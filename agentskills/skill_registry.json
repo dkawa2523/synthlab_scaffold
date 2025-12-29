@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "id": "S10",
+      "name": "Architecture & Invariants (Architect)",
+      "path": "agentskills/skills/S10_ARCHITECTURE.md",
+      "use_when": ["依存方向を変える", "不変契約に触れる", "新ドメイン追加の骨格", "構造が肥大化しそう"]
+    },
+    {
+      "id": "S20",
+      "name": "Hydra Config Conventions",
+      "path": "agentskills/skills/S20_HYDRA_CONFIG.md",
+      "use_when": ["conf/追加", "defaults/override/run dir/seed", "config互換性"]
+    },
+    {
+      "id": "S30",
+      "name": "Plugin Extension & Registry",
+      "path": "agentskills/skills/S30_PLUGIN_EXTENSION.md",
+      "use_when": ["pattern追加", "size model追加", "metric/viz追加", "registry操作"]
+    },
+    {
+      "id": "S40",
+      "name": "Process Implementation & CLI",
+      "path": "agentskills/skills/S40_PROCESS_IMPLEMENTATION.md",
+      "use_when": ["generate/qc/viz/export/train/eval/predict/doctor/leaderboard 実装"]
+    },
+    {
+      "id": "S50",
+      "name": "Artifact Contract & I/O",
+      "path": "agentskills/skills/S50_ARTIFACT_AND_IO.md",
+      "use_when": ["artifact出力", "schema", "manifest", "parquet/csv", "versioning"]
+    },
+    {
+      "id": "S60",
+      "name": "Evaluation/QC/Data Audit",
+      "path": "agentskills/skills/S60_EVALUATION_QC.md",
+      "use_when": ["QC指標", "比較可能性", "リーク防止", "統計検証"]
+    },
+    {
+      "id": "S70",
+      "name": "Visualization & DS Workflow (Data Scientist)",
+      "path": "agentskills/skills/S70_VISUALIZATION_DS.md",
+      "use_when": ["可視化", "統計出力", "解釈しやすさ", "分析導線"]
+    },
+    {
+      "id": "S95",
+      "name": "Security/Secrets/Compliance",
+      "path": "agentskills/skills/S95_SECURITY.md",
+      "use_when": ["実測データ", "権限", "秘密", "外部連携"]
+    },
+    {
+      "id": "S98",
+      "name": "Governance: Tests/Review/Release",
+      "path": "agentskills/skills/S98_GOVERNANCE.md",
+      "use_when": ["テスト整備", "レビュー観点", "DoD統一", "リリース/CI準備"]
+    }
+  ]
+}

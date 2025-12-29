@@ -1,0 +1,151 @@
+[
+  {
+    "id": "T0001",
+    "priority": "P0",
+    "status": "todo",
+    "title": "リポジトリ骨格と最小CLI/Processディスパッチャの作成",
+    "path": "work/tasks/T0001_repo_scaffold.md",
+    "skills": ["S10", "S40"],
+    "contracts": ["docs/00_INVARIANTS.md", "docs/01_ARCHITECTURE.md", "docs/10_PROCESS_CATALOG.md"]
+  },
+  {
+    "id": "T0002",
+    "priority": "P0",
+    "status": "todo",
+    "title": "Hydra設定（conf/）の規約に沿ったスケルトン作成",
+    "path": "work/tasks/T0002_hydra_skeleton.md",
+    "skills": ["S20", "S10"],
+    "contracts": ["docs/03_CONFIG_CONVENTIONS.md", "docs/00_INVARIANTS.md"],
+    "depends_on": ["T0001"]
+  },
+  {
+    "id": "T0003",
+    "priority": "P0",
+    "status": "todo",
+    "title": "Artifact契約（run dir / meta / config snapshot / manifest）の実装",
+    "path": "work/tasks/T0003_artifact_contract.md",
+    "skills": ["S50", "S10"],
+    "contracts": ["docs/04_ARTIFACTS_AND_VERSIONING.md", "docs/00_INVARIANTS.md"],
+    "depends_on": ["T0001", "T0002"]
+  },
+  {
+    "id": "T0004",
+    "priority": "P0",
+    "status": "todo",
+    "title": "wafer_particles ドメインのスキーマ定義（点群テーブル/サンプルテーブル）",
+    "path": "work/tasks/T0004_domain_schema_wafer_particles.md",
+    "skills": ["S10", "S50"],
+    "contracts": ["docs/04_ARTIFACTS_AND_VERSIONING.md", "docs/00_INVARIANTS.md"],
+    "depends_on": ["T0001", "T0002"]
+  },
+  {
+    "id": "T0005",
+    "priority": "P0",
+    "status": "todo",
+    "title": "基礎パターンジェネレータ（リング/セクタ/スクラッチ/放射/ホットスポット/ランダム/合成）実装",
+    "path": "work/tasks/T0005_pattern_generators_baseline.md",
+    "skills": ["S30", "S50", "S10"],
+    "contracts": ["docs/11_PLUGIN_REGISTRY.md", "docs/00_INVARIANTS.md"],
+    "depends_on": ["T0004"]
+  },
+  {
+    "id": "T0006",
+    "priority": "P0",
+    "status": "todo",
+    "title": "粒径モデル（lognormal/gaussian/mixture）とラベル別割当の実装",
+    "path": "work/tasks/T0006_size_models.md",
+    "skills": ["S30", "S50"],
+    "contracts": ["docs/11_PLUGIN_REGISTRY.md", "docs/04_ARTIFACTS_AND_VERSIONING.md"],
+    "depends_on": ["T0004"]
+  },
+  {
+    "id": "T0007",
+    "priority": "P0",
+    "status": "todo",
+    "title": "process=generate（大量生成、ラベル比率指定、出力/manifest/最小統計）実装",
+    "path": "work/tasks/T0007_process_generate.md",
+    "skills": ["S40", "S50", "S20"],
+    "contracts": ["docs/10_PROCESS_CATALOG.md", "docs/04_ARTIFACTS_AND_VERSIONING.md", "docs/03_CONFIG_CONVENTIONS.md"],
+    "depends_on": ["T0003", "T0005", "T0006"]
+  },
+  {
+    "id": "T0008",
+    "priority": "P0",
+    "status": "todo",
+    "title": "process=qc（統計/QCメトリクス/期待特徴ルール）実装",
+    "path": "work/tasks/T0008_process_qc.md",
+    "skills": ["S60", "S50"],
+    "contracts": ["docs/09_EVALUATION_PROTOCOL.md", "docs/04_ARTIFACTS_AND_VERSIONING.md"],
+    "depends_on": ["T0007"]
+  },
+  {
+    "id": "T0009",
+    "priority": "P0",
+    "status": "todo",
+    "title": "process=viz（散布図/ヒスト/ラベル別サンプル）実装",
+    "path": "work/tasks/T0009_process_viz.md",
+    "skills": ["S70", "S50"],
+    "contracts": ["docs/04_ARTIFACTS_AND_VERSIONING.md", "docs/09_EVALUATION_PROTOCOL.md"],
+    "depends_on": ["T0007"]
+  },
+  {
+    "id": "T0010",
+    "priority": "P0",
+    "status": "todo",
+    "title": "Plugin Registry の実体実装と登録規約のテスト化",
+    "path": "work/tasks/T0010_plugin_registry.md",
+    "skills": ["S30", "S10"],
+    "contracts": ["docs/11_PLUGIN_REGISTRY.md", "docs/00_INVARIANTS.md"],
+    "depends_on": ["T0001", "T0002"]
+  },
+  {
+    "id": "T0011",
+    "priority": "P0",
+    "status": "todo",
+    "title": "テスト（再現性/スキーマ/スモーク）と process=doctor 実装",
+    "path": "work/tasks/T0011_tests_and_doctor.md",
+    "skills": ["S98", "S40"],
+    "contracts": ["docs/00_INVARIANTS.md", "docs/10_PROCESS_CATALOG.md"],
+    "depends_on": ["T0007", "T0008", "T0009"]
+  },
+  {
+    "id": "T0012",
+    "priority": "P0",
+    "status": "todo",
+    "title": "examples（Hydra override例、生成→QC→可視化の手順）整備",
+    "path": "work/tasks/T0012_examples.md",
+    "skills": ["S70", "S20", "S98"],
+    "contracts": ["docs/README.md", "docs/03_CONFIG_CONVENTIONS.md"],
+    "depends_on": ["T0011"]
+  },
+  {
+    "id": "T0101",
+    "priority": "P1",
+    "status": "todo",
+    "title": "点過程モデル拡張（非一様Poisson/クラスタ/Cox）をPluginとして追加",
+    "path": "work/tasks/T0101_point_process_generators.md",
+    "skills": ["S30", "S60"],
+    "contracts": ["docs/11_PLUGIN_REGISTRY.md", "docs/09_EVALUATION_PROTOCOL.md"],
+    "depends_on": ["T0005", "T0008"]
+  },
+  {
+    "id": "T0102",
+    "priority": "P1",
+    "status": "todo",
+    "title": "process=export（学習用split/インデックス/dataset_id固定）実装",
+    "path": "work/tasks/T0102_process_export.md",
+    "skills": ["S50", "S60", "S20"],
+    "contracts": ["docs/10_PROCESS_CATALOG.md", "docs/04_ARTIFACTS_AND_VERSIONING.md", "docs/09_EVALUATION_PROTOCOL.md"],
+    "depends_on": ["T0007", "T0008"]
+  },
+  {
+    "id": "T0103",
+    "priority": "P1",
+    "status": "todo",
+    "title": "下流学習のProcess雛形（train/eval/leaderboard）と比較ルール実装",
+    "path": "work/tasks/T0103_training_pipeline_skeleton.md",
+    "skills": ["S40", "S60", "S50"],
+    "contracts": ["docs/10_PROCESS_CATALOG.md", "docs/09_EVALUATION_PROTOCOL.md", "docs/04_ARTIFACTS_AND_VERSIONING.md"],
+    "depends_on": ["T0102"]
+  }
+]
