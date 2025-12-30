@@ -1,0 +1,6 @@
+ring_narrow:
+  name: wafer_particles.pattern.ring_narrow
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  radius_ratio: 0.7
+  width_ratio: 0.03

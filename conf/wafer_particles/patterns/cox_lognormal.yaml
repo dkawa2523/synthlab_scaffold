@@ -1,0 +1,6 @@
+cox_lognormal:
+  name: wafer_particles.pattern.cox_lognormal
+  mean_particles: 200
+  wafer_radius_mm: 150.0
+  grid_bins: 8
+  field_sigma: 0.8

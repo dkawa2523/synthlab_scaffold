@@ -1,0 +1,15 @@
+input:
+  run_name: null
+  process_name: wafer_particles.process.generate
+  run_dir: null
+  manifest_path: null
+  particles_path: null
+  samples_path: null
+split:
+  mode: ratio
+  seed_offset: 0
+  shuffle: true
+  ratios:
+    train: 0.8
+    val: 0.1
+    test: 0.1

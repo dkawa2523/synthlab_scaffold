@@ -1,0 +1,14 @@
+leaderboard:
+  inputs:
+    run_names: []
+    run_dirs: []
+    process_name: wafer_particles.process.eval
+  metrics_path: metrics/eval_summary.json
+  metric_key: null
+  primary_metric: null
+  sort_order: desc
+  compare:
+    require_same_schema_version: true
+    require_same_dataset_id: true
+    require_same_seed_policy: true
+    require_same_eval_config_hash: true

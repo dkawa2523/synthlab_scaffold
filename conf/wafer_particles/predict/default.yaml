@@ -1,0 +1,20 @@
+predict:
+  input:
+    data:
+      run_name: null
+      process_name: wafer_particles.process.export
+      run_dir: null
+      manifest_path: null
+      particles_path: null
+      samples_path: null
+      splits_path: null
+      index_samples_path: null
+      index_particles_path: null
+    model:
+      run_name: null
+      process_name: wafer_particles.process.train
+      run_dir: null
+      model_path: null
+  model:
+    name: null
+    params: {}

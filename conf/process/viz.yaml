@@ -1,0 +1,5 @@
+defaults:
+  - wafer_particles/viz: default
+  - _self_
+
+name: wafer_particles.process.viz

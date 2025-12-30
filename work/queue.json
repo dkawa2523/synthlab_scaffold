@@ -2,150 +2,361 @@
   {
     "id": "T0001",
     "priority": "P0",
-    "status": "todo",
+    "status": "done",
     "title": "リポジトリ骨格と最小CLI/Processディスパッチャの作成",
     "path": "work/tasks/T0001_repo_scaffold.md",
-    "skills": ["S10", "S40"],
-    "contracts": ["docs/00_INVARIANTS.md", "docs/01_ARCHITECTURE.md", "docs/10_PROCESS_CATALOG.md"]
+    "skills": [
+      "S10",
+      "S40"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/01_ARCHITECTURE.md",
+      "docs/10_PROCESS_CATALOG.md"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_075851_145865",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_075851_145865_T0001_a1_verification.log"
+    }
   },
   {
     "id": "T0002",
     "priority": "P0",
-    "status": "todo",
+    "status": "done",
     "title": "Hydra設定（conf/）の規約に沿ったスケルトン作成",
     "path": "work/tasks/T0002_hydra_skeleton.md",
-    "skills": ["S20", "S10"],
-    "contracts": ["docs/03_CONFIG_CONVENTIONS.md", "docs/00_INVARIANTS.md"],
-    "depends_on": ["T0001"]
+    "skills": [
+      "S20",
+      "S10"
+    ],
+    "contracts": [
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/00_INVARIANTS.md"
+    ],
+    "depends_on": [
+      "T0001"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_080956_276026",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_080956_276026_T0002_a1_verification.log"
+    }
   },
   {
     "id": "T0003",
     "priority": "P0",
-    "status": "todo",
+    "status": "done",
     "title": "Artifact契約（run dir / meta / config snapshot / manifest）の実装",
     "path": "work/tasks/T0003_artifact_contract.md",
-    "skills": ["S50", "S10"],
-    "contracts": ["docs/04_ARTIFACTS_AND_VERSIONING.md", "docs/00_INVARIANTS.md"],
-    "depends_on": ["T0001", "T0002"]
+    "skills": [
+      "S50",
+      "S10"
+    ],
+    "contracts": [
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/00_INVARIANTS.md"
+    ],
+    "depends_on": [
+      "T0001",
+      "T0002"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_082348_701918",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_082348_701918_T0003_a1_verification.log"
+    }
   },
   {
     "id": "T0004",
     "priority": "P0",
-    "status": "todo",
+    "status": "done",
     "title": "wafer_particles ドメインのスキーマ定義（点群テーブル/サンプルテーブル）",
     "path": "work/tasks/T0004_domain_schema_wafer_particles.md",
-    "skills": ["S10", "S50"],
-    "contracts": ["docs/04_ARTIFACTS_AND_VERSIONING.md", "docs/00_INVARIANTS.md"],
-    "depends_on": ["T0001", "T0002"]
+    "skills": [
+      "S10",
+      "S50"
+    ],
+    "contracts": [
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/00_INVARIANTS.md"
+    ],
+    "depends_on": [
+      "T0001",
+      "T0002"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_083100_922993",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_083100_922993_T0004_a1_verification.log"
+    }
   },
   {
     "id": "T0005",
     "priority": "P0",
-    "status": "todo",
+    "status": "done",
     "title": "基礎パターンジェネレータ（リング/セクタ/スクラッチ/放射/ホットスポット/ランダム/合成）実装",
     "path": "work/tasks/T0005_pattern_generators_baseline.md",
-    "skills": ["S30", "S50", "S10"],
-    "contracts": ["docs/11_PLUGIN_REGISTRY.md", "docs/00_INVARIANTS.md"],
-    "depends_on": ["T0004"]
+    "skills": [
+      "S30",
+      "S50",
+      "S10"
+    ],
+    "contracts": [
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/00_INVARIANTS.md"
+    ],
+    "depends_on": [
+      "T0004"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_083811_940195",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_083811_940195_T0005_a1_verification.log"
+    }
   },
   {
     "id": "T0006",
     "priority": "P0",
-    "status": "todo",
+    "status": "done",
     "title": "粒径モデル（lognormal/gaussian/mixture）とラベル別割当の実装",
     "path": "work/tasks/T0006_size_models.md",
-    "skills": ["S30", "S50"],
-    "contracts": ["docs/11_PLUGIN_REGISTRY.md", "docs/04_ARTIFACTS_AND_VERSIONING.md"],
-    "depends_on": ["T0004"]
+    "skills": [
+      "S30",
+      "S50"
+    ],
+    "contracts": [
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0004"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_085534_460781",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_085534_460781_T0006_a1_verification.log"
+    }
   },
   {
     "id": "T0007",
     "priority": "P0",
-    "status": "todo",
+    "status": "done",
     "title": "process=generate（大量生成、ラベル比率指定、出力/manifest/最小統計）実装",
     "path": "work/tasks/T0007_process_generate.md",
-    "skills": ["S40", "S50", "S20"],
-    "contracts": ["docs/10_PROCESS_CATALOG.md", "docs/04_ARTIFACTS_AND_VERSIONING.md", "docs/03_CONFIG_CONVENTIONS.md"],
-    "depends_on": ["T0003", "T0005", "T0006"]
+    "skills": [
+      "S40",
+      "S50",
+      "S20"
+    ],
+    "contracts": [
+      "docs/10_PROCESS_CATALOG.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/03_CONFIG_CONVENTIONS.md"
+    ],
+    "depends_on": [
+      "T0003",
+      "T0005",
+      "T0006"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_090915_096551",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_090915_096551_T0007_a1_verification.log"
+    }
   },
   {
     "id": "T0008",
     "priority": "P0",
-    "status": "todo",
+    "status": "done",
     "title": "process=qc（統計/QCメトリクス/期待特徴ルール）実装",
     "path": "work/tasks/T0008_process_qc.md",
-    "skills": ["S60", "S50"],
-    "contracts": ["docs/09_EVALUATION_PROTOCOL.md", "docs/04_ARTIFACTS_AND_VERSIONING.md"],
-    "depends_on": ["T0007"]
+    "skills": [
+      "S60",
+      "S50"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0007"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_092813_309881",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_092813_309881_T0008_a1_verification.log"
+    }
   },
   {
     "id": "T0009",
     "priority": "P0",
-    "status": "todo",
+    "status": "done",
     "title": "process=viz（散布図/ヒスト/ラベル別サンプル）実装",
     "path": "work/tasks/T0009_process_viz.md",
-    "skills": ["S70", "S50"],
-    "contracts": ["docs/04_ARTIFACTS_AND_VERSIONING.md", "docs/09_EVALUATION_PROTOCOL.md"],
-    "depends_on": ["T0007"]
+    "skills": [
+      "S70",
+      "S50"
+    ],
+    "contracts": [
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/09_EVALUATION_PROTOCOL.md"
+    ],
+    "depends_on": [
+      "T0007"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_094206_654957",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_094206_654957_T0009_a1_verification.log"
+    }
   },
   {
     "id": "T0010",
     "priority": "P0",
-    "status": "todo",
+    "status": "done",
     "title": "Plugin Registry の実体実装と登録規約のテスト化",
     "path": "work/tasks/T0010_plugin_registry.md",
-    "skills": ["S30", "S10"],
-    "contracts": ["docs/11_PLUGIN_REGISTRY.md", "docs/00_INVARIANTS.md"],
-    "depends_on": ["T0001", "T0002"]
+    "skills": [
+      "S30",
+      "S10"
+    ],
+    "contracts": [
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/00_INVARIANTS.md"
+    ],
+    "depends_on": [
+      "T0001",
+      "T0002"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_095929_547218",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_095929_547218_T0010_a1_verification.log"
+    }
   },
   {
     "id": "T0011",
     "priority": "P0",
-    "status": "todo",
+    "status": "done",
     "title": "テスト（再現性/スキーマ/スモーク）と process=doctor 実装",
     "path": "work/tasks/T0011_tests_and_doctor.md",
-    "skills": ["S98", "S40"],
-    "contracts": ["docs/00_INVARIANTS.md", "docs/10_PROCESS_CATALOG.md"],
-    "depends_on": ["T0007", "T0008", "T0009"]
+    "skills": [
+      "S98",
+      "S40"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/10_PROCESS_CATALOG.md"
+    ],
+    "depends_on": [
+      "T0007",
+      "T0008",
+      "T0009"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_101007_792230",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_101007_792230_T0011_a1_verification.log"
+    }
   },
   {
     "id": "T0012",
     "priority": "P0",
-    "status": "todo",
+    "status": "done",
     "title": "examples（Hydra override例、生成→QC→可視化の手順）整備",
     "path": "work/tasks/T0012_examples.md",
-    "skills": ["S70", "S20", "S98"],
-    "contracts": ["docs/README.md", "docs/03_CONFIG_CONVENTIONS.md"],
-    "depends_on": ["T0011"]
+    "skills": [
+      "S70",
+      "S20",
+      "S98"
+    ],
+    "contracts": [
+      "docs/README.md",
+      "docs/03_CONFIG_CONVENTIONS.md"
+    ],
+    "depends_on": [
+      "T0011"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_102204_130900",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_102204_130900_T0012_a1_verification.log"
+    }
   },
   {
     "id": "T0101",
     "priority": "P1",
-    "status": "todo",
+    "status": "done",
     "title": "点過程モデル拡張（非一様Poisson/クラスタ/Cox）をPluginとして追加",
     "path": "work/tasks/T0101_point_process_generators.md",
-    "skills": ["S30", "S60"],
-    "contracts": ["docs/11_PLUGIN_REGISTRY.md", "docs/09_EVALUATION_PROTOCOL.md"],
-    "depends_on": ["T0005", "T0008"]
+    "skills": [
+      "S30",
+      "S60"
+    ],
+    "contracts": [
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/09_EVALUATION_PROTOCOL.md"
+    ],
+    "depends_on": [
+      "T0005",
+      "T0008"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_102742_649983",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_102742_649983_T0101_a1_verification.log"
+    }
   },
   {
     "id": "T0102",
     "priority": "P1",
-    "status": "todo",
+    "status": "done",
     "title": "process=export（学習用split/インデックス/dataset_id固定）実装",
     "path": "work/tasks/T0102_process_export.md",
-    "skills": ["S50", "S60", "S20"],
-    "contracts": ["docs/10_PROCESS_CATALOG.md", "docs/04_ARTIFACTS_AND_VERSIONING.md", "docs/09_EVALUATION_PROTOCOL.md"],
-    "depends_on": ["T0007", "T0008"]
+    "skills": [
+      "S50",
+      "S60",
+      "S20"
+    ],
+    "contracts": [
+      "docs/10_PROCESS_CATALOG.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/09_EVALUATION_PROTOCOL.md"
+    ],
+    "depends_on": [
+      "T0007",
+      "T0008"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_104943_258398",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_104943_258398_T0102_a1_verification.log"
+    }
   },
   {
     "id": "T0103",
     "priority": "P1",
-    "status": "todo",
+    "status": "done",
     "title": "下流学習のProcess雛形（train/eval/leaderboard）と比較ルール実装",
     "path": "work/tasks/T0103_training_pipeline_skeleton.md",
-    "skills": ["S40", "S60", "S50"],
-    "contracts": ["docs/10_PROCESS_CATALOG.md", "docs/09_EVALUATION_PROTOCOL.md", "docs/04_ARTIFACTS_AND_VERSIONING.md"],
-    "depends_on": ["T0102"]
+    "skills": [
+      "S40",
+      "S60",
+      "S50"
+    ],
+    "contracts": [
+      "docs/10_PROCESS_CATALOG.md",
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0102"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_110316_232881",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_110316_232881_T0103_a1_verification.log"
+    }
   }
 ]

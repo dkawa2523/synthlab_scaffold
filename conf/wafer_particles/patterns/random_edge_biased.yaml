@@ -1,0 +1,5 @@
+random_edge_biased:
+  name: wafer_particles.pattern.random_edge_biased
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  edge_bias: 2.0

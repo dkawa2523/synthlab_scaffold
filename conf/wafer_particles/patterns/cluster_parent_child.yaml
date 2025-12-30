@@ -1,0 +1,6 @@
+cluster_parent_child:
+  name: wafer_particles.pattern.cluster_parent_child
+  mean_particles: 200
+  wafer_radius_mm: 150.0
+  mean_children: 8
+  cluster_sigma_ratio: 0.03

@@ -1,0 +1,8 @@
+scratch:
+  name: wafer_particles.pattern.scratch
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  angle_category: horizontal
+  length_ratio: 1.0
+  width_ratio: 0.01
+  offset_ratio: 0.0

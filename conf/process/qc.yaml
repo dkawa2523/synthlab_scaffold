@@ -1,0 +1,5 @@
+defaults:
+  - wafer_particles/qc: default
+  - _self_
+
+name: wafer_particles.process.qc

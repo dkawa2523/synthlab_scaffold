@@ -1,0 +1,8 @@
+hotspot:
+  name: wafer_particles.pattern.hotspot
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  mode: center
+  sigma_ratio: 0.05
+  center_radius_ratio: 0.9
+  center_angle: random

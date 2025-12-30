@@ -1,0 +1,5 @@
+defaults:
+  - wafer_particles/predict: default
+  - _self_
+
+name: wafer_particles.process.predict

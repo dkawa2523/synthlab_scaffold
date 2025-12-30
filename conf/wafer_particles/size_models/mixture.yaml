@@ -1,0 +1,16 @@
+name: wafer_particles.size_model.mixture
+components:
+  - model: wafer_particles.size_model.lognormal
+    weight: 0.7
+    cfg:
+      mu_log: -0.2
+      sigma_log: 0.35
+      min_um: 0.05
+      max_um: 3.0
+  - model: wafer_particles.size_model.gaussian
+    weight: 0.3
+    cfg:
+      mean_um: 2.0
+      std_um: 0.3
+      min_um: 0.2
+      max_um: 5.0

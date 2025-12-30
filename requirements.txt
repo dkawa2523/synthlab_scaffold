@@ -1,0 +1,2 @@
+matplotlib==3.10.8
+pyarrow==22.0.0

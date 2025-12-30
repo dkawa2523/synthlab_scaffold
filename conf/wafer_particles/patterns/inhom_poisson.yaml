@@ -1,0 +1,8 @@
+inhom_poisson:
+  name: wafer_particles.pattern.inhomogeneous_poisson
+  mean_particles: 200
+  wafer_radius_mm: 150.0
+  radial_power: 1.5
+  angular_amplitude: 0.4
+  angular_harmonic: 2
+  angular_phase_deg: 30.0

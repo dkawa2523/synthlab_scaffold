@@ -1,0 +1,27 @@
+input:
+  run_name: null
+  process_name: wafer_particles.process.generate
+  run_dir: null
+  manifest_path: null
+  particles_path: null
+  samples_path: null
+samples_per_label: 3
+max_labels: null
+wafer_radius_mm: null
+scatter:
+  max_points: null
+  point_size: 6.0
+  alpha: 0.7
+hist:
+  r:
+    start: 0.0
+    stop: 150.0
+    count: 30
+  theta:
+    start: 0.0
+    stop: 6.283185307179586
+    count: 36
+  size:
+    start: null
+    stop: null
+    count: 30

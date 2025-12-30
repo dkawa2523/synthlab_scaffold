@@ -1,0 +1,5 @@
+name: wafer_particles.size_model.gaussian
+mean_um: 1.0
+std_um: 0.2
+min_um: 0.05
+max_um: 5.0

@@ -1,0 +1,5 @@
+name: wafer_particles.size_model.lognormal
+mu_log: -0.1
+sigma_log: 0.35
+min_um: 0.05
+max_um: 5.0

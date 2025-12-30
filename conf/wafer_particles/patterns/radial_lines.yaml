@@ -1,0 +1,8 @@
+radial_lines:
+  name: wafer_particles.pattern.radial_lines
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  n_lines: 6
+  angular_jitter_deg: 2.0
+  r_min_ratio: 0.0
+  r_max_ratio: 1.0

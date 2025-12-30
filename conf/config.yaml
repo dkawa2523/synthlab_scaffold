@@ -1,0 +1,16 @@
+defaults:
+  - domain: wafer_particles
+  - process: doctor
+  - wafer_particles/labels: taxonomy_v1
+  - _self_
+
+seed: ???
+run_name: ${now:%Y-%m-%d_%H-%M-%S}
+notes: null
+
+hydra:
+  run:
+    dir: runs/${run_name}/${process.name}
+  sweep:
+    dir: sweeps/${run_name}
+    subdir: ${hydra.job.num}

@@ -40,6 +40,7 @@ conf/
     viz/
       default.yaml
     io/
+      auto.yaml
       parquet.yaml
       csv.yaml
 ```

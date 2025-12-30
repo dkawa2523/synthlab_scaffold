@@ -1,0 +1,40 @@
+defaults:
+  - wafer_particles/size_models: lognormal
+  - wafer_particles/patterns: ring_narrow
+  - wafer_particles/patterns: ring_wide
+  - wafer_particles/patterns: edge_sector
+  - wafer_particles/patterns: scratch
+  - wafer_particles/patterns: radial_lines
+  - wafer_particles/patterns: hotspot
+  - wafer_particles/patterns: random_uniform
+  - wafer_particles/patterns: random_edge_biased
+  - wafer_particles/patterns: inhom_poisson
+  - wafer_particles/patterns: cluster_parent_child
+  - wafer_particles/patterns: cox_lognormal
+  - wafer_particles/patterns: composite
+  - wafer_particles/io: auto
+  - _self_
+
+name: wafer_particles.process.generate
+
+wafer_particles:
+  n_samples: 1000
+  n_particles: null
+  wafer_radius_mm: null
+  sample_id_prefix: sample
+  include_xy: true
+  source: synthetic
+  label_selection:
+    mode: ratio
+    shuffle: true
+    ratios:
+      ring_narrow: 0.2
+      ring_wide: 0.2
+      edge_sector_right: 0.1
+      edge_sector_left: 0.1
+      scratch_horizontal: 0.1
+      scratch_vertical: 0.1
+      radial_lines: 0.1
+      hotspot_center: 0.05
+      random_uniform: 0.025
+      random_edge_biased: 0.025

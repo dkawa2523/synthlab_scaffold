@@ -23,6 +23,8 @@
    - 秘密情報・権限・ネットワーク・実測データ扱い
 9. 12_INTEGRATIONS_READY.md  
    - 将来の MLOps 連携（今は入れないが見越す）
+10. 20_EXAMPLES.md  
+   - generate→qc→viz の最短手順と override 例
 
 ## この基盤が守ること（要約）
 - Hydra config が真実：実行時に解決された config を artifact として保存する
