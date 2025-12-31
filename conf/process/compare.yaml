@@ -1,0 +1,5 @@
+defaults:
+  - compare: default
+  - _self_
+
+name: wafer_particles.process.compare

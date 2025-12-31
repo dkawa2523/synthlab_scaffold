@@ -1,0 +1,107 @@
+[
+  {
+    "id": "T0201",
+    "priority": "P0",
+    "status": "todo",
+    "title": "Taxonomy階層化 v2（fine/coarse）と後方互換",
+    "path": "work/tasks/T0201_taxonomy_hierarchy_v2.md",
+    "skills": [
+      "S20",
+      "S50",
+      "S10"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/09_EVALUATION_PROTOCOL.md"
+    ],
+    "depends_on": [
+      "T0102"
+    ]
+  },
+  {
+    "id": "T0202",
+    "priority": "P0",
+    "status": "todo",
+    "title": "複合パターン体系化：Composite DSL + プリセットライブラリ",
+    "path": "work/tasks/T0202_composite_pattern_dsl_and_library.md",
+    "skills": [
+      "S30",
+      "S20",
+      "S70"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/11_PLUGIN_REGISTRY.md"
+    ],
+    "depends_on": [
+      "T0201"
+    ]
+  },
+  {
+    "id": "T0203",
+    "priority": "P1",
+    "status": "todo",
+    "title": "点過程ジェネレータ追加（Inhom Poisson / Cluster / Repulsive）",
+    "path": "work/tasks/T0203_point_process_generators_pack.md",
+    "skills": [
+      "S30",
+      "S60"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/03_CONFIG_CONVENTIONS.md"
+    ],
+    "depends_on": [
+      "T0201"
+    ]
+  },
+  {
+    "id": "T0204",
+    "priority": "P0",
+    "status": "todo",
+    "title": "実測比較の距離指標拡張（Distribution/Spatial distance report）",
+    "path": "work/tasks/T0204_real_vs_synth_distance_metrics_extend.md",
+    "skills": [
+      "S40",
+      "S60",
+      "S50"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/05_SECURITY_SECRETS.md",
+      "docs/00_INVARIANTS.md"
+    ],
+    "depends_on": [
+      "T0102"
+    ]
+  },
+  {
+    "id": "T0205",
+    "priority": "P0",
+    "status": "todo",
+    "title": "データセット配布用 export 強化（dataset bundle / checksums / card）",
+    "path": "work/tasks/T0205_export_distribution_packaging.md",
+    "skills": [
+      "S50",
+      "S20",
+      "S60"
+    ],
+    "contracts": [
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/00_INVARIANTS.md",
+      "docs/05_SECURITY_SECRETS.md"
+    ],
+    "depends_on": [
+      "T0201",
+      "T0102"
+    ]
+  }
+]

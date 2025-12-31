@@ -1,0 +1,27 @@
+C08_CurvedScratch:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.C08_CurvedScratch
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  arc_radius_ratio: 0.7
+  span_deg: 90.0
+  width_ratio: 0.02
+  angle_center_deg: 0.0
+  param_space:
+    arc_radius_ratio:
+      dist: uniform
+      min: 0.4
+      max: 0.9
+    span_deg:
+      dist: uniform
+      min: 30.0
+      max: 160.0
+    width_ratio:
+      dist: uniform
+      min: 0.01
+      max: 0.06
+    angle_center_rad:
+      dist: uniform
+      min: 0.0
+      max: 6.283185307179586

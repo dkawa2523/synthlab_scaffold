@@ -1,0 +1,1890 @@
+OpenAI Codex v0.77.0 (research preview)
+--------
+workdir: /Users/kawahito/Desktop/synthlab_scaffold
+model: gpt-5.2-codex
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: auto
+session id: 019b6c55-f4d2-72a0-92e3-ddb5fdfd767e
+--------
+user
+# AUTODEV TASK RUN
+
+Target Task: T0001 — リポジトリ骨格と最小CLI/Processディスパッチャの作成
+
+## Contracts (MUST READ)
+
+- docs/00_INVARIANTS.md
+- docs/01_ARCHITECTURE.md
+- docs/10_PROCESS_CATALOG.md
+
+## Skills to follow
+
+- agentskills/skills/S10_ARCHITECTURE.md
+- agentskills/skills/S40_PROCESS_IMPLEMENTATION.md
+
+## Hard rules (no stalls)
+
+- Do NOT ask the user questions. Make reasonable defaults and proceed.
+- If ambiguity exists, choose the option that preserves docs/00 invariants and is minimal.
+- Always keep changes small & reviewable; list files changed at the end.
+
+## AutoDev policy
+
+- If you ask questions/confirmation, the loop will treat it as failure and retry.
+
+## Task file content
+
+(from /Users/kawahito/Desktop/synthlab_scaffold/work/tasks/T0001_repo_scaffold.md)
+
+```md
+# TASK: T0001 リポジトリ骨格と最小CLI/Processディスパッチャの作成
+
+## Contracts (MUST READ)
+- docs/00_INVARIANTS.md
+- docs/01_ARCHITECTURE.md
+- docs/10_PROCESS_CATALOG.md
+
+## Scope
+- `src/synthlab/` の骨格（framework/domains/ の空実装）
+- 単一 entrypoint（例：`python -m synthlab.cli.main process=...`）で Process を切替
+- process=doctor の最小実装（後で詳細化）
+
+## Non-goals
+- 本格的な生成/QC/viz 実装（別タスク）
+- 外部MLOps連携
+
+## Acceptance Criteria
+- [ ] `python -m synthlab.cli.main --help` が動く
+- [ ] `process=doctor` が run artifact を作り meta を出力する（最低限）
+- [ ] 依存方向が docs/01 に反しない
+
+## Verification
+- `python -m synthlab.cli.main process=doctor seed=1`
+- runs/ 配下に artifact ができ、meta/meta.json と config/resolved.yaml が存在する
+
+## Implementation Notes
+- Hydra導入は T0002 だが、T0001 では CLI の入口と “Process呼び出しの形” を固定する
+- Hydra main の導入タイミングは実装者裁量だが、docs/00 の「configが真実」は必ず守る
+
+## DoD
+- [ ] 最小のプロジェクト構造が作成される
+- [ ] doctor が artifact 契約の雛形を満たす
+
+```
+
+## Contract: docs/00_INVARIANTS.md
+```md
+# 00_INVARIANTS — 不変条件（契約）
+
+## 0. この文書の位置づけ
+この文書は「以後すべての実装/タスク/レビューが従う不変契約」です。
+例外は **blocked運用**でのみ許可します。
+
+---
+
+## 1. 用語
+- **Domain**: データ型のまとまり（例：wafer_particles、画像、時系列）
+- **Process**: 実行単位（generate/qc/viz/train/eval/export/doctor…）
+- **Artifact**: Processの出力（runディレクトリ）。再現・比較の最小単位
+- **Plugin**: 拡張点（pattern/size_model/metric/viz/process など）
+- **Resolved Config**: Hydra で解決済みの設定（YAML）。真実の情報
+
+---
+
+## 2. 不変条件（MUST）
+### 2.1 設定が真実（Config is the Source of Truth）
+- すべての実行は Hydra 設定（YAML）で宣言される
+- Artifact には必ず以下を保存する
+  - 解決済み config（resolved.yaml）
+  - override（overrides.txt）
+  - seed
+  - 実行環境メタ（OS/Python/依存）
+
+### 2.2 再現性（Determinism）
+- 乱数は **単一の seed** と **明示的な RNG 注入**で制御する
+- グローバル乱数（np.random.* の暗黙利用、random モジュール直叩き）は禁止
+- 同じ resolved config + seed から、同一データ・同一統計が再現できること
+
+### 2.3 Processの純度（Process Purity）
+- Process は「入力Artifact/入力ファイル → 出力Artifact」を明確にする
+- Process は run ディレクトリ外に副作用を書かない（例外：明示された cache/ がある場合のみ）
+- Process は構成上、他の Process の内部実装に依存しない（I/O契約に依存）
+
+### 2.4 Artifactは追記・改変しない（Immutability）
+- 生成済み artifact は原則「write-once」
+- 再生成/改良は新しい run として出力する（比較可能性のため）
+- 例外的な上書きは blocked運用でのみ許可
+
+### 2.5 比較可能性（Comparability）
+- 比較は「同一評価プロトコル（docs/09）」「同一スキーマ」「同一seed方針」でのみ行う
+- 生成器の変更で評価が変わる場合、必ず差分を meta に残す（git sha / config hash）
+
+### 2.6 Skew禁止（Train/Inference / Generate/Analyze のズレ禁止）
+- 同じ artifact を入力にする解析/QC/viz は同じスキーマ・同じ前処理を用いる
+- “見た目だけ合う” 生成（vizで見えるが粒子データとしては壊れている等）を禁止
+- 変換（r,theta→x,y 等）は単一実装に統一し、複数実装の分岐を禁止
+
+### 2.7 拡張はPluginで行う（No Big if/else）
+- パターン追加、サイズモデル追加、評価指標追加、可視化追加は Plugin Registry を通す
+- 巨大な条件分岐で増殖させない（コード肥大化・レビュー困難を防ぐ）
+
+### 2.8 観測可能性（Observability）
+- すべての run は metrics と plots を持つ（最低限）
+- ログ（console.log相当）を run に残す（クラッシュ時に再現可能にする）
+
+---
+
+## 3. Blocked運用（不変契約の変更手順）
+不変契約に抵触する変更が必要になった場合:
+
+1) まず **blocked** の解除タスクを作る（work/tasks に追加）
+   - 解除タスクは `unblocks: [対象タスクID]` を持つ  
+2) docs の更新（どの不変条件がなぜ変わるか、影響範囲、移行手順）
+3) 互換性/移行計画（artifact/schema/version の扱い）
+4) Verification を通してから実装再開
+
+---
+
+## 4. TODO（根拠が無い点）
+- 生成データを社内レイクに登録する正式手順（権限/監査）: TODO
+- 実測データの匿名化・取り扱い規定（会社ポリシー依存）: TODO
+
+```
+
+## Contract: docs/01_ARCHITECTURE.md
+```md
+# 01_ARCHITECTURE — 構成と依存方向
+
+## 1. 目的
+- **拡張しても肥大化しない**構造（pattern/metric/viz/process が増えても一定の秩序）
+- **複数ドメイン**（点群/画像/動画/時系列）へ拡張可能
+- **Hydra設定**と **artifact契約**で、再現性・比較可能性を担保
+
+## 2. 現状→理想（方針）
+現状: wafer_particles を最初の Domain として実装開始  
+理想: Domain を増やしても framework は共通、Domain固有は domains/ 配下に閉じる
+
+## 3. 依存方向（重要）
+下位層は上位層を import しない（逆依存禁止）。
+
+```
+[CLI / main]
+    |
+    v
+[Process Dispatcher] -----> [Artifact I/O]
+    |
+    v
+[Domain API] --------------> [Registry]
+    |
+    v
+[Plugin Implementations] --> [Core Utils (rng, geometry, types)]
+```
+
+### 依存ルール
+- Process は Domain API と Artifact I/O に依存してよい
+- Domain API は core utils と registry に依存してよい
+- Plugin 実装は Domain API（interface）と core utils に依存してよい
+- core utils は他層に依存してはいけない
+- Hydra/OmegaConf は “Process/CLI 層” に閉じる（Domain/Plugin が Hydra に依存しない）
+
+## 4. 推奨ディレクトリ（骨格）
+（実装は work/tasks で段階的に行う）
+
+```
+conf/                      # Hydra YAML
+src/synthlab/
+  cli/                     # entrypoint（Hydra main）
+  framework/
+    process.py              # process dispatch, base classes
+    artifacts.py            # artifact contract & writer/reader
+    registry.py             # plugin registry
+  domains/
+    wafer_particles/
+      schema.py             # data schema / domain config
+      generators/           # pattern + size models
+      metrics/              # QC metrics
+      viz/                  # plots
+tests/
+runs/                      # outputs（git管理しない）
+```
+
+## 5. 拡張戦略（肥大化防止）
+### 5.1 新しいパターンを追加する
+- `domains/wafer_particles/generators/patterns/` に実装を追加
+- `docs/11_PLUGIN_REGISTRY.md` の登録規約に従って registry に登録
+- Hydra config に pattern を追加（conf/ の group）
+
+### 5.2 新しい Domain を追加する（将来）
+- `src/synthlab/domains/<new_domain>/` を作り、同様の構造で閉じる
+- framework 側は process/artifact/registry の共通I/Fを維持
+
+## 6. 非目標（今はやらない）
+- 特定のMLOps製品の強制（MLflow/ClearML/W&B等）：docs/12にチェックリストだけ用意
+- 大規模分散処理：必要になったら blocked運用で導入
+
+```
+
+## Contract: docs/10_PROCESS_CATALOG.md
+```md
+# 10_PROCESS_CATALOG — Process一覧とI/O
+
+## 共通事項（MUST）
+- すべての Process は Hydra config で選択される
+- すべての Process は artifact 契約（docs/04）を満たす
+- 入力が artifact の場合、参照はパス + meta を読み取り、再現可能な形にする
+
+---
+
+## P0で実装するProcess
+### 1) process=generate
+目的: 擬似粒子データ（wafer_particles）を生成し、data/ に保存  
+入力: Hydra config のみ  
+出力:
+- data/particles.parquet(or csv)
+- data/samples.parquet(or csv)
+- manifest
+- metrics/（最低限の集計）
+- plots/（任意、最小でもOK）
+
+### 2) process=qc
+目的: 生成データの統計/QCを計算し metrics/ に保存  
+入力:
+- generate の artifact（または data/ パス）
+出力:
+- metrics/qc.json
+- metrics/label_summary.csv
+- plots/（任意）
+
+### 3) process=viz
+目的: 可視化（ラベル別サンプル、ヒストグラム、密度など）  
+入力:
+- generate の artifact（または data/ パス）
+出力:
+- plots/*.png（またはhtml）
+- metrics/（必要なら）
+
+### 4) process=doctor
+目的: 環境・依存・設定の健全性チェック（壊れやすい点を事前検知）  
+入力: なし  
+出力:
+- meta/doctor.json（OK/NG、バージョン、GPU有無など）
+
+---
+
+## P1以降で実装予定（契約だけ先に固定）
+### 5) process=export
+目的: 学習で使いやすい形にパッケージ（split、index、dataset_id）  
+入力: generate artifact  
+出力: export artifact（data/ + splits + manifest）
+
+### 6) process=train / eval / predict
+目的: 下流学習（分類/検知/回帰）を統一インターフェースで扱う  
+入力: export artifact + model config  
+出力: model/ + metrics/ + preds/
+
+### 7) process=leaderboard
+目的: runs を集計して比較表を生成  
+入力: runs/ の複数artifact  
+出力: leaderboard.csv / html
+
+※ 具体仕様は work/tasks で作る（TODO）
+
+```
+
+## Deliverables
+
+- Implement changes to satisfy Acceptance Criteria and Verification.
+- Print a concise summary: files changed + how to run verification.
+mcp: context7 starting
+mcp: context7 ready
+mcp startup: ready: context7
+
+thinking
+**Preparing to inspect skills files**
+exec
+/bin/zsh -lc ls in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 314ms:
+README.md
+__pycache__
+agentskills
+autodev
+conf
+docs
+runs
+src
+synthlab
+tests
+work
+
+thinking
+**Reading skill files**
+exec
+/bin/zsh -lc 'cat agentskills/skills/S10_ARCHITECTURE.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 273ms:
+# S10 — Architecture & Invariants (Architect)
+
+## 目的
+- 構造が肥大化しないように **依存方向**と**拡張点**を守る
+- docs/00（不変契約）を破らない変更計画を作る
+- 将来ドメイン（画像/動画/時系列）にも耐える骨格を維持する
+
+## 参照（MUST）
+- docs/00_INVARIANTS.md
+- docs/01_ARCHITECTURE.md
+- docs/11_PLUGIN_REGISTRY.md
+
+## 手順（やること）
+1) 変更要求を “分類” する
+   - (A) 新機能追加（plugin/新process）なのか
+   - (B) 既存契約の変更（schema/評価/依存方向）なのか
+2) 依存方向をチェック
+   - Hydra依存が Domain/Plugin に侵入していないか
+   - 下位層が上位層を import していないか
+3) 拡張点を registry で吸収できるか検討
+
+thinking
+**Noting requirement for S40**
+exec
+/bin/zsh -lc 'cat agentskills/skills/S40_PROCESS_IMPLEMENTATION.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 246ms:
+# S40 — Process Implementation & CLI
+
+## 目的
+- generate/qc/viz/export/train/eval 等の Process を “同じ型” で実装し、比較可能にする
+
+## 参照（MUST）
+- docs/10_PROCESS_CATALOG.md
+- docs/04_ARTIFACTS_AND_VERSIONING.md
+- docs/00_INVARIANTS.md
+
+## 手順
+1) Process の I/O を決める（入力artifact/出力artifact）
+2) 解析/生成の “純度” を守る（run dir 外に出さない）
+3) artifact writer を使って config/meta を必ず保存
+4) 成果物（data/metrics/plots）を契約通り配置
+5) 失敗時にログが残るようにする（最低限 console.log）
+
+## 事故りやすい点
+- Process が別Processの内部実装を import して依存する
+- 例外時に途中ファイルだけ残る（manifest不整合）
+
+thinking
+**Checking referenced documentation files**
+exec
+/bin/zsh -lc 'ls docs' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 263ms:
+00_INVARIANTS.md
+01_ARCHITECTURE.md
+03_CONFIG_CONVENTIONS.md
+04_ARTIFACTS_AND_VERSIONING.md
+05_SECURITY_SECRETS.md
+09_EVALUATION_PROTOCOL.md
+10_PROCESS_CATALOG.md
+11_PLUGIN_REGISTRY.md
+12_INTEGRATIONS_READY.md
+README.md
+
+thinking
+**Reading documentation files**
+exec
+/bin/zsh -lc 'cat docs/04_ARTIFACTS_AND_VERSIONING.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 236ms:
+# 04_ARTIFACTS_AND_VERSIONING — Artifact契約とバージョニング（更新 v2.2）
+
+## 1. Artifact（run）ディレクトリ契約（MUST）
+各 Process の出力は **単一の run ディレクトリ**に保存される。
+最低限、以下を持つ。
+
+```
+runs/<run_name>/<process.name>/
+  config/
+    resolved.yaml
+    overrides.txt
+  meta/
+    meta.json
+  data/                     # generate/export の主出力
+  metrics/                  # qc/eval 等
+  plots/                    # viz
+  logs/
+    console.log             # 可能なら
+  README.md                 # そのrunの要約（自動生成可）
+```
+
+thinking
+**Checking for plugin registry docs**
+exec
+/bin/zsh -lc 'cat docs/11_PLUGIN_REGISTRY.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 276ms:
+# 11_PLUGIN_REGISTRY — 拡張（モデル/特徴量/Process）登録規約
+
+## 1. 目的
+- 新しいパターン/サイズモデル/メトリクス/可視化/Process を追加しても
+  - if/else が肥大化しない
+  - ディレクトリが無秩序にならない
+  - レビューが容易
+を保証する。
+
+## 2. Plugin種別（v1）
+- PatternGenerator（点座標を生成）
+- SizeModel（粒径を割り当て）
+- Metric（QC指標）
+- Visualizer（プロット生成）
+- Process（generate/qc/viz/export/train…）
+
+## 3. 登録の原則（MUST）
+- plugin は **名前（key）**で登録される
+- key は namespaced にする（衝突防止）
+  - 例: `wafer_particles.pattern.ring_narrow`
+
+thinking
+**Exploring repository structure**
+exec
+/bin/zsh -lc "rg --files -g 'src/**'" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 393ms:
+src/README.md
+
+thinking
+**Checking for synthlab directory**
+exec
+/bin/zsh -lc 'ls -a' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 278ms:
+.
+..
+.DS_Store
+.git
+.gitignore
+.pytest_cache
+.venv
+README.md
+__pycache__
+agentskills
+autodev
+conf
+docs
+runs
+src
+synthlab
+tests
+work
+
+thinking
+**Checking for synthlab module files**
+exec
+/bin/zsh -lc 'rg --files synthlab' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 277ms:
+synthlab/__init__.py
+
+thinking
+**Checking for package location**
+exec
+/bin/zsh -lc 'cat src/README.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 267ms:
+# src/ — Implementation
+
+実装コードは `src/synthlab/` 配下に配置します。
+依存方向は docs/01_ARCHITECTURE.md を必ず守ってください。
+
+P0では work/tasks/T0001_repo_scaffold.md から開始します。
+
+thinking
+**Planning package structure**
+exec
+/bin/zsh -lc 'cat synthlab/__init__.py' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 266ms:
+from __future__ import annotations
+
+from pathlib import Path
+
+__all__ = ["__version__"]
+__version__ = "0.0.0"
+
+_pkg_root = Path(__file__).resolve().parent
+_src_pkg = _pkg_root.parent / "src" / "synthlab"
+if _src_pkg.is_dir():
+    __path__.append(str(_src_pkg))
+
+thinking
+**Designing initial CLI and framework structure**
+
+I'm planning the basic CLI entrypoint with a key=value override style parser to match minimal config needs without Hydra. I'll also set up the skeletal process, registry, artifact handling, and domain folders following the architecture and docs, crafting a simple but faithful implementation of config-as-truth and run artifact metadata for the doctor process.
+exec
+/bin/zsh -lc 'ls conf' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 305ms:
+README.md
+
+thinking
+**Designing minimal doctor process and CLI setup**
+
+I’m outlining a minimal doctor process implementation inside synthlab, including CLI entry, artifacts, logging, config handling with config hashing excluding run_name, and meta/doctor.json generation capturing environment info like Python version and optional Torch presence. I’m planning a simple logger to write both to console and logs/console.log, ensuring all outputs stay within run directories generated from timestamp or passed run_name. I also consider YAML serialization with PyYAML for config resolution and hashing, checking if the dependency exists or if alternatives are needed.
+exec
+/bin/zsh -lc "rg --files -g 'pyproject.toml' -g 'requirements*.txt' -g 'setup.py'" in /Users/kawahito/Desktop/synthlab_scaffold exited 1 in 291ms:
+
+
+thinking
+**Evaluating YAML handling and repo structure assumptions**
+exec
+/bin/zsh -lc 'rg -n "process" src synthlab autodev' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 376ms:
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:40:- 単一 entrypoint（例：`python -m synthlab.cli.main process=...`）で Process を切替
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:41:- process=doctor の最小実装（後で詳細化）
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:49:- [ ] `process=doctor` が run artifact を作り meta を出力する（最低限）
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:53:- `python -m synthlab.cli.main process=doctor seed=1`
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:80:- **Plugin**: 拡張点（pattern/size_model/metric/viz/process など）
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:150:- **拡張しても肥大化しない**構造（pattern/metric/viz/process が増えても一定の秩序）
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:189:    process.py              # process dispatch, base classes
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:210:- framework 側は process/artifact/registry の共通I/Fを維持
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:230:### 1) process=generate
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:240:### 2) process=qc
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:249:### 3) process=viz
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:257:### 4) process=doctor
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:266:### 5) process=export
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:271:### 6) process=train / eval / predict
+autodev/logs/20251230_075851_145865_T0001_a1_prompt.md:276:### 7) process=leaderboard
+autodev/verifiers.py:18:import subprocess
+autodev/verifiers.py:32:    p = subprocess.run(
+autodev/verifiers.py:35:        stdout=subprocess.PIPE,
+autodev/verifiers.py:36:        stderr=subprocess.STDOUT,
+autodev/verifiers.py:44:def _latest_artifact_dir(runs_dir: Path, process_name: str) -> Optional[Path]:
+
+thinking
+**Checking autodev verifiers directory**
+exec
+/bin/zsh -lc 'cat autodev/verifiers.py' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 275ms:
+\
+"""
+autodev/verifiers.py (v2.2)
+
+- タスクごとに "機械的に判定可能" な Verification を提供する。
+- 特に T0003 (artifact contract) は、よく詰まるので専用の厳密検証を持つ。
+
+Verification は以下の方針:
+- 失敗時に Codex に渡せる「短いsummary」を返す
+- 同じタスクを何度も回す場合でも、最新の runs/ を自動で追跡する
+"""
+from __future__ import annotations
+
+import dataclasses
+import hashlib
+import json
+import os
+import subprocess
+from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
+
+thinking
+**Ensuring YAML compatibility and stable hashing**
+
+I’m focusing on matching autodev’s use of PyYAML for reading and hashing YAML config files, so I’ll use yaml.safe_dump with sort_keys=True to generate resolved.yaml and calculate config_hash. I’ll also handle removal of hydra and run_name from the config before hashing to ensure stability and follow expected directory structures for artifacts. It seems PyYAML is available in the environment, so relying on it is safe. Next, I want to check relevant docs for naming conventions to align fully.
+exec
+/bin/zsh -lc 'cat docs/03_CONFIG_CONVENTIONS.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 271ms:
+# 03_CONFIG_CONVENTIONS — Hydra（YAML）運用規約
+
+## 1. 原則
+- **すべて YAML**（Hydra）
+- defaults リストで「構成」を表す
+- すべての run は resolved config を artifact に保存（docs/04）
+- seed は root に 1つ（docs/00）
+
+## 2. conf/ 構造（推奨）
+```
+conf/
+  config.yaml               # root（defaults）
+  domain/
+    wafer_particles.yaml
+  process/
+    generate.yaml
+    qc.yaml
+    viz.yaml
+    export.yaml
+    doctor.yaml
+
+thinking
+**Designing root config and CLI overrides**
+
+I'm outlining a minimal root config structure mimicking Hydra conventions, focusing on required fields like `process.name`, `seed`, and `run_name`. I'll handle CLI overrides parsing with dot notation, coercing types, and converting `process=doctor` to `process: {name: "doctor"}` for compatibility. For unique `run_name` generation, I'll combine timestamps with a short UUID to avoid collisions, and plan for stable config hashing excluding `run_name`. Also, I'll prepare metadata files including git SHA detection via subprocess with fallback and structure directories and files like overrides.txt, meta.json, logs, and README to meet expected invariants.
+exec
+/bin/zsh -lc 'cat .gitignore' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 311ms:
+runs/
+sweeps/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+
+
+thinking
+**Designing synthlab framework skeleton and CLI**
+thinking
+**Detailing ArtifactWriter setup and environment metadata**
+
+I’m mapping out how ArtifactWriter will initialize and prepare the run directory by writing resolved config, overrides, meta with config hash, and environment details like Python version and platform. I’m also ensuring config_hash calculation excludes run_name and hydra and matches expected YAML formatting. Then I’m planning creation of directories using shell commands for all necessary package paths.
+exec
+/bin/zsh -lc 'mkdir -p src/synthlab/cli src/synthlab/framework src/synthlab/processes src/synthlab/domains/wafer_particles/generators src/synthlab/domains/wafer_particles/metrics src/synthlab/domains/wafer_particles/viz' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 372ms:
+
+
+thinking
+**Creating __init__.py with version**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/__init__.py
+from __future__ import annotations
+
+__all__ = [\"__version__\"]
+__version__ = \"0.0.0\"
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 234ms:
+
+
+thinking
+**Noticing a simple init file**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/cli/__init__.py
+from __future__ import annotations
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 269ms:
+
+
+thinking
+**Exporting dispatch_process from framework**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/framework/__init__.py
+from __future__ import annotations
+
+from .process import dispatch_process
+
+__all__ = [\"dispatch_process\"]
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 265ms:
+
+
+thinking
+**Implementing process registry**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/framework/registry.py
+from __future__ import annotations
+
+from typing import Callable, Dict, Iterable, Type
+
+if False:  # TYPE_CHECKING guard without import overhead
+    from .process import BaseProcess  # pragma: no cover
+
+
+_PROCESS_REGISTRY: Dict[str, \"Type[BaseProcess]\"] = {}
+
+
+def register_process(name: str) -> Callable[[\"Type[BaseProcess]\"], \"Type[BaseProcess]\"]:
+    def _decorator(cls: \"Type[BaseProcess]\") -> \"Type[BaseProcess]\":
+        if name in _PROCESS_REGISTRY:
+            raise ValueError(f\"process already registered: {name}\")
+        _PROCESS_REGISTRY[name] = cls
+        return cls
+
+    return _decorator
+
+
+def get_process(name: str) -> \"Type[BaseProcess]\":
+    if name not in _PROCESS_REGISTRY:
+        known = \", \".join(sorted(_PROCESS_REGISTRY.keys()))
+        raise KeyError(f\"unknown process: {name}. known=[{known}]\")
+    return _PROCESS_REGISTRY[name]
+
+
+def list_processes() -> Iterable[str]:
+    return sorted(_PROCESS_REGISTRY.keys())
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 265ms:
+
+
+thinking
+**Refactoring type checking and outlining core components**
+
+I've decided to replace `if False` guards with the proper `TYPE_CHECKING` import from typing to improve clarity. I'm sketching out key modules like `artifacts.py`, designing `ArtifactWriter` with methods for preparing run directories, logging, and writing metadata. I'm planning `process.py` with `BaseProcess` and a dispatch function that handles unique run names and runs processes via `ArtifactWriter`. The `doctor.py` process will extend `BaseProcess`, registering itself and logging system info. I'm also drafting CLI main logic to parse overrides, ensure defaults, and dispatch processes. I'll patch `registry.py` for TYPE_CHECKING usage as well. Overall, I’m setting up a solid skeleton with configuration resolution, logging, and process dispatching, ready to apply more detailed implementations next.
+file update
+M /Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/registry.py
+@@ -2,6 +2,6 @@
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+apply_patch(auto_approved=true) exited 0 in 44ms:
+Success. Updated the following files:
+M src/synthlab/framework/registry.py
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Starting artifacts.py implementation**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/framework/artifacts.py
+from __future__ import annotations
+
+import copy
+import hashlib
+import json
+import platform
+import subprocess
+import sys
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Iterable, Optional
+
+import yaml
+
+
+def compute_config_hash(cfg: dict[str, Any]) -> str:
+    canonical = copy.deepcopy(cfg)
+    if isinstance(canonical, dict):
+        canonical.pop(\"hydra\", None)
+        canonical.pop(\"run_name\", None)
+    dumped = yaml.safe_dump(canonical, sort_keys=True)
+    return hashlib.sha256(dumped.encode(\"utf-8\")).hexdigest()[:12]
+
+
+def ensure_unique_run_name(runs_dir: Path, run_name: str, process_name: str) -> str:
+    candidate = run_name
+    suffix = 1
+    while (runs_dir / candidate / process_name).exists():
+        candidate = f\"{run_name}_{suffix}\"
+        suffix += 1
+    return candidate
+
+
+def _git_sha(repo_root: Path) -> Optional[str]:
+    try:
+        p = subprocess.run(
+            [\"git\", \"rev-parse\", \"HEAD\"],
+            cwd=str(repo_root),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if p.returncode "'!= 0:
+        return None
+    return p.stdout.strip() or None
+
+
+def _iso_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _dump_yaml(path: Path, cfg: dict[str, Any]) -> None:
+    text = yaml.safe_dump(cfg, sort_keys=True, allow_unicode=False)
+    path.write_text(text, encoding="utf-8")
+
+
+def _dump_json(path: Path, payload: dict[str, Any]) -> None:
+    text = json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=True)
+    path.write_text(text + "'"\\n\", encoding=\"utf-8\")
+
+
+@dataclass
+class ArtifactWriter:
+    repo_root: Path
+    cfg: dict[str, Any]
+    overrides: list[str]
+
+    def __post_init__(self) -> None:
+        self.process_name = _process_name(self.cfg)
+        self.run_name = str(self.cfg.get(\"run_name\") or \"\")
+        self.run_dir = self.repo_root / \"runs\" / self.run_name / self.process_name
+        self.created_at = _iso_now()
+        self.config_hash = compute_config_hash(self.cfg)
+        self._log_path = self.run_dir / \"logs\" / \"console.log\"
+
+    def prepare(self) -> None:
+        self._create_dirs()
+        self._write_config()
+        self._write_meta()
+        self._write_readme()
+        if not self._log_path.exists():
+            self._log_path.write_text(\"\", encoding=\"utf-8\")
+
+    def log(self, message: str) -> None:
+        line = f\"[{_iso_now()}] {message}\"
+        print(line, flush=True)
+        with self._log_path.open(\"a\", encoding=\"utf-8\") as f:
+            f.write(line + \"\\n\")
+
+    def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+        path = self.run_dir / rel_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        _dump_json(path, payload)
+
+    def finalize(self) -> None:
+        self.log(\"process completed\")
+
+    def _create_dirs(self) -> None:
+        for rel in [
+            \"config\",
+            \"meta\",
+            \"data\",
+            \"metrics\",
+            \"plots\",
+            \"logs\",
+        ]:
+            (self.run_dir / rel).mkdir(parents=True, exist_ok=True)
+
+    def _write_config(self) -> None:
+        _dump_yaml(self.run_dir / \"config\" / \"resolved.yaml\", self.cfg)
+        overrides_text = \"\\n\".join(self.overrides) + (\"\\n\" if self.overrides else \"\")
+        (self.run_dir / \"config\" / \"overrides.txt\").write_text(overrides_text, encoding=\"utf-8\")
+
+    def _write_meta(self) -> None:
+        meta = {
+            \"run_name\": self.run_name,
+            \"process_name\": self.process_name,
+            \"created_at\": self.created_at,
+            \"seed\": self.cfg.get(\"seed\"),
+            \"git_sha\": _git_sha(self.repo_root),
+            \"config_hash\": self.config_hash,
+            \"domain\": self.cfg.get(\"domain\"),
+            \"schema_version\": self.cfg.get(\"schema_version\"),
+            \"notes\": self.cfg.get(\"notes\"),
+            \"env\": {
+                \"python\": sys.version.split()[0],
+                \"executable\": sys.executable,
+                \"platform\": platform.platform(),
+            },
+        }
+        _dump_json(self.run_dir / \"meta\" / \"meta.json\", meta)
+
+    def _write_readme(self) -> None:
+        lines = [
+            \"# Run Summary\",
+            \"\",
+            f\"- run_name: {self.run_name}\",
+            f\"- process: {self.process_name}\",
+            f\"- created_at: {self.created_at}\",
+        ]
+        (self.run_dir / \"README.md\").write_text(\"\\n\".join(lines) + \"\\n\", encoding=\"utf-8\")
+
+
+def _process_name(cfg: dict[str, Any]) -> str:
+    proc = cfg.get(\"process\")
+    if isinstance(proc, dict):
+        name = proc.get(\"name\")
+    else:
+        name = proc
+    if not name:
+        raise ValueError(\"process.name is required\")
+    return str(name)
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 302ms:
+
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Analyzing config hash and run name handling**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/framework/process.py
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from .artifacts import ArtifactWriter, ensure_unique_run_name
+from .registry import get_process
+
+
+class BaseProcess:
+    name = \"\"
+
+    def __init__(self, cfg: dict[str, Any]) -> None:
+        self.cfg = cfg
+
+    def run(self, writer: ArtifactWriter) -> None:
+        raise NotImplementedError
+
+
+def dispatch_process(cfg: dict[str, Any], overrides: list[str], repo_root: Path) -> Path:
+    process_name = _process_name(cfg)
+    run_name = cfg.get(\"run_name\")
+    if not run_name:
+        raise ValueError(\"run_name is required\")
+    runs_dir = repo_root / \"runs\"
+    unique_run_name = ensure_unique_run_name(runs_dir, str(run_name), process_name)
+    if unique_run_name "'!= run_name:
+        cfg["run_name"] = unique_run_name
+    writer = ArtifactWriter(repo_root=repo_root, cfg=cfg, overrides=overrides)
+    writer.prepare()
+    writer.log(f"dispatch process={process_name}")
+    proc_cls = get_process(process_name)
+    proc = proc_cls(cfg)
+    proc.run(writer)
+    writer.finalize()
+    return writer.run_dir
+
+
+def _process_name(cfg: dict[str, Any]) -> str:
+    proc = cfg.get("process")
+    if isinstance(proc, dict):
+        name = proc.get("name")
+    else:
+        name = proc
+    if not name:
+        raise ValueError("process.name is required")
+    return str(name)
+EOF' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 276ms:
+
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Implementing torch detection helper**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/processes/doctor.py
+from __future__ import annotations
+
+import platform
+import sys
+from datetime import datetime, timezone
+from typing import Any, Dict
+
+from synthlab.framework.process import BaseProcess
+from synthlab.framework.registry import register_process
+
+
+def _torch_info() -> Dict[str, Any]:
+    try:
+        import torch
+    except Exception as exc:  # pragma: no cover - optional dependency
+        return {
+            \"available\": False,
+            \"cuda_available\": False,
+            \"error\": str(exc),
+        }
+    return {
+        \"available\": True,
+        \"version\": getattr(torch, \"__version__\", \"unknown\"),
+        \"cuda_available\": bool(torch.cuda.is_available()),
+    }
+
+
+@register_process(\"doctor\")
+class DoctorProcess(BaseProcess):
+    name = \"doctor\"
+
+    def run(self, writer) -> None:
+        writer.log(\"doctor start\")
+        payload = {
+            \"ok\": True,
+            \"created_at\": datetime.now(timezone.utc).isoformat(),
+            \"python\": {
+                \"version\": sys.version.split()[0],
+                \"executable\": sys.executable,
+            },
+            \"platform\": platform.platform(),
+            \"torch\": _torch_info(),
+        }
+        writer.write_json(\"meta/doctor.json\", payload)
+        writer.log(\"doctor complete\")
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 262ms:
+
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Preparing to create __init__.py in processes**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/processes/__init__.py
+from __future__ import annotations
+
+from .doctor import DoctorProcess
+
+__all__ = [\"DoctorProcess\"]
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 281ms:
+
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Creating synthlab domain skeleton**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/domains/__init__.py
+from __future__ import annotations
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 277ms:
+
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Opening wafer_particles __init__.py**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/domains/wafer_particles/__init__.py
+from __future__ import annotations
+
+from .schema import DOMAIN_NAME, SCHEMA_VERSION
+
+__all__ = [\"DOMAIN_NAME\", \"SCHEMA_VERSION\"]
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 259ms:
+
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Opening schema.py file**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/domains/wafer_particles/schema.py
+from __future__ import annotations
+
+DOMAIN_NAME = \"wafer_particles\"
+SCHEMA_VERSION = \"wafer_particles.v1\"
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 258ms:
+
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Adding __init__.py to metrics/viz**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/domains/wafer_particles/generators/__init__.py
+from __future__ import annotations
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 261ms:
+
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Examining Metrics Initialization**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/domains/wafer_particles/metrics/__init__.py
+from __future__ import annotations
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 260ms:
+
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Examining __init__.py file**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/domains/wafer_particles/viz/__init__.py
+from __future__ import annotations
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 261ms:
+
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Designing CLI main functions**
+exec
+/bin/zsh -lc "cat <<'EOF' > src/synthlab/cli/main.py
+from __future__ import annotations
+
+import argparse
+import sys
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+from synthlab.framework.artifacts import ensure_unique_run_name
+from synthlab.framework.process import dispatch_process
+
+# Register processes
+import synthlab.processes  # noqa: F401
+
+
+def _coerce_value(raw: str) -> Any:
+    lower = raw.lower()
+    if lower in {\"true\", \"false\"}:
+        return lower == \"true\"
+    if lower in {\"null\", \"none\"}:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        pass
+    try:
+        return float(raw)
+    except ValueError:
+        return raw
+
+
+def _set_nested(target: dict[str, Any], keys: list[str], value: Any) -> None:
+    cur = target
+    for key in keys[:-1]:
+        if key not in cur or not isinstance(cur[key], dict):
+            cur[key] = {}
+        cur = cur[key]
+    cur[keys[-1]] = value
+
+
+def _deep_update(base: dict[str, Any], updates: dict[str, Any]) -> dict[str, Any]:
+    for key, value in updates.items():
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
+            _deep_update(base[key], value)
+        else:
+            base[key] = value
+    return base
+
+
+def _parse_overrides(overrides: list[str]) -> dict[str, Any]:
+    parsed: dict[str, Any] = {}
+    for item in overrides:
+        if \"=\" not in item:
+            raise ValueError(f\"override must be key=value: {item}\")
+        key, raw = item.split(\"=\", 1)
+        if not key:
+            raise ValueError(f\"override key is empty: {item}\")
+        _set_nested(parsed, key.split(\".\"), _coerce_value(raw))
+    return parsed
+
+
+def _default_run_name() -> str:
+    ts = datetime.now(timezone.utc).strftime(\"%Y-%m-%d_%H-%M-%S\")
+    return f\"{ts}_{uuid.uuid4().hex[:6]}\"
+
+
+def _normalize_process(cfg: dict[str, Any]) -> None:
+    proc = cfg.get(\"process\")
+    if isinstance(proc, str):
+        cfg[\"process\"] = {\"name\": proc}
+    elif isinstance(proc, dict):
+        if \"name\" not in proc or not proc[\"name\"]:
+            raise ValueError(\"process.name is required\")
+    else:
+        raise ValueError(\"process is required\")
+
+
+def resolve_config(overrides: dict[str, Any]) -> dict[str, Any]:
+    cfg: dict[str, Any] = {
+        \"seed\": 0,
+        \"process\": {\"name\": \"doctor\"},
+        \"run_name\": None,
+        \"domain\": \"system\",
+        \"schema_version\": \"system.v1\",
+        \"notes\": None,
+    }
+    _deep_update(cfg, overrides)
+    _normalize_process(cfg)
+    if not cfg.get(\"run_name\"):
+        cfg[\"run_name\"] = _default_run_name()
+    if cfg.get(\"seed\") is None:
+        raise ValueError(\"seed is required\")
+    return cfg
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description=\"SynthLab CLI (minimal dispatcher)\",
+    )
+    parser.add_argument(
+        \"overrides\",
+        nargs=\"*\",
+        help=\"Hydra-style overrides, e.g. process=doctor seed=1\",
+    )
+    args = parser.parse_args(argv)
+
+    overrides = list(args.overrides)
+    try:
+        override_cfg = _parse_overrides(overrides)
+        cfg = resolve_config(override_cfg)
+        process_name = cfg[\"process\"][\"name\"]
+        runs_dir = Path.cwd() / \"runs\"
+        cfg[\"run_name\"] = ensure_unique_run_name(runs_dir, str(cfg[\"run_name\"]), process_name)
+        dispatch_process(cfg=cfg, overrides=overrides, repo_root=Path.cwd())
+    except Exception as exc:
+        print(f\"error: {exc}\", file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == \"__main__\":
+    raise SystemExit(main())
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 306ms:
+
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Evaluating Python version compatibility**
+exec
+/bin/zsh -lc 'python --version' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 281ms:
+Python 3.10.8
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Reviewing type annotations and config handling**
+
+I’m carefully verifying Python 3.10 type hints compatibility, ensuring the config uses consistent YAML serialization for hashing, and confirming that `ensure_unique_run_name` is safely called twice without causing problems. I’m also checking module imports and how the package namespace works when running the CLI, and considering running minimal commands like `--help` to verify behavior.
+exec
+/bin/zsh -lc 'python -m synthlab.cli.main --help' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 758ms:
+usage: main.py [-h] [overrides ...]
+
+SynthLab CLI (minimal dispatcher)
+
+positional arguments:
+  overrides   Hydra-style overrides, e.g. process=doctor seed=1
+
+options:
+  -h, --help  show this help message and exit
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Verifying setup with doctor command**
+exec
+/bin/zsh -lc 'python -m synthlab.cli.main process=doctor seed=1' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 323ms:
+[2025-12-29T23:07:47.372478+00:00] dispatch process=doctor
+[2025-12-29T23:07:47.372564+00:00] doctor start
+[2025-12-29T23:07:47.372789+00:00] doctor complete
+[2025-12-29T23:07:47.372821+00:00] process completed
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Checking run directory and artifacts**
+exec
+/bin/zsh -lc 'ls runs' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 275ms:
+2025-12-29_20-02-22
+2025-12-29_20-05-04
+2025-12-29_20-33-32
+2025-12-29_20-50-32
+2025-12-29_20-59-57
+2025-12-29_21-06-41
+2025-12-29_21-19-14
+2025-12-29_23-07-47_11d860
+artifact_contract_test
+doctor_seed1
+doctor_seed123
+t0003_artifact_contract
+t0003_artifact_contract_attempt11
+t0003_artifact_contract_attempt3
+t0003_artifact_contract_attempt5
+t0003_artifact_contract_attempt6
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Checking existing run data**
+exec
+/bin/zsh -lc 'ls runs/2025-12-29_23-07-47_11d860/doctor' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 262ms:
+README.md
+config
+data
+logs
+meta
+metrics
+plots
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Inspecting meta files**
+exec
+/bin/zsh -lc 'cat runs/2025-12-29_23-07-47_11d860/doctor/meta/meta.json' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 266ms:
+{
+  "config_hash": "26e87d46e31b",
+  "created_at": "2025-12-29T23:07:47.351023+00:00",
+  "domain": "system",
+  "env": {
+    "executable": "/Users/kawahito/Desktop/synthlab_scaffold/.venv/bin/python",
+    "platform": "macOS-14.5-arm64-arm-64bit",
+    "python": "3.10.8"
+  },
+  "git_sha": "c8790fd0fbb011ad05249a80a1c09b1cdc0df552",
+  "notes": null,
+  "process_name": "doctor",
+  "run_name": "2025-12-29_23-07-47_11d860",
+  "schema_version": "system.v1",
+  "seed": 1
+}
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Reviewing resolved.yaml**
+exec
+/bin/zsh -lc 'cat runs/2025-12-29_23-07-47_11d860/doctor/config/resolved.yaml' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 268ms:
+domain: system
+notes: null
+process:
+  name: doctor
+run_name: 2025-12-29_23-07-47_11d860
+schema_version: system.v1
+seed: 1
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Checking for overrides file**
+exec
+/bin/zsh -lc 'cat runs/2025-12-29_23-07-47_11d860/doctor/config/overrides.txt' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 265ms:
+process=doctor
+seed=1
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Verifying existence of doctor.json**
+exec
+/bin/zsh -lc 'cat runs/2025-12-29_23-07-47_11d860/doctor/meta/doctor.json' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 266ms:
+{
+  "created_at": "2025-12-29T23:07:47.372594+00:00",
+  "ok": true,
+  "platform": "macOS-14.5-arm64-arm-64bit",
+  "python": {
+    "executable": "/Users/kawahito/Desktop/synthlab_scaffold/.venv/bin/python",
+    "version": "3.10.8"
+  },
+  "torch": {
+    "available": false,
+    "cuda_available": false,
+    "error": "No module named 'torch'"
+  }
+}
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Verifying config hash and process consistency**
+
+I'm checking that the computed config_hash matches autodev’s method by ensuring stable hashing without dynamic fields like run_name, confirming process registration loads properly, and validating config resolution with process overrides. I'll also note any run artifacts created during testing and prepare to list changed files using git status.
+exec
+/bin/zsh -lc 'git status -s' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 341ms:
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/INSTALLER
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/LICENSE.txt
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/METADATA
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/RECORD
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/REQUESTED
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/WHEEL
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/entry_points.txt
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/top_level.txt
+ M .venv/lib/python3.10/site-packages/pip/__init__.py
+ M .venv/lib/python3.10/site-packages/pip/__main__.py
+ M .venv/lib/python3.10/site-packages/pip/__pip-runner__.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/__init__.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/build_env.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cache.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cli/__init__.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cli/autocompletion.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cli/base_command.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cli/cmdoptions.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cli/command_context.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cli/main.py
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Handling pre-existing git changes**
+exec
+/bin/zsh -lc 'rg --files src/synthlab' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 302ms:
+src/synthlab/cli/main.py
+src/synthlab/processes/__init__.py
+src/synthlab/framework/process.py
+src/synthlab/framework/registry.py
+src/synthlab/domains/wafer_particles/__init__.py
+src/synthlab/processes/doctor.py
+src/synthlab/framework/__init__.py
+src/synthlab/domains/wafer_particles/schema.py
+src/synthlab/domains/__init__.py
+src/synthlab/cli/__init__.py
+src/synthlab/__init__.py
+src/synthlab/framework/artifacts.py
+src/synthlab/domains/wafer_particles/metrics/__init__.py
+src/synthlab/domains/wafer_particles/generators/__init__.py
+src/synthlab/domains/wafer_particles/viz/__init__.py
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+thinking
+**Summarizing final delivery and verification plan**
+
+I'm gathering all key points for the final summary: outlining the CLI entrypoint and process dispatcher additions, artifact writer details, doctor process and domain skeleton work, plus tests executed and verification commands run. I'll include a comprehensive list of changed files and mention the creation of new run artifacts to give the user a clear, structured wrap-up of everything done.
+codex
+Added a minimal CLI entrypoint and dispatcher that resolve Hydra-style overrides into a config, write the artifact contract (config/meta/logs/README), and route to a registered process; implemented `doctor` plus a wafer_particles domain skeleton to match the architecture and process catalog.
+
+**Details**
+- `src/synthlab/cli/main.py` parses `key=value` overrides, fills defaults (seed/run_name), normalizes `process.name`, and dispatches to the framework.
+- `src/synthlab/framework/artifacts.py` writes `config/resolved.yaml`, `config/overrides.txt`, `meta/meta.json`, `logs/console.log`, and computes `config_hash` per docs/04.
+- `src/synthlab/processes/doctor.py` emits `meta/doctor.json` with basic environment info and logs progress.
+- `src/synthlab/domains/wafer_particles/` adds the empty domain skeleton required by docs/01.
+
+**Tests**
+- `python -m synthlab.cli.main --help`
+- `python -m synthlab.cli.main process=doctor seed=1`
+
+**Verification**
+- `python -m synthlab.cli.main process=doctor seed=1`
+
+**Files Changed**
+- `src/synthlab/__init__.py`
+- `src/synthlab/cli/__init__.py`
+- `src/synthlab/cli/main.py`
+- `src/synthlab/framework/__init__.py`
+- `src/synthlab/framework/artifacts.py`
+- `src/synthlab/framework/process.py`
+- `src/synthlab/framework/registry.py`
+- `src/synthlab/processes/__init__.py`
+- `src/synthlab/processes/doctor.py`
+- `src/synthlab/domains/__init__.py`
+- `src/synthlab/domains/wafer_particles/__init__.py`
+- `src/synthlab/domains/wafer_particles/schema.py`
+- `src/synthlab/domains/wafer_particles/generators/__init__.py`
+- `src/synthlab/domains/wafer_particles/metrics/__init__.py`
+- `src/synthlab/domains/wafer_particles/viz/__init__.py`
+
+Next steps (optional):
+1. Run the verification command above to confirm artifact creation in `runs/`.
+2. Proceed with T0002 to introduce Hydra-based config resolution.
+file update:
+diff --git a/src/synthlab/framework/registry.py b/src/synthlab/framework/registry.py
+index 314c751bce5b42366c0717f72c7a9e147789cd97..a12ccba97027de619b3637d1a46a5a68c4876023
+--- a/src/synthlab/framework/registry.py
++++ b/src/synthlab/framework/registry.py
+@@ -1,9 +1,9 @@
+ from __future__ import annotations
+ 
+-from typing import Callable, Dict, Iterable, Type
++from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+ 
+-if False:  # TYPE_CHECKING guard without import overhead
+-    from .process import BaseProcess  # pragma: no cover
++if TYPE_CHECKING:
++    from .process import BaseProcess
+ 
+ 
+ _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+tokens used
+125,256
+Added a minimal CLI entrypoint and dispatcher that resolve Hydra-style overrides into a config, write the artifact contract (config/meta/logs/README), and route to a registered process; implemented `doctor` plus a wafer_particles domain skeleton to match the architecture and process catalog.
+
+**Details**
+- `src/synthlab/cli/main.py` parses `key=value` overrides, fills defaults (seed/run_name), normalizes `process.name`, and dispatches to the framework.
+- `src/synthlab/framework/artifacts.py` writes `config/resolved.yaml`, `config/overrides.txt`, `meta/meta.json`, `logs/console.log`, and computes `config_hash` per docs/04.
+- `src/synthlab/processes/doctor.py` emits `meta/doctor.json` with basic environment info and logs progress.
+- `src/synthlab/domains/wafer_particles/` adds the empty domain skeleton required by docs/01.
+
+**Tests**
+- `python -m synthlab.cli.main --help`
+- `python -m synthlab.cli.main process=doctor seed=1`
+
+**Verification**
+- `python -m synthlab.cli.main process=doctor seed=1`
+
+**Files Changed**
+- `src/synthlab/__init__.py`
+- `src/synthlab/cli/__init__.py`
+- `src/synthlab/cli/main.py`
+- `src/synthlab/framework/__init__.py`
+- `src/synthlab/framework/artifacts.py`
+- `src/synthlab/framework/process.py`
+- `src/synthlab/framework/registry.py`
+- `src/synthlab/processes/__init__.py`
+- `src/synthlab/processes/doctor.py`
+- `src/synthlab/domains/__init__.py`
+- `src/synthlab/domains/wafer_particles/__init__.py`
+- `src/synthlab/domains/wafer_particles/schema.py`
+- `src/synthlab/domains/wafer_particles/generators/__init__.py`
+- `src/synthlab/domains/wafer_particles/metrics/__init__.py`
+- `src/synthlab/domains/wafer_particles/viz/__init__.py`
+
+Next steps (optional):
+1. Run the verification command above to confirm artifact creation in `runs/`.
+2. Proceed with T0002 to introduce Hydra-based config resolution.

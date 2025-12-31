@@ -1,0 +1,25 @@
+input:
+  run_name: null
+  process_name: wafer_particles.process.generate
+  run_dir: null
+  manifest_path: null
+  particles_path: null
+  samples_path: null
+group_by_label: true
+stats:
+  theta_bins: 36
+  theta_coverage_min_count: 1
+  theta_span_quantile: 0.9
+  r_quantiles:
+    - 0.05
+    - 0.5
+    - 0.95
+estimators:
+  ring: wafer_particles.param_estimator.ring
+  sector: wafer_particles.param_estimator.sector
+  hotspot: wafer_particles.param_estimator.hotspot
+  scratch: wafer_particles.param_estimator.scratch
+  radial_lines: wafer_particles.param_estimator.radial_lines
+  line: wafer_particles.param_estimator.scratch
+  default: wafer_particles.param_estimator.generic
+estimator_configs: {}

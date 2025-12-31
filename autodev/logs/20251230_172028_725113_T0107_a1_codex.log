@@ -1,0 +1,3472 @@
+OpenAI Codex v0.77.0 (research preview)
+--------
+workdir: /Users/kawahito/Desktop/synthlab_scaffold
+model: gpt-5.2-codex
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: auto
+session id: 019b6e58-23e1-7622-a6f9-2d1e9d31621c
+--------
+user
+# AUTODEV TASK RUN
+
+Target Task: T0107 — タクソノミー拡張と期待特徴ルール整備
+
+## Contracts (MUST READ)
+
+- docs/09_EVALUATION_PROTOCOL.md
+- docs/03_CONFIG_CONVENTIONS.md
+- docs/00_INVARIANTS.md
+
+## Skills to follow
+
+- agentskills/skills/S20_HYDRA_CONFIG.md
+- agentskills/skills/S60_EVALUATION_QC.md
+- agentskills/skills/S98_GOVERNANCE.md
+
+## Hard rules (no stalls)
+
+- Do NOT ask the user questions. Make reasonable defaults and proceed.
+- If ambiguity exists, choose the option that preserves docs/00 invariants and is minimal.
+- Always keep changes small & reviewable; list files changed at the end.
+
+## AutoDev policy
+
+- If you ask questions/confirmation, the loop will treat it as failure and retry.
+
+## Task file content
+
+(from /Users/kawahito/Desktop/synthlab_scaffold/work/tasks/T0107_taxonomy_expected_rules.md)
+
+```md
+# TASK: T0107 タクソノミー拡張と期待特徴ルールの整備 (P1)
+
+## Contracts
+- docs/09_EVALUATION_PROTOCOL.md
+- docs/03_CONFIG_CONVENTIONS.md
+- docs/00_INVARIANTS.md
+
+## Summary
+taxonomy_v1.yaml の “TODO” を解消し、ラベルごとの期待特徴（expected_rules）を具体化して QC 出力に反映させる。
+
+## Scope
+- `conf/wafer_particles/labels/taxonomy_v1.yaml` の expected_rules を具体化（TODO撤去）
+- QC で taxonomy の expected_rules が出力に含まれることを保証する
+- 今後の拡張に備え、記述を「カテゴリ→サブラベル→期待特徴」の形で読みやすく整える
+
+## Acceptance Criteria
+- [ ] `pytest -q tests/test_T0107_taxonomy_expected_rules.py` が通る
+- [ ] taxonomy_v1.yaml 内の expected_rules から "TODO" が消える
+- [ ] `process=qc` の出力（metrics）に expected_rules が含まれる（少なくとも1ラベルで確認）
+
+## Implementation Notes
+- ルール“判定”の厳密化はP2でも良いが、期待特徴の記述はP1で整備する
+
+## Verification
+- `pytest -q tests/test_T0107_taxonomy_expected_rules.py`
+
+```
+
+## Contract: docs/00_INVARIANTS.md
+```md
+# 00_INVARIANTS — 不変条件（契約）
+
+## 0. この文書の位置づけ
+この文書は「以後すべての実装/タスク/レビューが従う不変契約」です。
+例外は **blocked運用**でのみ許可します。
+
+---
+
+## 1. 用語
+- **Domain**: データ型のまとまり（例：wafer_particles、画像、時系列）
+- **Process**: 実行単位（generate/qc/viz/train/eval/export/doctor…）
+- **Artifact**: Processの出力（runディレクトリ）。再現・比較の最小単位
+- **Plugin**: 拡張点（pattern/size_model/metric/viz/process など）
+- **Resolved Config**: Hydra で解決済みの設定（YAML）。真実の情報
+
+---
+
+## 2. 不変条件（MUST）
+### 2.1 設定が真実（Config is the Source of Truth）
+- すべての実行は Hydra 設定（YAML）で宣言される
+- Artifact には必ず以下を保存する
+  - 解決済み config（resolved.yaml）
+  - override（overrides.txt）
+  - seed
+  - 実行環境メタ（OS/Python/依存）
+
+### 2.2 再現性（Determinism）
+- 乱数は **単一の seed** と **明示的な RNG 注入**で制御する
+- グローバル乱数（np.random.* の暗黙利用、random モジュール直叩き）は禁止
+- 同じ resolved config + seed から、同一データ・同一統計が再現できること
+
+### 2.3 Processの純度（Process Purity）
+- Process は「入力Artifact/入力ファイル → 出力Artifact」を明確にする
+- Process は run ディレクトリ外に副作用を書かない（例外：明示された cache/ がある場合のみ）
+- Process は構成上、他の Process の内部実装に依存しない（I/O契約に依存）
+
+### 2.4 Artifactは追記・改変しない（Immutability）
+- 生成済み artifact は原則「write-once」
+- 再生成/改良は新しい run として出力する（比較可能性のため）
+- 例外的な上書きは blocked運用でのみ許可
+
+### 2.5 比較可能性（Comparability）
+- 比較は「同一評価プロトコル（docs/09）」「同一スキーマ」「同一seed方針」でのみ行う
+- 生成器の変更で評価が変わる場合、必ず差分を meta に残す（git sha / config hash）
+
+### 2.6 Skew禁止（Train/Inference / Generate/Analyze のズレ禁止）
+- 同じ artifact を入力にする解析/QC/viz は同じスキーマ・同じ前処理を用いる
+- “見た目だけ合う” 生成（vizで見えるが粒子データとしては壊れている等）を禁止
+- 変換（r,theta→x,y 等）は単一実装に統一し、複数実装の分岐を禁止
+
+### 2.7 拡張はPluginで行う（No Big if/else）
+- パターン追加、サイズモデル追加、評価指標追加、可視化追加は Plugin Registry を通す
+- 巨大な条件分岐で増殖させない（コード肥大化・レビュー困難を防ぐ）
+
+### 2.8 観測可能性（Observability）
+- すべての run は metrics と plots を持つ（最低限）
+- ログ（console.log相当）を run に残す（クラッシュ時に再現可能にする）
+
+---
+
+## 3. Blocked運用（不変契約の変更手順）
+不変契約に抵触する変更が必要になった場合:
+
+1) まず **blocked** の解除タスクを作る（work/tasks に追加）
+   - 解除タスクは `unblocks: [対象タスクID]` を持つ  
+2) docs の更新（どの不変条件がなぜ変わるか、影響範囲、移行手順）
+3) 互換性/移行計画（artifact/schema/version の扱い）
+4) Verification を通してから実装再開
+
+---
+
+## 4. TODO（根拠が無い点）
+- 生成データを社内レイクに登録する正式手順（権限/監査）: TODO
+- 実測データの匿名化・取り扱い規定（会社ポリシー依存）: TODO
+
+```
+
+## Contract: docs/09_EVALUATION_PROTOCOL.md
+```md
+# 09_EVALUATION_PROTOCOL — 評価プロトコル（QC/比較ルール）
+
+## 1. 目的
+- 擬似データが「意図したラベル/パターン」を満たすか
+- 擬似データが「学習データとして扱いやすい品質」を持つか
+- run間比較（改善の効果測定）を正しく行う
+
+## 2. 原則（MUST）
+- 同一 seed 方針・同一 bin 定義・同一 metric 定義で比較する
+- 評価コード/設定も artifact に保存する（docs/04）
+- “見た目だけ良い” を禁止：必ず粒子テーブルで評価する（docs/00）
+
+## 3. QC（生成品質）メトリクス（wafer_particles v1）
+### 3.1 分布系（必須）
+- 粒子数 `n_particles` の分布（label別）
+- 半径方向ヒストグラム `hist_r`（同一bin）
+- 角度方向ヒストグラム `hist_theta`（同一bin）
+- 粒径分布（平均、分散、分位点、KS距離の計算準備）
+
+### 3.2 空間構造（推奨）
+- 最近傍距離分布（NN distance）
+- ペア相関（近距離でのクラスタ/反発の指標）
+- 簡易 Ripley’s K/L（P1で導入可）
+
+### 3.3 ラベル整合性（必須）
+- label別に「期待特徴」が満たされるか（ルールチェック）
+  - ring系: rの分散が閾値内、thetaが広く分布
+  - sector系: thetaが狭い範囲に集中
+  - scratch/radial: 直線フィット残差が小さい（簡易でOK）
+  - hotspot: 密度中心が存在し、外側で密度減衰
+
+※ “期待特徴” のルールは taxonomy_v1 と一緒に管理（Hydra YAML）
+
+## 4. 実測との比較（任意・推奨）
+- 実測が少ない場合でも、同一指標で距離を計算し目安にする
+- 実測データ取り込みはセキュリティ規定に従う（docs/05）
+- TODO: 実測比較の正式手順（データ共有方法）
+
+## 5. 下流学習での評価（将来）
+- synthetic で学習 → real でテスト（リーク防止）
+- 同一 split/seed を守る
+- metric（F1/PR-AUC/混同行列）を artifact に保存
+- TODO: 学習パイプラインの具体仕様（P1）
+
+## 6. 比較ルール（MUST）
+- run A と run B の比較は
+  - 同一 schema_version
+  - 同一 evaluation config（bin等）
+  - 同一 seed 方針
+  - 同一 dataset_id（比較目的が generator のみの場合は dataset_id を固定するなど）
+  を満たすこと
+
+## 7. TODO
+- “良い擬似データ” の合格基準（閾値・許容範囲）: TODO（実測/運用で決める）
+
+```
+
+## Contract: docs/03_CONFIG_CONVENTIONS.md
+```md
+# 03_CONFIG_CONVENTIONS — Hydra（YAML）運用規約
+
+## 1. 原則
+- **すべて YAML**（Hydra）
+- defaults リストで「構成」を表す
+- すべての run は resolved config を artifact に保存（docs/04）
+- seed は root に 1つ（docs/00）
+
+## 2. conf/ 構造（推奨）
+```
+conf/
+  config.yaml               # root（defaults）
+  domain/
+    wafer_particles.yaml
+  process/
+    generate.yaml
+    qc.yaml
+    viz.yaml
+    export.yaml
+    doctor.yaml
+  wafer_particles/
+    labels/
+      taxonomy_v1.yaml
+    patterns/
+      ring_narrow.yaml
+      ring_wide.yaml
+      edge_sector.yaml
+      scratch.yaml
+      radial_lines.yaml
+      hotspot.yaml
+      random_uniform.yaml
+      random_edge_biased.yaml
+      composite.yaml
+    size_models/
+      lognormal.yaml
+      gaussian.yaml
+      mixture.yaml
+    qc/
+      default.yaml
+    viz/
+      default.yaml
+    io/
+      auto.yaml
+      parquet.yaml
+      csv.yaml
+```
+
+## 3. root config の基本形（例）
+- `conf/config.yaml` の `defaults` で domain/process を必ず指定する
+- process は dispatcher が選ぶ（同一 entrypoint で切り替える想定）
+
+例:
+```yaml
+defaults:
+  - domain: wafer_particles
+  - process: generate
+  - override hydra/job_logging: disabled
+  - override hydra/hydra_logging: disabled
+
+seed: 1234
+run_name: ${now:%Y-%m-%d_%H-%M-%S}
+
+hydra:
+  run:
+    dir: runs/${run_name}/${process.name}
+  sweep:
+    dir: sweeps/${run_name}
+    subdir: ${hydra.job.num}
+```
+
+## 4. override の規約
+- CLI からの override は meta に残す（artifactに保存）
+- “同名キーの意味変更” は禁止（互換性崩壊なので blocked運用）
+
+例:
+- `python -m synthlab.cli.main process=generate wafer_particles/patterns=ring_narrow seed=42`
+
+## 5. seed の規約
+- root `seed` を唯一の seed とし、派生 seed は `seed + hash(component)` で作る（実装側で統一）
+- seed 未指定は禁止（必ず入れる）
+
+## 6. スキーマ検証（推奨）
+- OmegaConf の structured config（dataclass）または pydantic を検討
+- “型安全”導入は段階的に（P0: 最低限の必須キー存在チェック）
+- 詳細は work/tasks で実装
+
+## 7. TODO
+- hydra multirun での sweep ベストプラクティス（GPU/並列制御）: TODO
+
+```
+
+## Deliverables
+
+- Implement changes to satisfy Acceptance Criteria and Verification.
+- Print a concise summary: files changed + how to run verification.
+mcp: context7 starting
+mcp: context7 ready
+mcp startup: ready: context7
+
+thinking
+**Opening skill files**
+exec
+/bin/zsh -lc ls in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 277ms:
+README.md
+__pycache__
+agentskills
+autodev
+conf
+docs
+patch
+requirements.txt
+runs
+src
+synthlab
+tests
+work
+exec
+/bin/zsh -lc 'cat /Users/kawahito/Desktop/synthlab_scaffold/agentskills/skills/S20_HYDRA_CONFIG.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 261ms:
+# S20 — Hydra Config Conventions
+
+## 目的
+- Hydra（YAML）で設定を拡張しても破綻しないようにする
+- defaults/group/override/run dir/seed を不変契約に沿って維持
+
+## 参照（MUST）
+- docs/03_CONFIG_CONVENTIONS.md
+- docs/00_INVARIANTS.md
+- docs/04_ARTIFACTS_AND_VERSIONING.md
+
+## 手順
+1) 追加したい設定を “group” に落とす
+   - domain/process/wafer_particles/patterns/size_models/qc/viz/io など
+2) defaults を更新
+   - 既定値を増やすときは互換性に注意（既存runの再現性）
+3) override を想定してキー設計
+   - 例: `wafer_particles.n_samples=10000`
+4) seed の扱い
+   - root seed 以外を増やさない
+exec
+/bin/zsh -lc 'cat /Users/kawahito/Desktop/synthlab_scaffold/agentskills/skills/S60_EVALUATION_QC.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 265ms:
+# S60 — Evaluation/QC/Data Audit
+
+## 目的
+- 生成データの品質を “粒子テーブルとして” 評価し、比較可能にする
+- 下流学習を見越したリーク/スキューの事故を防ぐ
+
+## 参照（MUST）
+- docs/09_EVALUATION_PROTOCOL.md
+- docs/00_INVARIANTS.md
+
+## 手順
+1) bin 定義を config に固定（比較可能性）
+2) label別に統計を計算（n/r/theta/size）
+3) 期待特徴ルールチェック（taxonomyから読み込む）
+4) 異常（欠損/範囲外/thetaラップ）を検知
+5) metrics を artifact に保存（json/csv）
+
+## 事故りやすい点
+- bin が run ごとに変わる（比較不能）
+- 期待特徴の “ルール” がコードに埋まる（拡張困難）
+exec
+/bin/zsh -lc 'cat /Users/kawahito/Desktop/synthlab_scaffold/agentskills/skills/S98_GOVERNANCE.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 257ms:
+# S98 — Governance: Tests/Review/Release
+
+## 目的
+- “何十回も Codex で反復開発” しても品質が落ちないようにする
+- テスト/レビュー/DoD を統一する
+
+## 参照（MUST）
+- docs/00_INVARIANTS.md
+- docs/04_ARTIFACTS_AND_VERSIONING.md
+
+## 手順
+1) 変更が入ったら必ずテスト観点を追加
+   - 再現性
+   - スキーマ
+   - スモーク（generate→qc→viz）
+2) PRレビュー観点（手動でもOK）
+   - 依存方向が壊れていない
+   - if/else 増殖していない（plugin化されている）
+   - artifact契約が守られている
+3) リリース/配布を想定し、README/例を更新
+
+thinking
+**Preparing to update taxonomy rules**
+exec
+/bin/zsh -lc "rg --files -g 'taxonomy_v1.yaml'" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 288ms:
+conf/wafer_particles/labels/taxonomy_v1.yaml
+exec
+/bin/zsh -lc 'cat /Users/kawahito/Desktop/synthlab_scaffold/conf/wafer_particles/labels/taxonomy_v1.yaml' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 257ms:
+version: taxonomy_v1
+domain: wafer_particles
+labels:
+  - name: ring_narrow
+    category: ring
+    expected_rules:
+      - TODO: r variance small (narrow ring)
+      - TODO: theta covers full 0..2pi
+  - name: ring_wide
+    category: ring
+    expected_rules:
+      - TODO: r variance larger than ring_narrow
+      - TODO: theta covers full 0..2pi
+  - name: edge_sector
+    category: sector
+    expected_rules:
+      - TODO: theta concentrated in sector range
+      - TODO: r near outer edge
+    variants:
+      - name: edge_sector_right
+
+thinking
+**Planning taxonomy structure change**
+exec
+/bin/zsh -lc 'rg -n "expected_rules|taxonomy_v1|taxonomy" conf src tests' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 272ms:
+conf/config.yaml:4:  - wafer_particles/labels: taxonomy_v1
+conf/wafer_particles/labels/taxonomy_v1.yaml:1:version: taxonomy_v1
+conf/wafer_particles/labels/taxonomy_v1.yaml:6:    expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:11:    expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:16:    expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:23:        expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:28:        expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:33:        expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:38:        expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:42:    expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:49:        expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:54:        expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:59:        expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:64:        expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:68:    expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:73:    expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:80:        expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:85:        expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:90:        expected_rules:
+conf/wafer_particles/labels/taxonomy_v1.yaml:94:    expected_rules:
+exec
+/bin/zsh -lc "sed -n '1,220p' /Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/processes/qc.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 267ms:
+from __future__ import annotations
+
+import csv
+import json
+from dataclasses import dataclass
+from math import atan2, cos, log, pi, sin, sqrt, tau
+from pathlib import Path
+from typing import Any, Iterable, Mapping
+
+import yaml
+
+from synthlab.domains.wafer_particles import (
+    DOMAIN_NAME,
+    SCHEMA_VERSION,
+    polar_to_cartesian_mm,
+    validate_manifest,
+    validate_particles_table,
+    validate_samples_table,
+)
+from synthlab.domains.wafer_particles.metrics.size_stats import (
+exec
+/bin/zsh -lc "sed -n '220,520p' /Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/processes/qc.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 254ms:
+        particles_path=particles_path,
+        samples_path=samples_path,
+        input_config=input_config,
+    )
+
+
+def _resolve_path(value: Any, base: Path) -> Path:
+    path = Path(str(value))
+    if not path.is_absolute():
+        path = base / path
+    return path
+
+
+def _resolve_data_path(run_dir: Path, value: Any, candidates: list[str]) -> Path:
+    if value:
+        path = Path(str(value))
+        if not path.is_absolute():
+            return run_dir / path
+        return path
+    for name in candidates:
+exec
+/bin/zsh -lc "sed -n '520,880p' /Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/processes/qc.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 256ms:
+                "label": label,
+                "category": meta.get("category") or "",
+                "n_samples": n_samples,
+                "n_particles": n_particles,
+                "n_particles_mean": n_particles_stats.get("mean"),
+                "n_particles_std": n_particles_stats.get("std"),
+                "size_mean": size_stats.get("mean"),
+                "size_std": size_stats.get("std"),
+                "r_mean": r_stats.get("mean"),
+                "r_std": r_stats.get("std"),
+                "theta_mean": theta_stats.get("mean"),
+                "theta_std": theta_stats.get("std"),
+                "theta_coverage": theta_coverage,
+                "rule_violations": ";".join(violations),
+            }
+        )
+
+    summary = {
+        "labels": len(labels),
+        "total_particles": total_particles,
+exec
+/bin/zsh -lc "sed -n '880,1240p' /Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/processes/qc.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 268ms:
+            checks.append(_skipped_rule("hotspot.mode", f"unsupported mode: {mode}"))
+    return checks
+
+
+def _rule_inhom_poisson(
+    spatial_stats: Mapping[str, Any],
+    cfg: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    checks: list[dict[str, Any]] = []
+    min_dispersion = cfg.get("min_grid_dispersion")
+    if min_dispersion is not None:
+        checks.append(
+            _threshold_rule(
+                "inhom_poisson.grid_dispersion",
+                spatial_stats.get("grid_dispersion"),
+                float(min_dispersion),
+                "min",
+            )
+        )
+    return checks
+
+thinking
+**Checking expected_rules in metrics structure**
+exec
+/bin/zsh -lc 'cat /Users/kawahito/Desktop/synthlab_scaffold/tests/test_T0107_taxonomy_expected_rules.py' in /Users/kawahito/Desktop/synthlab_scaffold exited 1 in 259ms:
+cat: /Users/kawahito/Desktop/synthlab_scaffold/tests/test_T0107_taxonomy_expected_rules.py: No such file or directory
+
+thinking
+**Checking for test files**
+exec
+/bin/zsh -lc 'ls /Users/kawahito/Desktop/synthlab_scaffold/tests' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 267ms:
+README.md
+__pycache__
+test_T0105_sector_custom_and_composite.py
+test_T0106_noise_jitter_and_background.py
+test_artifacts.py
+test_plugin_registry.py
+test_process_smoke.py
+test_wafer_particles_patterns.py
+test_wafer_particles_schema.py
+test_wafer_particles_size_models.py
+
+thinking
+**Investigating missing test presence**
+exec
+/bin/zsh -lc 'rg -n "T0107" -S' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 289ms:
+patch/queue_patch_T0104_T0108.json:71:    "id": "T0107",
+patch/queue_patch_T0104_T0108.json:75:    "path": "work/tasks/T0107_taxonomy_expected_rules.md",
+work/queue.json:446:    "id": "T0107",
+work/queue.json:450:    "path": "work/tasks/T0107_taxonomy_expected_rules.md",
+autodev/logs/20251230_165101_228584_T0104_a1_codex.log:14522:?? work/tasks/T0107_taxonomy_expected_rules.md
+work/tasks/T0107_taxonomy_expected_rules.md:1:# TASK: T0107 タクソノミー拡張と期待特徴ルールの整備 (P1)
+work/tasks/T0107_taxonomy_expected_rules.md:17:- [ ] `pytest -q tests/test_T0107_taxonomy_expected_rules.py` が通る
+work/tasks/T0107_taxonomy_expected_rules.md:25:- `pytest -q tests/test_T0107_taxonomy_expected_rules.py`
+autodev/logs/20251230_172028_725113_T0107_a1_prompt.md:3:Target Task: T0107 — タクソノミー拡張と期待特徴ルール整備
+autodev/logs/20251230_172028_725113_T0107_a1_prompt.md:29:(from /Users/kawahito/Desktop/synthlab_scaffold/work/tasks/T0107_taxonomy_expected_rules.md)
+autodev/logs/20251230_172028_725113_T0107_a1_prompt.md:32:# TASK: T0107 タクソノミー拡張と期待特徴ルールの整備 (P1)
+autodev/logs/20251230_172028_725113_T0107_a1_prompt.md:48:- [ ] `pytest -q tests/test_T0107_taxonomy_expected_rules.py` が通る
+autodev/logs/20251230_172028_725113_T0107_a1_prompt.md:56:- `pytest -q tests/test_T0107_taxonomy_expected_rules.py`
+
+thinking
+**Planning test additions and taxonomy restructuring**
+
+I'm thinking about adding tests to ensure no "TODO" remains in expected_rules and that QC output correctly includes these rules. Also, I want to carefully reorganize the taxonomy YAML for better readability by grouping labels under categories and sublabels, keeping compatibility by minimally adjusting the parse logic, and replacing placeholders with concrete expected_rules descriptions. I'll check existing tests and their style to create appropriate new tests without overcomplicating changes.
+exec
+/bin/zsh -lc "sed -n '1,220p' /Users/kawahito/Desktop/synthlab_scaffold/tests/test_T0106_noise_jitter_and_background.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 297ms:
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from synthlab.domains.wafer_particles import DOMAIN_NAME, SCHEMA_VERSION  # noqa: E402
+from synthlab.framework.process import dispatch_process  # noqa: E402
+from synthlab.processes._wafer_particles_io import (  # noqa: E402
+    find_manifest,
+    paths_from_manifest,
+    read_table,
+)
+
+
+def _variance(values: list[float]) -> float:
+
+thinking
+**Examining test setup and QC tests**
+exec
+/bin/zsh -lc "sed -n '1,200p' /Users/kawahito/Desktop/synthlab_scaffold/tests/test_process_smoke.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 283ms:
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+import synthlab.processes  # noqa: E402,F401
+from synthlab.domains.wafer_particles import (  # noqa: E402
+    DOMAIN_NAME,
+    PARTICLES_SCHEMA,
+    SAMPLES_SCHEMA,
+    SCHEMA_VERSION,
+    validate_particles_table,
+
+thinking
+**Examining taxonomy usage in config and tests**
+exec
+/bin/zsh -lc 'cat /Users/kawahito/Desktop/synthlab_scaffold/conf/config.yaml' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 264ms:
+defaults:
+  - domain: wafer_particles
+  - process: doctor
+  - wafer_particles/labels: taxonomy_v1
+  - _self_
+
+seed: ???
+run_name: ${now:%Y-%m-%d_%H-%M-%S}
+notes: null
+
+hydra:
+  run:
+    dir: runs/${run_name}/${process.name}
+  sweep:
+    dir: sweeps/${run_name}
+    subdir: ${hydra.job.num}
+
+thinking
+**Analyzing taxonomy YAML integration**
+exec
+/bin/zsh -lc 'cat /Users/kawahito/Desktop/synthlab_scaffold/conf/domain/wafer_particles.yaml' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 261ms:
+name: wafer_particles
+schema_version: wafer_particles.v1
+
+thinking
+**Listing wafer_particles config directory**
+exec
+/bin/zsh -lc 'ls /Users/kawahito/Desktop/synthlab_scaffold/conf/wafer_particles' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 253ms:
+eval
+export
+io
+labels
+leaderboard
+noise
+patterns
+predict
+qc
+size_models
+train
+viz
+
+thinking
+**Checking for configuration files**
+exec
+/bin/zsh -lc "rg --files -g 'wafer_particles.yaml' conf" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 267ms:
+conf/domain/wafer_particles.yaml
+
+thinking
+**Inspecting wafer_particles configuration**
+exec
+/bin/zsh -lc 'cat /Users/kawahito/Desktop/synthlab_scaffold/conf/wafer_particles/qc/default.yaml' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 264ms:
+input:
+  run_name: null
+  process_name: wafer_particles.process.generate
+  run_dir: null
+  manifest_path: null
+  particles_path: null
+  samples_path: null
+bins:
+  r:
+    start: 0.0
+    stop: 150.0
+    count: 30
+  theta:
+    start: 0.0
+    stop: 6.283185307179586
+    count: 36
+quantiles:
+  - 0.05
+  - 0.5
+  - 0.95
+
+thinking
+**Planning taxonomy restructuring and QC updates**
+
+I'm thinking about how to reorganize the taxonomy to group labels by category with expected rules clearly defined, balancing readability and minimal disruption. I need to consider updating the parser for a new nested format while keeping compatibility, ensure removal of TODOs in expected_rules, and prepare tests that confirm expected_rules flow through QC outputs properly. I'll also need to watch for any other code relying on the current labels structure.
+exec
+/bin/zsh -lc "rg -n \"wafer_particles\\.labels|labels\" src/synthlab -g '*.py'" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 316ms:
+src/synthlab/processes/generate.py:48:        labels_cfg = wp_cfg.get("labels")
+src/synthlab/processes/generate.py:49:        label_defs = _resolve_label_defs(labels_cfg, patterns_cfg)
+src/synthlab/processes/generate.py:52:        labels = _select_labels(n_samples, label_selection, label_defs, label_rng)
+src/synthlab/processes/generate.py:74:        for idx, label in enumerate(labels):
+src/synthlab/processes/generate.py:213:    labels_cfg: Any,
+src/synthlab/processes/generate.py:217:    if isinstance(labels_cfg, Mapping) and "labels" in labels_cfg:
+src/synthlab/processes/generate.py:218:        entries = labels_cfg.get("labels")
+src/synthlab/processes/generate.py:220:            raise ValueError("wafer_particles.labels.labels must be a list")
+src/synthlab/processes/generate.py:259:        raise ValueError("no labels available for generation")
+src/synthlab/processes/generate.py:263:def _select_labels(
+src/synthlab/processes/generate.py:277:            raise ValueError(f"unknown labels in selection: {missing}")
+src/synthlab/processes/generate.py:281:        labels = selection_cfg.get("labels")
+src/synthlab/processes/generate.py:282:        if not isinstance(labels, list) or not labels:
+src/synthlab/processes/generate.py:283:            raise ValueError("label_selection.labels must be a non-empty list for fixed mode")
+src/synthlab/processes/generate.py:284:        chosen = [str(label) for label in labels]
+src/synthlab/processes/generate.py:295:        labels = selection_cfg.get("labels")
+src/synthlab/processes/generate.py:296:        pool = [str(label) for label in labels] if isinstance(labels, list) and labels else available
+src/synthlab/processes/generate.py:298:            raise ValueError("label_selection.labels must be non-empty for random mode")
+src/synthlab/processes/generate.py:310:        labels = selection_cfg.get("labels")
+src/synthlab/processes/generate.py:311:        labels = [str(label) for label in labels] if isinstance(labels, list) and labels else available
+
+thinking
+**Reorganizing taxonomy labels and rules**
+
+I'm planning to restructure the taxonomy YAML by grouping labels under categories with clear comment headers, ensuring each label and its variants include descriptive expected_rules aligned with QC standards. I’m carefully considering how to handle base and variant expected_rules, debating whether to duplicate base rules in variants or update parsing code to merge them for clearer, maintainable output.
+exec
+/bin/zsh -lc "sed -n '1,260p' /Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/processes/generate.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 301ms:
+from __future__ import annotations
+
+import csv
+import hashlib
+import json
+import random
+from copy import deepcopy
+from pathlib import Path
+from typing import Any, Mapping, Sequence
+
+from synthlab.domains.wafer_particles import (
+    DOMAIN_NAME,
+    SCHEMA_VERSION,
+    build_manifest,
+    polar_to_cartesian_mm,
+    validate_particles_table,
+    validate_samples_table,
+)
+from synthlab.domains.wafer_particles.generators.patterns.common import resolve_sample_ctx
+from synthlab.domains.wafer_particles.generators.size_models.common import apply_size_model
+
+thinking
+**Analyzing taxonomy and expected_rules constraints**
+
+I'm mapping out how the generate function depends on labels config and why restructuring taxonomy to nested categories would break it—so I need to keep the top-level labels list while possibly adding comments for clarity. Also, expected_rules are crucial for QC and tests but not for generate, so I plan to update them accordingly and ensure no "TODO" entries remain. I'm thinking of creating tests to validate expected_rules integrity and their presence in QC outputs, leveraging YAML loading and existing dependencies like PyYAML. This feels like a careful balancing act between code constraints and configuration clarity!
+exec
+/bin/zsh -lc 'rg -n "pyyaml|yaml" requirements.txt' in /Users/kawahito/Desktop/synthlab_scaffold exited 1 in 275ms:
+
+
+thinking
+**Checking requirements.txt file**
+exec
+/bin/zsh -lc 'cat /Users/kawahito/Desktop/synthlab_scaffold/requirements.txt' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 261ms:
+matplotlib==3.10.8
+numpy==1.26.4
+pyarrow==22.0.0
+
+thinking
+**Analyzing PyYAML dependency and test implications**
+exec
+/bin/zsh -lc 'cat /Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/processes/__init__.py' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 262ms:
+from __future__ import annotations
+
+from .doctor import DoctorProcess
+from .eval import EvalProcess
+from .export import ExportProcess
+from .generate import GenerateProcess
+from .leaderboard import LeaderboardProcess
+from .predict import PredictProcess
+from .qc import QcProcess
+from .train import TrainProcess
+from .viz import VizProcess
+
+__all__ = [
+    "DoctorProcess",
+    "EvalProcess",
+    "ExportProcess",
+    "GenerateProcess",
+    "LeaderboardProcess",
+    "PredictProcess",
+    "QcProcess",
+
+thinking
+**Preparing environment and compliance checks**
+
+I’m confirming PyYAML is safely installed since tests import qc, which needs yaml. The environment enforces no permission asking and sandboxed commands, so I have to avoid network or external writes. I also need to mention the skills used (S20, S60, S98) with reasoning and check skill-referenced docs, especially docs/04, which wasn’t provided yet. I plan to open docs/04_ARTIFACTS_AND_VERSIONING.md to follow the MUST-reference instructions properly.
+exec
+/bin/zsh -lc 'cat /Users/kawahito/Desktop/synthlab_scaffold/docs/04_ARTIFACTS_AND_VERSIONING.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 260ms:
+# 04_ARTIFACTS_AND_VERSIONING — Artifact契約とバージョニング（更新 v2.2）
+
+## 1. Artifact（run）ディレクトリ契約（MUST）
+各 Process の出力は **単一の run ディレクトリ**に保存される。
+最低限、以下を持つ。
+
+```
+runs/<run_name>/<process.name>/
+  config/
+    resolved.yaml
+    overrides.txt
+  meta/
+    meta.json
+  data/                     # generate/export の主出力
+  metrics/                  # qc/eval 等
+  plots/                    # viz
+  logs/
+    console.log             # 可能なら
+  README.md                 # そのrunの要約（自動生成可）
+```
+
+
+thinking
+**Analyzing taxonomy and QC output updates**
+thinking
+**Designing helper and detailed tests for taxonomy expected rules**
+
+I’m setting up a helper to fetch expected_rules for any label or variant in the taxonomy, which helps confirm QC output matches taxonomy data. I’m also planning thorough tests to check that every label and variant has non-empty expected_rules without “TODO” strings, and that QC metrics include these rules correctly—this will involve crafting configs mimicking existing tests and carefully handling QC config requirements to keep runs smooth.
+exec
+/bin/zsh -lc 'rg -n "write_config|resolved.yaml|overrides" -S /Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 324ms:
+/Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/process.py:20:def dispatch_process(cfg: dict[str, Any], overrides: list[str], repo_root: Path) -> Path:
+/Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/process.py:29:    writer = ArtifactWriter(repo_root=repo_root, cfg=cfg, overrides=overrides)
+/Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/artifacts.py:98:    overrides: list[str]
+/Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/artifacts.py:110:        self._write_config()
+/Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/artifacts.py:141:    def _write_config(self) -> None:
+/Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/artifacts.py:142:        _dump_yaml(self.run_dir / "config" / "resolved.yaml", self.cfg)
+/Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/artifacts.py:143:        overrides_text = "\n".join(self.overrides) + ("\n" if self.overrides else "")
+/Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/artifacts.py:144:        (self.run_dir / "config" / "overrides.txt").write_text(overrides_text, encoding="utf-8")
+/Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/artifacts.py:181:        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
+/Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/artifacts.py:183:    def read_overrides(self) -> list[str]:
+/Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/artifacts.py:184:        path = self.run_dir / "config" / "overrides.txt"
+exec
+/bin/zsh -lc "sed -n '1,220p' /Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/artifacts.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 250ms:
+from __future__ import annotations
+
+import copy
+import hashlib
+import json
+import platform
+import subprocess
+import sys
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Iterable, Optional
+
+import yaml
+
+
+def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+    canonical = copy.deepcopy(cfg)
+    if isinstance(canonical, dict):
+        canonical.pop("hydra", None)
+
+thinking
+**Preparing taxonomy YAML update and test strategy**
+
+I’m reshaping the taxonomy YAML completely with detailed wafer particle labels and expected rules, carefully balancing YAML syntax quirks. I’m also planning tests to verify the expected_rules appear in QC output, ensuring consistency. For the patch, I intend to delete and re-add the entire YAML file using apply_patch, which should handle it cleanly. After updating, I’ll decide about running targeted tests given dependency and environment concerns.
+file update
+D /Users/kawahito/Desktop/synthlab_scaffold/conf/wafer_particles/labels/taxonomy_v1.yaml
+version: taxonomy_v1
+domain: wafer_particles
+labels:
+  - name: ring_narrow
+    category: ring
+    expected_rules:
+      - TODO: r variance small (narrow ring)
+      - TODO: theta covers full 0..2pi
+  - name: ring_wide
+    category: ring
+    expected_rules:
+      - TODO: r variance larger than ring_narrow
+      - TODO: theta covers full 0..2pi
+  - name: edge_sector
+    category: sector
+    expected_rules:
+      - TODO: theta concentrated in sector range
+      - TODO: r near outer edge
+    variants:
+      - name: edge_sector_right
+        params:
+          side: right
+        expected_rules:
+          - TODO: theta near 0 rad
+      - name: edge_sector_left
+        params:
+          side: left
+        expected_rules:
+          - TODO: theta near pi rad
+      - name: edge_sector_top
+        params:
+          side: top
+        expected_rules:
+          - TODO: theta near pi/2 rad
+      - name: edge_sector_bottom
+        params:
+          side: bottom
+        expected_rules:
+          - TODO: theta near 3pi/2 rad
+  - name: scratch
+    category: line
+    expected_rules:
+      - TODO: line-fit residual small
+      - TODO: perpendicular variance small
+    variants:
+      - name: scratch_horizontal
+        params:
+          angle_category: horizontal
+        expected_rules:
+          - TODO: line angle near 0 or pi
+      - name: scratch_vertical
+        params:
+          angle_category: vertical
+        expected_rules:
+          - TODO: line angle near pi/2
+      - name: scratch_diagonal
+        params:
+          angle_category: diagonal
+        expected_rules:
+          - TODO: line angle near pi/4
+      - name: scratch_diagonal_rev
+        params:
+          angle_category: diagonal_rev
+        expected_rules:
+          - TODO: line angle near 3pi/4
+  - name: radial_lines
+    category: line
+    expected_rules:
+      - TODO: multiple line angles present
+      - TODO: points concentrated on radial lines
+  - name: hotspot
+    category: hotspot
+    expected_rules:
+      - TODO: density peak around center point
+      - TODO: density decays with radius from peak
+    variants:
+      - name: hotspot_center
+        params:
+          mode: center
+        expected_rules:
+          - TODO: peak at wafer center
+      - name: hotspot_edge
+        params:
+          mode: edge
+        expected_rules:
+          - TODO: peak near outer edge
+      - name: hotspot_random
+        params:
+          mode: random
+        expected_rules:
+          - TODO: peak location varies per sample
+  - name: random_uniform
+    category: random
+    expected_rules:
+      - TODO: uniform density across wafer area
+  - name: random_edge_biased
+    category: random
+    expected_rules:
+      - TODO: density increases toward edge
+  - name: inhom_poisson
+    category: inhom_poisson
+    expected_rules:
+      - TODO: grid dispersion above uniform baseline
+      - TODO: lambda(r,theta) variation visible in histograms
+  - name: cluster_parent_child
+    category: cluster
+    expected_rules:
+      - TODO: NN distances shorter than CSR
+      - TODO: grid dispersion > 1 (over-dispersion)
+  - name: cox_lognormal
+    category: cox
+    expected_rules:
+      - TODO: over-dispersion in grid counts
+      - TODO: intensity field varies across cells
+  - name: composite
+    category: composite
+    expected_rules:
+      - TODO: component mixture ratios respected
+      - TODO: each component retains its expected pattern
+apply_patch(auto_approved=true) exited 0 in 20ms:
+Success. Updated the following files:
+D /Users/kawahito/Desktop/synthlab_scaffold/conf/wafer_particles/labels/taxonomy_v1.yaml
+file update:
+diff --git a/conf/wafer_particles/labels/taxonomy_v1.yaml b/conf/wafer_particles/labels/taxonomy_v1.yaml
+deleted file mode 100644
+index 1919baf08ce498b5689efba25e041180a1041576..0000000000000000000000000000000000000000
+--- a/conf/wafer_particles/labels/taxonomy_v1.yaml
++++ /dev/null
+@@ -1,119 +0,0 @@
+-version: taxonomy_v1
+-domain: wafer_particles
+-labels:
+-  - name: ring_narrow
+-    category: ring
+-    expected_rules:
+-      - TODO: r variance small (narrow ring)
+-      - TODO: theta covers full 0..2pi
+-  - name: ring_wide
+-    category: ring
+-    expected_rules:
+-      - TODO: r variance larger than ring_narrow
+-      - TODO: theta covers full 0..2pi
+-  - name: edge_sector
+-    category: sector
+-    expected_rules:
+-      - TODO: theta concentrated in sector range
+-      - TODO: r near outer edge
+-    variants:
+-      - name: edge_sector_right
+-        params:
+-          side: right
+-        expected_rules:
+-          - TODO: theta near 0 rad
+-      - name: edge_sector_left
+-        params:
+-          side: left
+-        expected_rules:
+-          - TODO: theta near pi rad
+-      - name: edge_sector_top
+-        params:
+-          side: top
+-        expected_rules:
+-          - TODO: theta near pi/2 rad
+-      - name: edge_sector_bottom
+-        params:
+-          side: bottom
+-        expected_rules:
+-          - TODO: theta near 3pi/2 rad
+-  - name: scratch
+-    category: line
+-    expected_rules:
+-      - TODO: line-fit residual small
+-      - TODO: perpendicular variance small
+-    variants:
+-      - name: scratch_horizontal
+-        params:
+-          angle_category: horizontal
+-        expected_rules:
+-          - TODO: line angle near 0 or pi
+-      - name: scratch_vertical
+-        params:
+-          angle_category: vertical
+-        expected_rules:
+-          - TODO: line angle near pi/2
+-      - name: scratch_diagonal
+-        params:
+-          angle_category: diagonal
+-        expected_rules:
+-          - TODO: line angle near pi/4
+-      - name: scratch_diagonal_rev
+-        params:
+-          angle_category: diagonal_rev
+-        expected_rules:
+-          - TODO: line angle near 3pi/4
+-  - name: radial_lines
+-    category: line
+-    expected_rules:
+-      - TODO: multiple line angles present
+-      - TODO: points concentrated on radial lines
+-  - name: hotspot
+-    category: hotspot
+-    expected_rules:
+-      - TODO: density peak around center point
+-      - TODO: density decays with radius from peak
+-    variants:
+-      - name: hotspot_center
+-        params:
+-          mode: center
+-        expected_rules:
+-          - TODO: peak at wafer center
+-      - name: hotspot_edge
+-        params:
+-          mode: edge
+-        expected_rules:
+-          - TODO: peak near outer edge
+-      - name: hotspot_random
+-        params:
+-          mode: random
+-        expected_rules:
+-          - TODO: peak location varies per sample
+-  - name: random_uniform
+-    category: random
+-    expected_rules:
+-      - TODO: uniform density across wafer area
+-  - name: random_edge_biased
+-    category: random
+-    expected_rules:
+-      - TODO: density increases toward edge
+-  - name: inhom_poisson
+-    category: inhom_poisson
+-    expected_rules:
+-      - TODO: grid dispersion above uniform baseline
+-      - TODO: lambda(r,theta) variation visible in histograms
+-  - name: cluster_parent_child
+-    category: cluster
+-    expected_rules:
+-      - TODO: NN distances shorter than CSR
+-      - TODO: grid dispersion > 1 (over-dispersion)
+-  - name: cox_lognormal
+-    category: cox
+-    expected_rules:
+-      - TODO: over-dispersion in grid counts
+-      - TODO: intensity field varies across cells
+-  - name: composite
+-    category: composite
+-    expected_rules:
+-      - TODO: component mixture ratios respected
+-      - TODO: each component retains its expected pattern
+
+file update:
+diff --git a/conf/wafer_particles/labels/taxonomy_v1.yaml b/conf/wafer_particles/labels/taxonomy_v1.yaml
+deleted file mode 100644
+index 1919baf08ce498b5689efba25e041180a1041576..0000000000000000000000000000000000000000
+--- a/conf/wafer_particles/labels/taxonomy_v1.yaml
++++ /dev/null
+@@ -1,119 +0,0 @@
+-version: taxonomy_v1
+-domain: wafer_particles
+-labels:
+-  - name: ring_narrow
+-    category: ring
+-    expected_rules:
+-      - TODO: r variance small (narrow ring)
+-      - TODO: theta covers full 0..2pi
+-  - name: ring_wide
+-    category: ring
+-    expected_rules:
+-      - TODO: r variance larger than ring_narrow
+-      - TODO: theta covers full 0..2pi
+-  - name: edge_sector
+-    category: sector
+-    expected_rules:
+-      - TODO: theta concentrated in sector range
+-      - TODO: r near outer edge
+-    variants:
+-      - name: edge_sector_right
+-        params:
+-          side: right
+-        expected_rules:
+-          - TODO: theta near 0 rad
+-      - name: edge_sector_left
+-        params:
+-          side: left
+-        expected_rules:
+-          - TODO: theta near pi rad
+-      - name: edge_sector_top
+-        params:
+-          side: top
+-        expected_rules:
+-          - TODO: theta near pi/2 rad
+-      - name: edge_sector_bottom
+-        params:
+-          side: bottom
+-        expected_rules:
+-          - TODO: theta near 3pi/2 rad
+-  - name: scratch
+-    category: line
+-    expected_rules:
+-      - TODO: line-fit residual small
+-      - TODO: perpendicular variance small
+-    variants:
+-      - name: scratch_horizontal
+-        params:
+-          angle_category: horizontal
+-        expected_rules:
+-          - TODO: line angle near 0 or pi
+-      - name: scratch_vertical
+-        params:
+-          angle_category: vertical
+-        expected_rules:
+-          - TODO: line angle near pi/2
+-      - name: scratch_diagonal
+-        params:
+-          angle_category: diagonal
+-        expected_rules:
+-          - TODO: line angle near pi/4
+-      - name: scratch_diagonal_rev
+-        params:
+-          angle_category: diagonal_rev
+-        expected_rules:
+-          - TODO: line angle near 3pi/4
+-  - name: radial_lines
+-    category: line
+-    expected_rules:
+-      - TODO: multiple line angles present
+-      - TODO: points concentrated on radial lines
+-  - name: hotspot
+-    category: hotspot
+-    expected_rules:
+-      - TODO: density peak around center point
+-      - TODO: density decays with radius from peak
+-    variants:
+-      - name: hotspot_center
+-        params:
+-          mode: center
+-        expected_rules:
+-          - TODO: peak at wafer center
+-      - name: hotspot_edge
+-        params:
+-          mode: edge
+-        expected_rules:
+-          - TODO: peak near outer edge
+-      - name: hotspot_random
+-        params:
+-          mode: random
+-        expected_rules:
+-          - TODO: peak location varies per sample
+-  - name: random_uniform
+-    category: random
+-    expected_rules:
+-      - TODO: uniform density across wafer area
+-  - name: random_edge_biased
+-    category: random
+-    expected_rules:
+-      - TODO: density increases toward edge
+-  - name: inhom_poisson
+-    category: inhom_poisson
+-    expected_rules:
+-      - TODO: grid dispersion above uniform baseline
+-      - TODO: lambda(r,theta) variation visible in histograms
+-  - name: cluster_parent_child
+-    category: cluster
+-    expected_rules:
+-      - TODO: NN distances shorter than CSR
+-      - TODO: grid dispersion > 1 (over-dispersion)
+-  - name: cox_lognormal
+-    category: cox
+-    expected_rules:
+-      - TODO: over-dispersion in grid counts
+-      - TODO: intensity field varies across cells
+-  - name: composite
+-    category: composite
+-    expected_rules:
+-      - TODO: component mixture ratios respected
+-      - TODO: each component retains its expected pattern
+
+
+thinking
+**Adding new file with content**
+file update
+A /Users/kawahito/Desktop/synthlab_scaffold/conf/wafer_particles/labels/taxonomy_v1.yaml
+version: taxonomy_v1
+domain: wafer_particles
+labels:
+  # ring
+  - name: ring_narrow
+    category: ring
+    expected_rules:
+      - r_std_ratio is small relative to wafer_radius (narrow ring)
+      - theta coverage spans most bins (0..2pi)
+  - name: ring_wide
+    category: ring
+    expected_rules:
+      - r_std_ratio is larger than ring_narrow but still ring-like
+      - theta coverage spans most bins (0..2pi)
+
+  # sector
+  - name: edge_sector
+    category: sector
+    expected_rules:
+      - theta coverage concentrated in a sector
+      - theta mean aligned to sector center
+      - r mean near wafer edge
+    variants:
+      - name: edge_sector_right
+        params:
+          side: right
+        expected_rules:
+          - theta coverage concentrated in a sector
+          - theta mean aligned to sector center
+          - r mean near wafer edge
+          - sector center near 0 rad (right)
+      - name: edge_sector_left
+        params:
+          side: left
+        expected_rules:
+          - theta coverage concentrated in a sector
+          - theta mean aligned to sector center
+          - r mean near wafer edge
+          - sector center near pi rad (left)
+      - name: edge_sector_top
+        params:
+          side: top
+        expected_rules:
+          - theta coverage concentrated in a sector
+          - theta mean aligned to sector center
+          - r mean near wafer edge
+          - sector center near pi/2 rad (top)
+      - name: edge_sector_bottom
+        params:
+          side: bottom
+        expected_rules:
+          - theta coverage concentrated in a sector
+          - theta mean aligned to sector center
+          - r mean near wafer edge
+          - sector center near 3pi/2 rad (bottom)
+
+  # line
+  - name: scratch
+    category: line
+    expected_rules:
+      - theta coverage is narrow (line-like)
+      - points lie close to a fitted line (small perpendicular spread)
+    variants:
+      - name: scratch_horizontal
+        params:
+          angle_category: horizontal
+        expected_rules:
+          - theta coverage is narrow (line-like)
+          - points lie close to a fitted line (small perpendicular spread)
+          - dominant line angle near 0 or pi (horizontal)
+      - name: scratch_vertical
+        params:
+          angle_category: vertical
+        expected_rules:
+          - theta coverage is narrow (line-like)
+          - points lie close to a fitted line (small perpendicular spread)
+          - dominant line angle near pi/2 (vertical)
+      - name: scratch_diagonal
+        params:
+          angle_category: diagonal
+        expected_rules:
+          - theta coverage is narrow (line-like)
+          - points lie close to a fitted line (small perpendicular spread)
+          - dominant line angle near pi/4 (diagonal)
+      - name: scratch_diagonal_rev
+        params:
+          angle_category: diagonal_rev
+        expected_rules:
+          - theta coverage is narrow (line-like)
+          - points lie close to a fitted line (small perpendicular spread)
+          - dominant line angle near 3pi/4 (diagonal rev)
+  - name: radial_lines
+    category: line
+    expected_rules:
+      - multiple line angles are present
+      - points cluster along radial lines through the center
+      - theta coverage has multiple narrow modes
+
+  # hotspot
+  - name: hotspot
+    category: hotspot
+    expected_rules:
+      - density peak around a center point
+      - density decays with radius from the peak
+    variants:
+      - name: hotspot_center
+        params:
+          mode: center
+        expected_rules:
+          - density peak around a center point
+          - density decays with radius from the peak
+          - peak near wafer center (low r mean ratio)
+      - name: hotspot_edge
+        params:
+          mode: edge
+        expected_rules:
+          - density peak around a center point
+          - density decays with radius from the peak
+          - peak near wafer edge (high r mean ratio)
+      - name: hotspot_random
+        params:
+          mode: random
+        expected_rules:
+          - density peak around a center point
+          - density decays with radius from the peak
+          - peak location varies per sample
+
+  # random
+  - name: random_uniform
+    category: random
+    expected_rules:
+      - uniform density across wafer area
+      - theta coverage spans most bins
+      - r histogram follows area-proportional profile
+  - name: random_edge_biased
+    category: random
+    expected_rules:
+      - density increases toward edge (high r mean ratio)
+      - theta coverage spans most bins
+
+  # inhom_poisson
+  - name: inhom_poisson
+    category: inhom_poisson
+    expected_rules:
+      - grid dispersion above uniform baseline
+      - grid counts show spatial intensity variation
+      - hist_r and hist_theta show structure
+
+  # cluster
+  - name: cluster_parent_child
+    category: cluster
+    expected_rules:
+      - nn mean ratio below CSR expectation
+      - grid dispersion above 1 (over-dispersion)
+      - child points cluster around parent centers
+
+  # cox
+  - name: cox_lognormal
+    category: cox
+    expected_rules:
+      - grid dispersion above 1 (over-dispersion)
+      - intensity field varies across cells
+
+  # composite
+  - name: composite
+    category: composite
+    expected_rules:
+      - component mixture ratios are respected
+      - each component retains its expected pattern
+      - label proportions match config
+apply_patch(auto_approved=true) exited 0 in 35ms:
+Success. Updated the following files:
+A /Users/kawahito/Desktop/synthlab_scaffold/conf/wafer_particles/labels/taxonomy_v1.yaml
+file update:
+diff --git a/conf/wafer_particles/labels/taxonomy_v1.yaml b/conf/wafer_particles/labels/taxonomy_v1.yaml
+index 1919baf08ce498b5689efba25e041180a1041576..5eee84045e08904188e3c2df0f645e0e42befda2
+--- a/conf/wafer_particles/labels/taxonomy_v1.yaml
++++ b/conf/wafer_particles/labels/taxonomy_v1.yaml
+@@ -1,119 +1,170 @@
+ version: taxonomy_v1
+ domain: wafer_particles
+ labels:
++  # ring
+   - name: ring_narrow
+     category: ring
+     expected_rules:
+-      - TODO: r variance small (narrow ring)
+-      - TODO: theta covers full 0..2pi
++      - r_std_ratio is small relative to wafer_radius (narrow ring)
++      - theta coverage spans most bins (0..2pi)
+   - name: ring_wide
+     category: ring
+     expected_rules:
+-      - TODO: r variance larger than ring_narrow
+-      - TODO: theta covers full 0..2pi
++      - r_std_ratio is larger than ring_narrow but still ring-like
++      - theta coverage spans most bins (0..2pi)
++
++  # sector
+   - name: edge_sector
+     category: sector
+     expected_rules:
+-      - TODO: theta concentrated in sector range
+-      - TODO: r near outer edge
++      - theta coverage concentrated in a sector
++      - theta mean aligned to sector center
++      - r mean near wafer edge
+     variants:
+       - name: edge_sector_right
+         params:
+           side: right
+         expected_rules:
+-          - TODO: theta near 0 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near 0 rad (right)
+       - name: edge_sector_left
+         params:
+           side: left
+         expected_rules:
+-          - TODO: theta near pi rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near pi rad (left)
+       - name: edge_sector_top
+         params:
+           side: top
+         expected_rules:
+-          - TODO: theta near pi/2 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near pi/2 rad (top)
+       - name: edge_sector_bottom
+         params:
+           side: bottom
+         expected_rules:
+-          - TODO: theta near 3pi/2 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near 3pi/2 rad (bottom)
++
++  # line
+   - name: scratch
+     category: line
+     expected_rules:
+-      - TODO: line-fit residual small
+-      - TODO: perpendicular variance small
++      - theta coverage is narrow (line-like)
++      - points lie close to a fitted line (small perpendicular spread)
+     variants:
+       - name: scratch_horizontal
+         params:
+           angle_category: horizontal
+         expected_rules:
+-          - TODO: line angle near 0 or pi
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near 0 or pi (horizontal)
+       - name: scratch_vertical
+         params:
+           angle_category: vertical
+         expected_rules:
+-          - TODO: line angle near pi/2
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near pi/2 (vertical)
+       - name: scratch_diagonal
+         params:
+           angle_category: diagonal
+         expected_rules:
+-          - TODO: line angle near pi/4
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near pi/4 (diagonal)
+       - name: scratch_diagonal_rev
+         params:
+           angle_category: diagonal_rev
+         expected_rules:
+-          - TODO: line angle near 3pi/4
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near 3pi/4 (diagonal rev)
+   - name: radial_lines
+     category: line
+     expected_rules:
+-      - TODO: multiple line angles present
+-      - TODO: points concentrated on radial lines
++      - multiple line angles are present
++      - points cluster along radial lines through the center
++      - theta coverage has multiple narrow modes
++
++  # hotspot
+   - name: hotspot
+     category: hotspot
+     expected_rules:
+-      - TODO: density peak around center point
+-      - TODO: density decays with radius from peak
++      - density peak around a center point
++      - density decays with radius from the peak
+     variants:
+       - name: hotspot_center
+         params:
+           mode: center
+         expected_rules:
+-          - TODO: peak at wafer center
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak near wafer center (low r mean ratio)
+       - name: hotspot_edge
+         params:
+           mode: edge
+         expected_rules:
+-          - TODO: peak near outer edge
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak near wafer edge (high r mean ratio)
+       - name: hotspot_random
+         params:
+           mode: random
+         expected_rules:
+-          - TODO: peak location varies per sample
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak location varies per sample
++
++  # random
+   - name: random_uniform
+     category: random
+     expected_rules:
+-      - TODO: uniform density across wafer area
++      - uniform density across wafer area
++      - theta coverage spans most bins
++      - r histogram follows area-proportional profile
+   - name: random_edge_biased
+     category: random
+     expected_rules:
+-      - TODO: density increases toward edge
++      - density increases toward edge (high r mean ratio)
++      - theta coverage spans most bins
++
++  # inhom_poisson
+   - name: inhom_poisson
+     category: inhom_poisson
+     expected_rules:
+-      - TODO: grid dispersion above uniform baseline
+-      - TODO: lambda(r,theta) variation visible in histograms
++      - grid dispersion above uniform baseline
++      - grid counts show spatial intensity variation
++      - hist_r and hist_theta show structure
++
++  # cluster
+   - name: cluster_parent_child
+     category: cluster
+     expected_rules:
+-      - TODO: NN distances shorter than CSR
+-      - TODO: grid dispersion > 1 (over-dispersion)
++      - nn mean ratio below CSR expectation
++      - grid dispersion above 1 (over-dispersion)
++      - child points cluster around parent centers
++
++  # cox
+   - name: cox_lognormal
+     category: cox
+     expected_rules:
+-      - TODO: over-dispersion in grid counts
+-      - TODO: intensity field varies across cells
++      - grid dispersion above 1 (over-dispersion)
++      - intensity field varies across cells
++
++  # composite
+   - name: composite
+     category: composite
+     expected_rules:
+-      - TODO: component mixture ratios respected
+-      - TODO: each component retains its expected pattern
++      - component mixture ratios are respected
++      - each component retains its expected pattern
++      - label proportions match config
+
+file update:
+diff --git a/conf/wafer_particles/labels/taxonomy_v1.yaml b/conf/wafer_particles/labels/taxonomy_v1.yaml
+index 1919baf08ce498b5689efba25e041180a1041576..5eee84045e08904188e3c2df0f645e0e42befda2
+--- a/conf/wafer_particles/labels/taxonomy_v1.yaml
++++ b/conf/wafer_particles/labels/taxonomy_v1.yaml
+@@ -1,119 +1,170 @@
+ version: taxonomy_v1
+ domain: wafer_particles
+ labels:
++  # ring
+   - name: ring_narrow
+     category: ring
+     expected_rules:
+-      - TODO: r variance small (narrow ring)
+-      - TODO: theta covers full 0..2pi
++      - r_std_ratio is small relative to wafer_radius (narrow ring)
++      - theta coverage spans most bins (0..2pi)
+   - name: ring_wide
+     category: ring
+     expected_rules:
+-      - TODO: r variance larger than ring_narrow
+-      - TODO: theta covers full 0..2pi
++      - r_std_ratio is larger than ring_narrow but still ring-like
++      - theta coverage spans most bins (0..2pi)
++
++  # sector
+   - name: edge_sector
+     category: sector
+     expected_rules:
+-      - TODO: theta concentrated in sector range
+-      - TODO: r near outer edge
++      - theta coverage concentrated in a sector
++      - theta mean aligned to sector center
++      - r mean near wafer edge
+     variants:
+       - name: edge_sector_right
+         params:
+           side: right
+         expected_rules:
+-          - TODO: theta near 0 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near 0 rad (right)
+       - name: edge_sector_left
+         params:
+           side: left
+         expected_rules:
+-          - TODO: theta near pi rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near pi rad (left)
+       - name: edge_sector_top
+         params:
+           side: top
+         expected_rules:
+-          - TODO: theta near pi/2 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near pi/2 rad (top)
+       - name: edge_sector_bottom
+         params:
+           side: bottom
+         expected_rules:
+-          - TODO: theta near 3pi/2 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near 3pi/2 rad (bottom)
++
++  # line
+   - name: scratch
+     category: line
+     expected_rules:
+-      - TODO: line-fit residual small
+-      - TODO: perpendicular variance small
++      - theta coverage is narrow (line-like)
++      - points lie close to a fitted line (small perpendicular spread)
+     variants:
+       - name: scratch_horizontal
+         params:
+           angle_category: horizontal
+         expected_rules:
+-          - TODO: line angle near 0 or pi
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near 0 or pi (horizontal)
+       - name: scratch_vertical
+         params:
+           angle_category: vertical
+         expected_rules:
+-          - TODO: line angle near pi/2
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near pi/2 (vertical)
+       - name: scratch_diagonal
+         params:
+           angle_category: diagonal
+         expected_rules:
+-          - TODO: line angle near pi/4
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near pi/4 (diagonal)
+       - name: scratch_diagonal_rev
+         params:
+           angle_category: diagonal_rev
+         expected_rules:
+-          - TODO: line angle near 3pi/4
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near 3pi/4 (diagonal rev)
+   - name: radial_lines
+     category: line
+     expected_rules:
+-      - TODO: multiple line angles present
+-      - TODO: points concentrated on radial lines
++      - multiple line angles are present
++      - points cluster along radial lines through the center
++      - theta coverage has multiple narrow modes
++
++  # hotspot
+   - name: hotspot
+     category: hotspot
+     expected_rules:
+-      - TODO: density peak around center point
+-      - TODO: density decays with radius from peak
++      - density peak around a center point
++      - density decays with radius from the peak
+     variants:
+       - name: hotspot_center
+         params:
+           mode: center
+         expected_rules:
+-          - TODO: peak at wafer center
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak near wafer center (low r mean ratio)
+       - name: hotspot_edge
+         params:
+           mode: edge
+         expected_rules:
+-          - TODO: peak near outer edge
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak near wafer edge (high r mean ratio)
+       - name: hotspot_random
+         params:
+           mode: random
+         expected_rules:
+-          - TODO: peak location varies per sample
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak location varies per sample
++
++  # random
+   - name: random_uniform
+     category: random
+     expected_rules:
+-      - TODO: uniform density across wafer area
++      - uniform density across wafer area
++      - theta coverage spans most bins
++      - r histogram follows area-proportional profile
+   - name: random_edge_biased
+     category: random
+     expected_rules:
+-      - TODO: density increases toward edge
++      - density increases toward edge (high r mean ratio)
++      - theta coverage spans most bins
++
++  # inhom_poisson
+   - name: inhom_poisson
+     category: inhom_poisson
+     expected_rules:
+-      - TODO: grid dispersion above uniform baseline
+-      - TODO: lambda(r,theta) variation visible in histograms
++      - grid dispersion above uniform baseline
++      - grid counts show spatial intensity variation
++      - hist_r and hist_theta show structure
++
++  # cluster
+   - name: cluster_parent_child
+     category: cluster
+     expected_rules:
+-      - TODO: NN distances shorter than CSR
+-      - TODO: grid dispersion > 1 (over-dispersion)
++      - nn mean ratio below CSR expectation
++      - grid dispersion above 1 (over-dispersion)
++      - child points cluster around parent centers
++
++  # cox
+   - name: cox_lognormal
+     category: cox
+     expected_rules:
+-      - TODO: over-dispersion in grid counts
+-      - TODO: intensity field varies across cells
++      - grid dispersion above 1 (over-dispersion)
++      - intensity field varies across cells
++
++  # composite
+   - name: composite
+     category: composite
+     expected_rules:
+-      - TODO: component mixture ratios respected
+-      - TODO: each component retains its expected pattern
++      - component mixture ratios are respected
++      - each component retains its expected pattern
++      - label proportions match config
+
+
+thinking
+**Adding detailed taxonomy test file**
+file update
+A /Users/kawahito/Desktop/synthlab_scaffold/tests/test_T0107_taxonomy_expected_rules.py
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from synthlab.domains.wafer_particles import DOMAIN_NAME, SCHEMA_VERSION  # noqa: E402
+from synthlab.framework.process import dispatch_process  # noqa: E402
+
+TAXONOMY_PATH = ROOT / "conf" / "wafer_particles" / "labels" / "taxonomy_v1.yaml"
+
+
+def _load_taxonomy() -> dict[str, Any]:
+    data = yaml.safe_load(TAXONOMY_PATH.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise AssertionError("taxonomy_v1.yaml must be a mapping")
+    return data
+
+
+def _require_rules(entry: dict[str, Any], name: str) -> list[str]:
+    rules = entry.get("expected_rules")
+    if not isinstance(rules, list) or not rules:
+        raise AssertionError(f"expected_rules missing for {name}")
+    return [str(rule) for rule in rules]
+
+
+def _expected_rules_for_label(taxonomy: dict[str, Any], label: str) -> list[str]:
+    labels = taxonomy.get("labels")
+    if not isinstance(labels, list):
+        return []
+    for entry in labels:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("name") == label:
+            return [str(rule) for rule in entry.get("expected_rules", [])]
+        variants = entry.get("variants") or []
+        if not isinstance(variants, list):
+            continue
+        for variant in variants:
+            if not isinstance(variant, dict):
+                continue
+            if variant.get("name") == label:
+                return [str(rule) for rule in variant.get("expected_rules", [])]
+    return []
+
+
+def _wafer_particles_cfg(taxonomy: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "n_samples": 2,
+        "n_particles": 25,
+        "wafer_radius_mm": 10.0,
+        "sample_id_prefix": "sample",
+        "include_xy": False,
+        "source": "synthetic",
+        "labels": taxonomy,
+        "label_selection": {
+            "mode": "fixed",
+            "labels": ["random_uniform"],
+            "shuffle": False,
+        },
+        "patterns": {
+            "random_uniform": {
+                "name": "wafer_particles.pattern.random_uniform",
+            }
+        },
+        "size_models": {
+            "name": "wafer_particles.size_model.lognormal",
+            "mu_log": 0.0,
+            "sigma_log": 0.1,
+        },
+        "io": {"format": "csv"},
+        "qc": {
+            "input": {
+                "run_name": None,
+                "process_name": "wafer_particles.process.generate",
+                "run_dir": None,
+                "manifest_path": None,
+                "particles_path": None,
+                "samples_path": None,
+            },
+            "bins": {
+                "r": {"start": 0.0, "stop": 10.0, "count": 5},
+                "theta": {"start": 0.0, "stop": 6.283185307179586, "count": 6},
+            },
+            "quantiles": [0.5],
+            "rules": {},
+        },
+    }
+
+
+def _make_cfg(process_name: str, run_name: str, seed: int, taxonomy: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "run_name": run_name,
+        "seed": seed,
+        "schema_version": SCHEMA_VERSION,
+        "domain": {"name": DOMAIN_NAME},
+        "process": {"name": process_name},
+        "wafer_particles": _wafer_particles_cfg(taxonomy),
+    }
+
+
+def test_taxonomy_expected_rules_no_todo() -> None:
+    taxonomy = _load_taxonomy()
+    labels = taxonomy.get("labels")
+    assert isinstance(labels, list) and labels
+    for entry in labels:
+        assert isinstance(entry, dict)
+        name = str(entry.get("name") or "")
+        assert name
+        for rule in _require_rules(entry, name):
+            assert "TODO" not in rule
+        variants = entry.get("variants") or []
+        if not variants:
+            continue
+        assert isinstance(variants, list)
+        for variant in variants:
+            assert isinstance(variant, dict)
+            variant_name = str(variant.get("name") or "")
+            assert variant_name
+            for rule in _require_rules(variant, variant_name):
+                assert "TODO" not in rule
+
+
+def test_qc_metrics_include_expected_rules(tmp_path: Path) -> None:
+    taxonomy = _load_taxonomy()
+    gen_cfg = _make_cfg("wafer_particles.process.generate", "t0107_gen", seed=101, taxonomy=taxonomy)
+    gen_run = dispatch_process(cfg=gen_cfg, overrides=[], repo_root=tmp_path)
+
+    qc_cfg = _make_cfg("wafer_particles.process.qc", "t0107_qc", seed=101, taxonomy=taxonomy)
+    qc_cfg["wafer_particles"]["qc"]["input"]["run_dir"] = str(gen_run)
+    qc_run = dispatch_process(cfg=qc_cfg, overrides=[], repo_root=tmp_path)
+
+    payload = json.loads((qc_run / "metrics" / "qc.json").read_text(encoding="utf-8"))
+    label_info = payload["labels"]["random_uniform"]
+    expected_rules = _expected_rules_for_label(taxonomy, "random_uniform")
+    assert label_info["expected_rules"] == expected_rules
+    assert label_info["expected_rules"]
+apply_patch(auto_approved=true) exited 0 in 40ms:
+Success. Updated the following files:
+A /Users/kawahito/Desktop/synthlab_scaffold/tests/test_T0107_taxonomy_expected_rules.py
+file update:
+diff --git a/conf/wafer_particles/labels/taxonomy_v1.yaml b/conf/wafer_particles/labels/taxonomy_v1.yaml
+index 1919baf08ce498b5689efba25e041180a1041576..5eee84045e08904188e3c2df0f645e0e42befda2
+--- a/conf/wafer_particles/labels/taxonomy_v1.yaml
++++ b/conf/wafer_particles/labels/taxonomy_v1.yaml
+@@ -1,119 +1,170 @@
+ version: taxonomy_v1
+ domain: wafer_particles
+ labels:
++  # ring
+   - name: ring_narrow
+     category: ring
+     expected_rules:
+-      - TODO: r variance small (narrow ring)
+-      - TODO: theta covers full 0..2pi
++      - r_std_ratio is small relative to wafer_radius (narrow ring)
++      - theta coverage spans most bins (0..2pi)
+   - name: ring_wide
+     category: ring
+     expected_rules:
+-      - TODO: r variance larger than ring_narrow
+-      - TODO: theta covers full 0..2pi
++      - r_std_ratio is larger than ring_narrow but still ring-like
++      - theta coverage spans most bins (0..2pi)
++
++  # sector
+   - name: edge_sector
+     category: sector
+     expected_rules:
+-      - TODO: theta concentrated in sector range
+-      - TODO: r near outer edge
++      - theta coverage concentrated in a sector
++      - theta mean aligned to sector center
++      - r mean near wafer edge
+     variants:
+       - name: edge_sector_right
+         params:
+           side: right
+         expected_rules:
+-          - TODO: theta near 0 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near 0 rad (right)
+       - name: edge_sector_left
+         params:
+           side: left
+         expected_rules:
+-          - TODO: theta near pi rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near pi rad (left)
+       - name: edge_sector_top
+         params:
+           side: top
+         expected_rules:
+-          - TODO: theta near pi/2 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near pi/2 rad (top)
+       - name: edge_sector_bottom
+         params:
+           side: bottom
+         expected_rules:
+-          - TODO: theta near 3pi/2 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near 3pi/2 rad (bottom)
++
++  # line
+   - name: scratch
+     category: line
+     expected_rules:
+-      - TODO: line-fit residual small
+-      - TODO: perpendicular variance small
++      - theta coverage is narrow (line-like)
++      - points lie close to a fitted line (small perpendicular spread)
+     variants:
+       - name: scratch_horizontal
+         params:
+           angle_category: horizontal
+         expected_rules:
+-          - TODO: line angle near 0 or pi
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near 0 or pi (horizontal)
+       - name: scratch_vertical
+         params:
+           angle_category: vertical
+         expected_rules:
+-          - TODO: line angle near pi/2
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near pi/2 (vertical)
+       - name: scratch_diagonal
+         params:
+           angle_category: diagonal
+         expected_rules:
+-          - TODO: line angle near pi/4
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near pi/4 (diagonal)
+       - name: scratch_diagonal_rev
+         params:
+           angle_category: diagonal_rev
+         expected_rules:
+-          - TODO: line angle near 3pi/4
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near 3pi/4 (diagonal rev)
+   - name: radial_lines
+     category: line
+     expected_rules:
+-      - TODO: multiple line angles present
+-      - TODO: points concentrated on radial lines
++      - multiple line angles are present
++      - points cluster along radial lines through the center
++      - theta coverage has multiple narrow modes
++
++  # hotspot
+   - name: hotspot
+     category: hotspot
+     expected_rules:
+-      - TODO: density peak around center point
+-      - TODO: density decays with radius from peak
++      - density peak around a center point
++      - density decays with radius from the peak
+     variants:
+       - name: hotspot_center
+         params:
+           mode: center
+         expected_rules:
+-          - TODO: peak at wafer center
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak near wafer center (low r mean ratio)
+       - name: hotspot_edge
+         params:
+           mode: edge
+         expected_rules:
+-          - TODO: peak near outer edge
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak near wafer edge (high r mean ratio)
+       - name: hotspot_random
+         params:
+           mode: random
+         expected_rules:
+-          - TODO: peak location varies per sample
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak location varies per sample
++
++  # random
+   - name: random_uniform
+     category: random
+     expected_rules:
+-      - TODO: uniform density across wafer area
++      - uniform density across wafer area
++      - theta coverage spans most bins
++      - r histogram follows area-proportional profile
+   - name: random_edge_biased
+     category: random
+     expected_rules:
+-      - TODO: density increases toward edge
++      - density increases toward edge (high r mean ratio)
++      - theta coverage spans most bins
++
++  # inhom_poisson
+   - name: inhom_poisson
+     category: inhom_poisson
+     expected_rules:
+-      - TODO: grid dispersion above uniform baseline
+-      - TODO: lambda(r,theta) variation visible in histograms
++      - grid dispersion above uniform baseline
++      - grid counts show spatial intensity variation
++      - hist_r and hist_theta show structure
++
++  # cluster
+   - name: cluster_parent_child
+     category: cluster
+     expected_rules:
+-      - TODO: NN distances shorter than CSR
+-      - TODO: grid dispersion > 1 (over-dispersion)
++      - nn mean ratio below CSR expectation
++      - grid dispersion above 1 (over-dispersion)
++      - child points cluster around parent centers
++
++  # cox
+   - name: cox_lognormal
+     category: cox
+     expected_rules:
+-      - TODO: over-dispersion in grid counts
+-      - TODO: intensity field varies across cells
++      - grid dispersion above 1 (over-dispersion)
++      - intensity field varies across cells
++
++  # composite
+   - name: composite
+     category: composite
+     expected_rules:
+-      - TODO: component mixture ratios respected
+-      - TODO: each component retains its expected pattern
++      - component mixture ratios are respected
++      - each component retains its expected pattern
++      - label proportions match config
+diff --git a/tests/test_T0107_taxonomy_expected_rules.py b/tests/test_T0107_taxonomy_expected_rules.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..925541232f228d1997b9b73e59eebf78caa5867a
+--- /dev/null
++++ b/tests/test_T0107_taxonomy_expected_rules.py
+@@ -0,0 +1,144 @@
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++ROOT = Path(__file__).resolve().parents[1]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
++from synthlab.domains.wafer_particles import DOMAIN_NAME, SCHEMA_VERSION  # noqa: E402
++from synthlab.framework.process import dispatch_process  # noqa: E402
++
++TAXONOMY_PATH = ROOT / "conf" / "wafer_particles" / "labels" / "taxonomy_v1.yaml"
++
++
++def _load_taxonomy() -> dict[str, Any]:
++    data = yaml.safe_load(TAXONOMY_PATH.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise AssertionError("taxonomy_v1.yaml must be a mapping")
++    return data
++
++
++def _require_rules(entry: dict[str, Any], name: str) -> list[str]:
++    rules = entry.get("expected_rules")
++    if not isinstance(rules, list) or not rules:
++        raise AssertionError(f"expected_rules missing for {name}")
++    return [str(rule) for rule in rules]
++
++
++def _expected_rules_for_label(taxonomy: dict[str, Any], label: str) -> list[str]:
++    labels = taxonomy.get("labels")
++    if not isinstance(labels, list):
++        return []
++    for entry in labels:
++        if not isinstance(entry, dict):
++            continue
++        if entry.get("name") == label:
++            return [str(rule) for rule in entry.get("expected_rules", [])]
++        variants = entry.get("variants") or []
++        if not isinstance(variants, list):
++            continue
++        for variant in variants:
++            if not isinstance(variant, dict):
++                continue
++            if variant.get("name") == label:
++                return [str(rule) for rule in variant.get("expected_rules", [])]
++    return []
++
++
++def _wafer_particles_cfg(taxonomy: dict[str, Any]) -> dict[str, Any]:
++    return {
++        "n_samples": 2,
++        "n_particles": 25,
++        "wafer_radius_mm": 10.0,
++        "sample_id_prefix": "sample",
++        "include_xy": False,
++        "source": "synthetic",
++        "labels": taxonomy,
++        "label_selection": {
++            "mode": "fixed",
++            "labels": ["random_uniform"],
++            "shuffle": False,
++        },
++        "patterns": {
++            "random_uniform": {
++                "name": "wafer_particles.pattern.random_uniform",
++            }
++        },
++        "size_models": {
++            "name": "wafer_particles.size_model.lognormal",
++            "mu_log": 0.0,
++            "sigma_log": 0.1,
++        },
++        "io": {"format": "csv"},
++        "qc": {
++            "input": {
++                "run_name": None,
++                "process_name": "wafer_particles.process.generate",
++                "run_dir": None,
++                "manifest_path": None,
++                "particles_path": None,
++                "samples_path": None,
++            },
++            "bins": {
++                "r": {"start": 0.0, "stop": 10.0, "count": 5},
++                "theta": {"start": 0.0, "stop": 6.283185307179586, "count": 6},
++            },
++            "quantiles": [0.5],
++            "rules": {},
++        },
++    }
++
++
++def _make_cfg(process_name: str, run_name: str, seed: int, taxonomy: dict[str, Any]) -> dict[str, Any]:
++    return {
++        "run_name": run_name,
++        "seed": seed,
++        "schema_version": SCHEMA_VERSION,
++        "domain": {"name": DOMAIN_NAME},
++        "process": {"name": process_name},
++        "wafer_particles": _wafer_particles_cfg(taxonomy),
++    }
++
++
++def test_taxonomy_expected_rules_no_todo() -> None:
++    taxonomy = _load_taxonomy()
++    labels = taxonomy.get("labels")
++    assert isinstance(labels, list) and labels
++    for entry in labels:
++        assert isinstance(entry, dict)
++        name = str(entry.get("name") or "")
++        assert name
++        for rule in _require_rules(entry, name):
++            assert "TODO" not in rule
++        variants = entry.get("variants") or []
++        if not variants:
++            continue
++        assert isinstance(variants, list)
++        for variant in variants:
++            assert isinstance(variant, dict)
++            variant_name = str(variant.get("name") or "")
++            assert variant_name
++            for rule in _require_rules(variant, variant_name):
++                assert "TODO" not in rule
++
++
++def test_qc_metrics_include_expected_rules(tmp_path: Path) -> None:
++    taxonomy = _load_taxonomy()
++    gen_cfg = _make_cfg("wafer_particles.process.generate", "t0107_gen", seed=101, taxonomy=taxonomy)
++    gen_run = dispatch_process(cfg=gen_cfg, overrides=[], repo_root=tmp_path)
++
++    qc_cfg = _make_cfg("wafer_particles.process.qc", "t0107_qc", seed=101, taxonomy=taxonomy)
++    qc_cfg["wafer_particles"]["qc"]["input"]["run_dir"] = str(gen_run)
++    qc_run = dispatch_process(cfg=qc_cfg, overrides=[], repo_root=tmp_path)
++
++    payload = json.loads((qc_run / "metrics" / "qc.json").read_text(encoding="utf-8"))
++    label_info = payload["labels"]["random_uniform"]
++    expected_rules = _expected_rules_for_label(taxonomy, "random_uniform")
++    assert label_info["expected_rules"] == expected_rules
++    assert label_info["expected_rules"]
+
+file update:
+diff --git a/conf/wafer_particles/labels/taxonomy_v1.yaml b/conf/wafer_particles/labels/taxonomy_v1.yaml
+index 1919baf08ce498b5689efba25e041180a1041576..5eee84045e08904188e3c2df0f645e0e42befda2
+--- a/conf/wafer_particles/labels/taxonomy_v1.yaml
++++ b/conf/wafer_particles/labels/taxonomy_v1.yaml
+@@ -1,119 +1,170 @@
+ version: taxonomy_v1
+ domain: wafer_particles
+ labels:
++  # ring
+   - name: ring_narrow
+     category: ring
+     expected_rules:
+-      - TODO: r variance small (narrow ring)
+-      - TODO: theta covers full 0..2pi
++      - r_std_ratio is small relative to wafer_radius (narrow ring)
++      - theta coverage spans most bins (0..2pi)
+   - name: ring_wide
+     category: ring
+     expected_rules:
+-      - TODO: r variance larger than ring_narrow
+-      - TODO: theta covers full 0..2pi
++      - r_std_ratio is larger than ring_narrow but still ring-like
++      - theta coverage spans most bins (0..2pi)
++
++  # sector
+   - name: edge_sector
+     category: sector
+     expected_rules:
+-      - TODO: theta concentrated in sector range
+-      - TODO: r near outer edge
++      - theta coverage concentrated in a sector
++      - theta mean aligned to sector center
++      - r mean near wafer edge
+     variants:
+       - name: edge_sector_right
+         params:
+           side: right
+         expected_rules:
+-          - TODO: theta near 0 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near 0 rad (right)
+       - name: edge_sector_left
+         params:
+           side: left
+         expected_rules:
+-          - TODO: theta near pi rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near pi rad (left)
+       - name: edge_sector_top
+         params:
+           side: top
+         expected_rules:
+-          - TODO: theta near pi/2 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near pi/2 rad (top)
+       - name: edge_sector_bottom
+         params:
+           side: bottom
+         expected_rules:
+-          - TODO: theta near 3pi/2 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near 3pi/2 rad (bottom)
++
++  # line
+   - name: scratch
+     category: line
+     expected_rules:
+-      - TODO: line-fit residual small
+-      - TODO: perpendicular variance small
++      - theta coverage is narrow (line-like)
++      - points lie close to a fitted line (small perpendicular spread)
+     variants:
+       - name: scratch_horizontal
+         params:
+           angle_category: horizontal
+         expected_rules:
+-          - TODO: line angle near 0 or pi
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near 0 or pi (horizontal)
+       - name: scratch_vertical
+         params:
+           angle_category: vertical
+         expected_rules:
+-          - TODO: line angle near pi/2
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near pi/2 (vertical)
+       - name: scratch_diagonal
+         params:
+           angle_category: diagonal
+         expected_rules:
+-          - TODO: line angle near pi/4
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near pi/4 (diagonal)
+       - name: scratch_diagonal_rev
+         params:
+           angle_category: diagonal_rev
+         expected_rules:
+-          - TODO: line angle near 3pi/4
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near 3pi/4 (diagonal rev)
+   - name: radial_lines
+     category: line
+     expected_rules:
+-      - TODO: multiple line angles present
+-      - TODO: points concentrated on radial lines
++      - multiple line angles are present
++      - points cluster along radial lines through the center
++      - theta coverage has multiple narrow modes
++
++  # hotspot
+   - name: hotspot
+     category: hotspot
+     expected_rules:
+-      - TODO: density peak around center point
+-      - TODO: density decays with radius from peak
++      - density peak around a center point
++      - density decays with radius from the peak
+     variants:
+       - name: hotspot_center
+         params:
+           mode: center
+         expected_rules:
+-          - TODO: peak at wafer center
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak near wafer center (low r mean ratio)
+       - name: hotspot_edge
+         params:
+           mode: edge
+         expected_rules:
+-          - TODO: peak near outer edge
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak near wafer edge (high r mean ratio)
+       - name: hotspot_random
+         params:
+           mode: random
+         expected_rules:
+-          - TODO: peak location varies per sample
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak location varies per sample
++
++  # random
+   - name: random_uniform
+     category: random
+     expected_rules:
+-      - TODO: uniform density across wafer area
++      - uniform density across wafer area
++      - theta coverage spans most bins
++      - r histogram follows area-proportional profile
+   - name: random_edge_biased
+     category: random
+     expected_rules:
+-      - TODO: density increases toward edge
++      - density increases toward edge (high r mean ratio)
++      - theta coverage spans most bins
++
++  # inhom_poisson
+   - name: inhom_poisson
+     category: inhom_poisson
+     expected_rules:
+-      - TODO: grid dispersion above uniform baseline
+-      - TODO: lambda(r,theta) variation visible in histograms
++      - grid dispersion above uniform baseline
++      - grid counts show spatial intensity variation
++      - hist_r and hist_theta show structure
++
++  # cluster
+   - name: cluster_parent_child
+     category: cluster
+     expected_rules:
+-      - TODO: NN distances shorter than CSR
+-      - TODO: grid dispersion > 1 (over-dispersion)
++      - nn mean ratio below CSR expectation
++      - grid dispersion above 1 (over-dispersion)
++      - child points cluster around parent centers
++
++  # cox
+   - name: cox_lognormal
+     category: cox
+     expected_rules:
+-      - TODO: over-dispersion in grid counts
+-      - TODO: intensity field varies across cells
++      - grid dispersion above 1 (over-dispersion)
++      - intensity field varies across cells
++
++  # composite
+   - name: composite
+     category: composite
+     expected_rules:
+-      - TODO: component mixture ratios respected
+-      - TODO: each component retains its expected pattern
++      - component mixture ratios are respected
++      - each component retains its expected pattern
++      - label proportions match config
+diff --git a/tests/test_T0107_taxonomy_expected_rules.py b/tests/test_T0107_taxonomy_expected_rules.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..925541232f228d1997b9b73e59eebf78caa5867a
+--- /dev/null
++++ b/tests/test_T0107_taxonomy_expected_rules.py
+@@ -0,0 +1,144 @@
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++ROOT = Path(__file__).resolve().parents[1]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
++from synthlab.domains.wafer_particles import DOMAIN_NAME, SCHEMA_VERSION  # noqa: E402
++from synthlab.framework.process import dispatch_process  # noqa: E402
++
++TAXONOMY_PATH = ROOT / "conf" / "wafer_particles" / "labels" / "taxonomy_v1.yaml"
++
++
++def _load_taxonomy() -> dict[str, Any]:
++    data = yaml.safe_load(TAXONOMY_PATH.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise AssertionError("taxonomy_v1.yaml must be a mapping")
++    return data
++
++
++def _require_rules(entry: dict[str, Any], name: str) -> list[str]:
++    rules = entry.get("expected_rules")
++    if not isinstance(rules, list) or not rules:
++        raise AssertionError(f"expected_rules missing for {name}")
++    return [str(rule) for rule in rules]
++
++
++def _expected_rules_for_label(taxonomy: dict[str, Any], label: str) -> list[str]:
++    labels = taxonomy.get("labels")
++    if not isinstance(labels, list):
++        return []
++    for entry in labels:
++        if not isinstance(entry, dict):
++            continue
++        if entry.get("name") == label:
++            return [str(rule) for rule in entry.get("expected_rules", [])]
++        variants = entry.get("variants") or []
++        if not isinstance(variants, list):
++            continue
++        for variant in variants:
++            if not isinstance(variant, dict):
++                continue
++            if variant.get("name") == label:
++                return [str(rule) for rule in variant.get("expected_rules", [])]
++    return []
++
++
++def _wafer_particles_cfg(taxonomy: dict[str, Any]) -> dict[str, Any]:
++    return {
++        "n_samples": 2,
++        "n_particles": 25,
++        "wafer_radius_mm": 10.0,
++        "sample_id_prefix": "sample",
++        "include_xy": False,
++        "source": "synthetic",
++        "labels": taxonomy,
++        "label_selection": {
++            "mode": "fixed",
++            "labels": ["random_uniform"],
++            "shuffle": False,
++        },
++        "patterns": {
++            "random_uniform": {
++                "name": "wafer_particles.pattern.random_uniform",
++            }
++        },
++        "size_models": {
++            "name": "wafer_particles.size_model.lognormal",
++            "mu_log": 0.0,
++            "sigma_log": 0.1,
++        },
++        "io": {"format": "csv"},
++        "qc": {
++            "input": {
++                "run_name": None,
++                "process_name": "wafer_particles.process.generate",
++                "run_dir": None,
++                "manifest_path": None,
++                "particles_path": None,
++                "samples_path": None,
++            },
++            "bins": {
++                "r": {"start": 0.0, "stop": 10.0, "count": 5},
++                "theta": {"start": 0.0, "stop": 6.283185307179586, "count": 6},
++            },
++            "quantiles": [0.5],
++            "rules": {},
++        },
++    }
++
++
++def _make_cfg(process_name: str, run_name: str, seed: int, taxonomy: dict[str, Any]) -> dict[str, Any]:
++    return {
++        "run_name": run_name,
++        "seed": seed,
++        "schema_version": SCHEMA_VERSION,
++        "domain": {"name": DOMAIN_NAME},
++        "process": {"name": process_name},
++        "wafer_particles": _wafer_particles_cfg(taxonomy),
++    }
++
++
++def test_taxonomy_expected_rules_no_todo() -> None:
++    taxonomy = _load_taxonomy()
++    labels = taxonomy.get("labels")
++    assert isinstance(labels, list) and labels
++    for entry in labels:
++        assert isinstance(entry, dict)
++        name = str(entry.get("name") or "")
++        assert name
++        for rule in _require_rules(entry, name):
++            assert "TODO" not in rule
++        variants = entry.get("variants") or []
++        if not variants:
++            continue
++        assert isinstance(variants, list)
++        for variant in variants:
++            assert isinstance(variant, dict)
++            variant_name = str(variant.get("name") or "")
++            assert variant_name
++            for rule in _require_rules(variant, variant_name):
++                assert "TODO" not in rule
++
++
++def test_qc_metrics_include_expected_rules(tmp_path: Path) -> None:
++    taxonomy = _load_taxonomy()
++    gen_cfg = _make_cfg("wafer_particles.process.generate", "t0107_gen", seed=101, taxonomy=taxonomy)
++    gen_run = dispatch_process(cfg=gen_cfg, overrides=[], repo_root=tmp_path)
++
++    qc_cfg = _make_cfg("wafer_particles.process.qc", "t0107_qc", seed=101, taxonomy=taxonomy)
++    qc_cfg["wafer_particles"]["qc"]["input"]["run_dir"] = str(gen_run)
++    qc_run = dispatch_process(cfg=qc_cfg, overrides=[], repo_root=tmp_path)
++
++    payload = json.loads((qc_run / "metrics" / "qc.json").read_text(encoding="utf-8"))
++    label_info = payload["labels"]["random_uniform"]
++    expected_rules = _expected_rules_for_label(taxonomy, "random_uniform")
++    assert label_info["expected_rules"] == expected_rules
++    assert label_info["expected_rules"]
+
+
+thinking
+**Verifying taxonomy expected_rules and preparing tests**
+exec
+/bin/zsh -lc 'pytest -q tests/test_T0107_taxonomy_expected_rules.py' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 688ms:
+..                                                                       [100%]
+2 passed in 0.22s
+file update:
+diff --git a/conf/wafer_particles/labels/taxonomy_v1.yaml b/conf/wafer_particles/labels/taxonomy_v1.yaml
+index 1919baf08ce498b5689efba25e041180a1041576..5eee84045e08904188e3c2df0f645e0e42befda2
+--- a/conf/wafer_particles/labels/taxonomy_v1.yaml
++++ b/conf/wafer_particles/labels/taxonomy_v1.yaml
+@@ -1,119 +1,170 @@
+ version: taxonomy_v1
+ domain: wafer_particles
+ labels:
++  # ring
+   - name: ring_narrow
+     category: ring
+     expected_rules:
+-      - TODO: r variance small (narrow ring)
+-      - TODO: theta covers full 0..2pi
++      - r_std_ratio is small relative to wafer_radius (narrow ring)
++      - theta coverage spans most bins (0..2pi)
+   - name: ring_wide
+     category: ring
+     expected_rules:
+-      - TODO: r variance larger than ring_narrow
+-      - TODO: theta covers full 0..2pi
++      - r_std_ratio is larger than ring_narrow but still ring-like
++      - theta coverage spans most bins (0..2pi)
++
++  # sector
+   - name: edge_sector
+     category: sector
+     expected_rules:
+-      - TODO: theta concentrated in sector range
+-      - TODO: r near outer edge
++      - theta coverage concentrated in a sector
++      - theta mean aligned to sector center
++      - r mean near wafer edge
+     variants:
+       - name: edge_sector_right
+         params:
+           side: right
+         expected_rules:
+-          - TODO: theta near 0 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near 0 rad (right)
+       - name: edge_sector_left
+         params:
+           side: left
+         expected_rules:
+-          - TODO: theta near pi rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near pi rad (left)
+       - name: edge_sector_top
+         params:
+           side: top
+         expected_rules:
+-          - TODO: theta near pi/2 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near pi/2 rad (top)
+       - name: edge_sector_bottom
+         params:
+           side: bottom
+         expected_rules:
+-          - TODO: theta near 3pi/2 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near 3pi/2 rad (bottom)
++
++  # line
+   - name: scratch
+     category: line
+     expected_rules:
+-      - TODO: line-fit residual small
+-      - TODO: perpendicular variance small
++      - theta coverage is narrow (line-like)
++      - points lie close to a fitted line (small perpendicular spread)
+     variants:
+       - name: scratch_horizontal
+         params:
+           angle_category: horizontal
+         expected_rules:
+-          - TODO: line angle near 0 or pi
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near 0 or pi (horizontal)
+       - name: scratch_vertical
+         params:
+           angle_category: vertical
+         expected_rules:
+-          - TODO: line angle near pi/2
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near pi/2 (vertical)
+       - name: scratch_diagonal
+         params:
+           angle_category: diagonal
+         expected_rules:
+-          - TODO: line angle near pi/4
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near pi/4 (diagonal)
+       - name: scratch_diagonal_rev
+         params:
+           angle_category: diagonal_rev
+         expected_rules:
+-          - TODO: line angle near 3pi/4
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near 3pi/4 (diagonal rev)
+   - name: radial_lines
+     category: line
+     expected_rules:
+-      - TODO: multiple line angles present
+-      - TODO: points concentrated on radial lines
++      - multiple line angles are present
++      - points cluster along radial lines through the center
++      - theta coverage has multiple narrow modes
++
++  # hotspot
+   - name: hotspot
+     category: hotspot
+     expected_rules:
+-      - TODO: density peak around center point
+-      - TODO: density decays with radius from peak
++      - density peak around a center point
++      - density decays with radius from the peak
+     variants:
+       - name: hotspot_center
+         params:
+           mode: center
+         expected_rules:
+-          - TODO: peak at wafer center
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak near wafer center (low r mean ratio)
+       - name: hotspot_edge
+         params:
+           mode: edge
+         expected_rules:
+-          - TODO: peak near outer edge
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak near wafer edge (high r mean ratio)
+       - name: hotspot_random
+         params:
+           mode: random
+         expected_rules:
+-          - TODO: peak location varies per sample
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak location varies per sample
++
++  # random
+   - name: random_uniform
+     category: random
+     expected_rules:
+-      - TODO: uniform density across wafer area
++      - uniform density across wafer area
++      - theta coverage spans most bins
++      - r histogram follows area-proportional profile
+   - name: random_edge_biased
+     category: random
+     expected_rules:
+-      - TODO: density increases toward edge
++      - density increases toward edge (high r mean ratio)
++      - theta coverage spans most bins
++
++  # inhom_poisson
+   - name: inhom_poisson
+     category: inhom_poisson
+     expected_rules:
+-      - TODO: grid dispersion above uniform baseline
+-      - TODO: lambda(r,theta) variation visible in histograms
++      - grid dispersion above uniform baseline
++      - grid counts show spatial intensity variation
++      - hist_r and hist_theta show structure
++
++  # cluster
+   - name: cluster_parent_child
+     category: cluster
+     expected_rules:
+-      - TODO: NN distances shorter than CSR
+-      - TODO: grid dispersion > 1 (over-dispersion)
++      - nn mean ratio below CSR expectation
++      - grid dispersion above 1 (over-dispersion)
++      - child points cluster around parent centers
++
++  # cox
+   - name: cox_lognormal
+     category: cox
+     expected_rules:
+-      - TODO: over-dispersion in grid counts
+-      - TODO: intensity field varies across cells
++      - grid dispersion above 1 (over-dispersion)
++      - intensity field varies across cells
++
++  # composite
+   - name: composite
+     category: composite
+     expected_rules:
+-      - TODO: component mixture ratios respected
+-      - TODO: each component retains its expected pattern
++      - component mixture ratios are respected
++      - each component retains its expected pattern
++      - label proportions match config
+diff --git a/tests/test_T0107_taxonomy_expected_rules.py b/tests/test_T0107_taxonomy_expected_rules.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..925541232f228d1997b9b73e59eebf78caa5867a
+--- /dev/null
++++ b/tests/test_T0107_taxonomy_expected_rules.py
+@@ -0,0 +1,144 @@
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++ROOT = Path(__file__).resolve().parents[1]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
++from synthlab.domains.wafer_particles import DOMAIN_NAME, SCHEMA_VERSION  # noqa: E402
++from synthlab.framework.process import dispatch_process  # noqa: E402
++
++TAXONOMY_PATH = ROOT / "conf" / "wafer_particles" / "labels" / "taxonomy_v1.yaml"
++
++
++def _load_taxonomy() -> dict[str, Any]:
++    data = yaml.safe_load(TAXONOMY_PATH.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise AssertionError("taxonomy_v1.yaml must be a mapping")
++    return data
++
++
++def _require_rules(entry: dict[str, Any], name: str) -> list[str]:
++    rules = entry.get("expected_rules")
++    if not isinstance(rules, list) or not rules:
++        raise AssertionError(f"expected_rules missing for {name}")
++    return [str(rule) for rule in rules]
++
++
++def _expected_rules_for_label(taxonomy: dict[str, Any], label: str) -> list[str]:
++    labels = taxonomy.get("labels")
++    if not isinstance(labels, list):
++        return []
++    for entry in labels:
++        if not isinstance(entry, dict):
++            continue
++        if entry.get("name") == label:
++            return [str(rule) for rule in entry.get("expected_rules", [])]
++        variants = entry.get("variants") or []
++        if not isinstance(variants, list):
++            continue
++        for variant in variants:
++            if not isinstance(variant, dict):
++                continue
++            if variant.get("name") == label:
++                return [str(rule) for rule in variant.get("expected_rules", [])]
++    return []
++
++
++def _wafer_particles_cfg(taxonomy: dict[str, Any]) -> dict[str, Any]:
++    return {
++        "n_samples": 2,
++        "n_particles": 25,
++        "wafer_radius_mm": 10.0,
++        "sample_id_prefix": "sample",
++        "include_xy": False,
++        "source": "synthetic",
++        "labels": taxonomy,
++        "label_selection": {
++            "mode": "fixed",
++            "labels": ["random_uniform"],
++            "shuffle": False,
++        },
++        "patterns": {
++            "random_uniform": {
++                "name": "wafer_particles.pattern.random_uniform",
++            }
++        },
++        "size_models": {
++            "name": "wafer_particles.size_model.lognormal",
++            "mu_log": 0.0,
++            "sigma_log": 0.1,
++        },
++        "io": {"format": "csv"},
++        "qc": {
++            "input": {
++                "run_name": None,
++                "process_name": "wafer_particles.process.generate",
++                "run_dir": None,
++                "manifest_path": None,
++                "particles_path": None,
++                "samples_path": None,
++            },
++            "bins": {
++                "r": {"start": 0.0, "stop": 10.0, "count": 5},
++                "theta": {"start": 0.0, "stop": 6.283185307179586, "count": 6},
++            },
++            "quantiles": [0.5],
++            "rules": {},
++        },
++    }
++
++
++def _make_cfg(process_name: str, run_name: str, seed: int, taxonomy: dict[str, Any]) -> dict[str, Any]:
++    return {
++        "run_name": run_name,
++        "seed": seed,
++        "schema_version": SCHEMA_VERSION,
++        "domain": {"name": DOMAIN_NAME},
++        "process": {"name": process_name},
++        "wafer_particles": _wafer_particles_cfg(taxonomy),
++    }
++
++
++def test_taxonomy_expected_rules_no_todo() -> None:
++    taxonomy = _load_taxonomy()
++    labels = taxonomy.get("labels")
++    assert isinstance(labels, list) and labels
++    for entry in labels:
++        assert isinstance(entry, dict)
++        name = str(entry.get("name") or "")
++        assert name
++        for rule in _require_rules(entry, name):
++            assert "TODO" not in rule
++        variants = entry.get("variants") or []
++        if not variants:
++            continue
++        assert isinstance(variants, list)
++        for variant in variants:
++            assert isinstance(variant, dict)
++            variant_name = str(variant.get("name") or "")
++            assert variant_name
++            for rule in _require_rules(variant, variant_name):
++                assert "TODO" not in rule
++
++
++def test_qc_metrics_include_expected_rules(tmp_path: Path) -> None:
++    taxonomy = _load_taxonomy()
++    gen_cfg = _make_cfg("wafer_particles.process.generate", "t0107_gen", seed=101, taxonomy=taxonomy)
++    gen_run = dispatch_process(cfg=gen_cfg, overrides=[], repo_root=tmp_path)
++
++    qc_cfg = _make_cfg("wafer_particles.process.qc", "t0107_qc", seed=101, taxonomy=taxonomy)
++    qc_cfg["wafer_particles"]["qc"]["input"]["run_dir"] = str(gen_run)
++    qc_run = dispatch_process(cfg=qc_cfg, overrides=[], repo_root=tmp_path)
++
++    payload = json.loads((qc_run / "metrics" / "qc.json").read_text(encoding="utf-8"))
++    label_info = payload["labels"]["random_uniform"]
++    expected_rules = _expected_rules_for_label(taxonomy, "random_uniform")
++    assert label_info["expected_rules"] == expected_rules
++    assert label_info["expected_rules"]
+
+
+thinking
+**Preparing final detailed response**
+codex
+Using S20_HYDRA_CONFIG, S60_EVALUATION_QC, and S98_GOVERNANCE to keep taxonomy config aligned with QC expectations and add verification coverage.
+Expanded taxonomy expected_rules with concrete, category-grouped descriptions and added a QC test to confirm expected_rules are surfaced in metrics.
+
+- Updated `conf/wafer_particles/labels/taxonomy_v1.yaml` to replace TODOs with explicit expected features and organize labels by category/variants.
+- Added `tests/test_T0107_taxonomy_expected_rules.py` to assert expected_rules are populated (no TODOs) and propagated into QC output.
+
+Tests:
+- `pytest -q tests/test_T0107_taxonomy_expected_rules.py`
+
+Files changed: `conf/wafer_particles/labels/taxonomy_v1.yaml`, `tests/test_T0107_taxonomy_expected_rules.py`
+file update:
+diff --git a/conf/wafer_particles/labels/taxonomy_v1.yaml b/conf/wafer_particles/labels/taxonomy_v1.yaml
+index 1919baf08ce498b5689efba25e041180a1041576..5eee84045e08904188e3c2df0f645e0e42befda2
+--- a/conf/wafer_particles/labels/taxonomy_v1.yaml
++++ b/conf/wafer_particles/labels/taxonomy_v1.yaml
+@@ -1,119 +1,170 @@
+ version: taxonomy_v1
+ domain: wafer_particles
+ labels:
++  # ring
+   - name: ring_narrow
+     category: ring
+     expected_rules:
+-      - TODO: r variance small (narrow ring)
+-      - TODO: theta covers full 0..2pi
++      - r_std_ratio is small relative to wafer_radius (narrow ring)
++      - theta coverage spans most bins (0..2pi)
+   - name: ring_wide
+     category: ring
+     expected_rules:
+-      - TODO: r variance larger than ring_narrow
+-      - TODO: theta covers full 0..2pi
++      - r_std_ratio is larger than ring_narrow but still ring-like
++      - theta coverage spans most bins (0..2pi)
++
++  # sector
+   - name: edge_sector
+     category: sector
+     expected_rules:
+-      - TODO: theta concentrated in sector range
+-      - TODO: r near outer edge
++      - theta coverage concentrated in a sector
++      - theta mean aligned to sector center
++      - r mean near wafer edge
+     variants:
+       - name: edge_sector_right
+         params:
+           side: right
+         expected_rules:
+-          - TODO: theta near 0 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near 0 rad (right)
+       - name: edge_sector_left
+         params:
+           side: left
+         expected_rules:
+-          - TODO: theta near pi rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near pi rad (left)
+       - name: edge_sector_top
+         params:
+           side: top
+         expected_rules:
+-          - TODO: theta near pi/2 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near pi/2 rad (top)
+       - name: edge_sector_bottom
+         params:
+           side: bottom
+         expected_rules:
+-          - TODO: theta near 3pi/2 rad
++          - theta coverage concentrated in a sector
++          - theta mean aligned to sector center
++          - r mean near wafer edge
++          - sector center near 3pi/2 rad (bottom)
++
++  # line
+   - name: scratch
+     category: line
+     expected_rules:
+-      - TODO: line-fit residual small
+-      - TODO: perpendicular variance small
++      - theta coverage is narrow (line-like)
++      - points lie close to a fitted line (small perpendicular spread)
+     variants:
+       - name: scratch_horizontal
+         params:
+           angle_category: horizontal
+         expected_rules:
+-          - TODO: line angle near 0 or pi
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near 0 or pi (horizontal)
+       - name: scratch_vertical
+         params:
+           angle_category: vertical
+         expected_rules:
+-          - TODO: line angle near pi/2
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near pi/2 (vertical)
+       - name: scratch_diagonal
+         params:
+           angle_category: diagonal
+         expected_rules:
+-          - TODO: line angle near pi/4
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near pi/4 (diagonal)
+       - name: scratch_diagonal_rev
+         params:
+           angle_category: diagonal_rev
+         expected_rules:
+-          - TODO: line angle near 3pi/4
++          - theta coverage is narrow (line-like)
++          - points lie close to a fitted line (small perpendicular spread)
++          - dominant line angle near 3pi/4 (diagonal rev)
+   - name: radial_lines
+     category: line
+     expected_rules:
+-      - TODO: multiple line angles present
+-      - TODO: points concentrated on radial lines
++      - multiple line angles are present
++      - points cluster along radial lines through the center
++      - theta coverage has multiple narrow modes
++
++  # hotspot
+   - name: hotspot
+     category: hotspot
+     expected_rules:
+-      - TODO: density peak around center point
+-      - TODO: density decays with radius from peak
++      - density peak around a center point
++      - density decays with radius from the peak
+     variants:
+       - name: hotspot_center
+         params:
+           mode: center
+         expected_rules:
+-          - TODO: peak at wafer center
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak near wafer center (low r mean ratio)
+       - name: hotspot_edge
+         params:
+           mode: edge
+         expected_rules:
+-          - TODO: peak near outer edge
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak near wafer edge (high r mean ratio)
+       - name: hotspot_random
+         params:
+           mode: random
+         expected_rules:
+-          - TODO: peak location varies per sample
++          - density peak around a center point
++          - density decays with radius from the peak
++          - peak location varies per sample
++
++  # random
+   - name: random_uniform
+     category: random
+     expected_rules:
+-      - TODO: uniform density across wafer area
++      - uniform density across wafer area
++      - theta coverage spans most bins
++      - r histogram follows area-proportional profile
+   - name: random_edge_biased
+     category: random
+     expected_rules:
+-      - TODO: density increases toward edge
++      - density increases toward edge (high r mean ratio)
++      - theta coverage spans most bins
++
++  # inhom_poisson
+   - name: inhom_poisson
+     category: inhom_poisson
+     expected_rules:
+-      - TODO: grid dispersion above uniform baseline
+-      - TODO: lambda(r,theta) variation visible in histograms
++      - grid dispersion above uniform baseline
++      - grid counts show spatial intensity variation
++      - hist_r and hist_theta show structure
++
++  # cluster
+   - name: cluster_parent_child
+     category: cluster
+     expected_rules:
+-      - TODO: NN distances shorter than CSR
+-      - TODO: grid dispersion > 1 (over-dispersion)
++      - nn mean ratio below CSR expectation
++      - grid dispersion above 1 (over-dispersion)
++      - child points cluster around parent centers
++
++  # cox
+   - name: cox_lognormal
+     category: cox
+     expected_rules:
+-      - TODO: over-dispersion in grid counts
+-      - TODO: intensity field varies across cells
++      - grid dispersion above 1 (over-dispersion)
++      - intensity field varies across cells
++
++  # composite
+   - name: composite
+     category: composite
+     expected_rules:
+-      - TODO: component mixture ratios respected
+-      - TODO: each component retains its expected pattern
++      - component mixture ratios are respected
++      - each component retains its expected pattern
++      - label proportions match config
+diff --git a/tests/test_T0107_taxonomy_expected_rules.py b/tests/test_T0107_taxonomy_expected_rules.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..925541232f228d1997b9b73e59eebf78caa5867a
+--- /dev/null
++++ b/tests/test_T0107_taxonomy_expected_rules.py
+@@ -0,0 +1,144 @@
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++from typing import Any
++
++import yaml
++
++ROOT = Path(__file__).resolve().parents[1]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
++from synthlab.domains.wafer_particles import DOMAIN_NAME, SCHEMA_VERSION  # noqa: E402
++from synthlab.framework.process import dispatch_process  # noqa: E402
++
++TAXONOMY_PATH = ROOT / "conf" / "wafer_particles" / "labels" / "taxonomy_v1.yaml"
++
++
++def _load_taxonomy() -> dict[str, Any]:
++    data = yaml.safe_load(TAXONOMY_PATH.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise AssertionError("taxonomy_v1.yaml must be a mapping")
++    return data
++
++
++def _require_rules(entry: dict[str, Any], name: str) -> list[str]:
++    rules = entry.get("expected_rules")
++    if not isinstance(rules, list) or not rules:
++        raise AssertionError(f"expected_rules missing for {name}")
++    return [str(rule) for rule in rules]
++
++
++def _expected_rules_for_label(taxonomy: dict[str, Any], label: str) -> list[str]:
++    labels = taxonomy.get("labels")
++    if not isinstance(labels, list):
++        return []
++    for entry in labels:
++        if not isinstance(entry, dict):
++            continue
++        if entry.get("name") == label:
++            return [str(rule) for rule in entry.get("expected_rules", [])]
++        variants = entry.get("variants") or []
++        if not isinstance(variants, list):
++            continue
++        for variant in variants:
++            if not isinstance(variant, dict):
++                continue
++            if variant.get("name") == label:
++                return [str(rule) for rule in variant.get("expected_rules", [])]
++    return []
++
++
++def _wafer_particles_cfg(taxonomy: dict[str, Any]) -> dict[str, Any]:
++    return {
++        "n_samples": 2,
++        "n_particles": 25,
++        "wafer_radius_mm": 10.0,
++        "sample_id_prefix": "sample",
++        "include_xy": False,
++        "source": "synthetic",
++        "labels": taxonomy,
++        "label_selection": {
++            "mode": "fixed",
++            "labels": ["random_uniform"],
++            "shuffle": False,
++        },
++        "patterns": {
++            "random_uniform": {
++                "name": "wafer_particles.pattern.random_uniform",
++            }
++        },
++        "size_models": {
++            "name": "wafer_particles.size_model.lognormal",
++            "mu_log": 0.0,
++            "sigma_log": 0.1,
++        },
++        "io": {"format": "csv"},
++        "qc": {
++            "input": {
++                "run_name": None,
++                "process_name": "wafer_particles.process.generate",
++                "run_dir": None,
++                "manifest_path": None,
++                "particles_path": None,
++                "samples_path": None,
++            },
++            "bins": {
++                "r": {"start": 0.0, "stop": 10.0, "count": 5},
++                "theta": {"start": 0.0, "stop": 6.283185307179586, "count": 6},
++            },
++            "quantiles": [0.5],
++            "rules": {},
++        },
++    }
++
++
++def _make_cfg(process_name: str, run_name: str, seed: int, taxonomy: dict[str, Any]) -> dict[str, Any]:
++    return {
++        "run_name": run_name,
++        "seed": seed,
++        "schema_version": SCHEMA_VERSION,
++        "domain": {"name": DOMAIN_NAME},
++        "process": {"name": process_name},
++        "wafer_particles": _wafer_particles_cfg(taxonomy),
++    }
++
++
++def test_taxonomy_expected_rules_no_todo() -> None:
++    taxonomy = _load_taxonomy()
++    labels = taxonomy.get("labels")
++    assert isinstance(labels, list) and labels
++    for entry in labels:
++        assert isinstance(entry, dict)
++        name = str(entry.get("name") or "")
++        assert name
++        for rule in _require_rules(entry, name):
++            assert "TODO" not in rule
++        variants = entry.get("variants") or []
++        if not variants:
++            continue
++        assert isinstance(variants, list)
++        for variant in variants:
++            assert isinstance(variant, dict)
++            variant_name = str(variant.get("name") or "")
++            assert variant_name
++            for rule in _require_rules(variant, variant_name):
++                assert "TODO" not in rule
++
++
++def test_qc_metrics_include_expected_rules(tmp_path: Path) -> None:
++    taxonomy = _load_taxonomy()
++    gen_cfg = _make_cfg("wafer_particles.process.generate", "t0107_gen", seed=101, taxonomy=taxonomy)
++    gen_run = dispatch_process(cfg=gen_cfg, overrides=[], repo_root=tmp_path)
++
++    qc_cfg = _make_cfg("wafer_particles.process.qc", "t0107_qc", seed=101, taxonomy=taxonomy)
++    qc_cfg["wafer_particles"]["qc"]["input"]["run_dir"] = str(gen_run)
++    qc_run = dispatch_process(cfg=qc_cfg, overrides=[], repo_root=tmp_path)
++
++    payload = json.loads((qc_run / "metrics" / "qc.json").read_text(encoding="utf-8"))
++    label_info = payload["labels"]["random_uniform"]
++    expected_rules = _expected_rules_for_label(taxonomy, "random_uniform")
++    assert label_info["expected_rules"] == expected_rules
++    assert label_info["expected_rules"]
+
+tokens used
+99,300
+Using S20_HYDRA_CONFIG, S60_EVALUATION_QC, and S98_GOVERNANCE to keep taxonomy config aligned with QC expectations and add verification coverage.
+Expanded taxonomy expected_rules with concrete, category-grouped descriptions and added a QC test to confirm expected_rules are surfaced in metrics.
+
+- Updated `conf/wafer_particles/labels/taxonomy_v1.yaml` to replace TODOs with explicit expected features and organize labels by category/variants.
+- Added `tests/test_T0107_taxonomy_expected_rules.py` to assert expected_rules are populated (no TODOs) and propagated into QC output.
+
+Tests:
+- `pytest -q tests/test_T0107_taxonomy_expected_rules.py`
+
+Files changed: `conf/wafer_particles/labels/taxonomy_v1.yaml`, `tests/test_T0107_taxonomy_expected_rules.py`

@@ -1,0 +1,19 @@
+composite_ring_hotspot_center:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.composite
+  n_particles: 220
+  wafer_radius_mm: 150.0
+  components:
+    - pattern: wafer_particles.pattern.ring_narrow
+      weight: 0.65
+      label: ring
+      cfg:
+        radius_ratio: 0.7
+        width_ratio: 0.03
+    - pattern: wafer_particles.pattern.hotspot
+      weight: 0.35
+      label: hotspot_center
+      cfg:
+        mode: center
+        sigma_ratio: 0.04

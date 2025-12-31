@@ -1,0 +1,114 @@
+[
+  {
+    "id": "T0104",
+    "priority": "P0",
+    "status": "todo",
+    "title": "下流学習モデル実装（ベースライン分類器）",
+    "path": "work/tasks/T0104_baseline_model_train_eval.md",
+    "skills": [
+      "S40",
+      "S60",
+      "S50",
+      "S30"
+    ],
+    "contracts": [
+      "docs/10_PROCESS_CATALOG.md",
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/11_PLUGIN_REGISTRY.md"
+    ],
+    "depends_on": [
+      "T0102",
+      "T0103"
+    ]
+  },
+  {
+    "id": "T0105",
+    "priority": "P1",
+    "status": "todo",
+    "title": "パターン生成バリエーション拡張（任意角度セクタ/リング＋ホットスポット合成）",
+    "path": "work/tasks/T0105_sector_custom_and_composite.md",
+    "skills": [
+      "S30",
+      "S20",
+      "S70",
+      "S98"
+    ],
+    "contracts": [
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/00_INVARIANTS.md",
+      "docs/09_EVALUATION_PROTOCOL.md"
+    ],
+    "depends_on": [
+      "T0005",
+      "T0007",
+      "T0010"
+    ]
+  },
+  {
+    "id": "T0106",
+    "priority": "P1",
+    "status": "todo",
+    "title": "複雑な物理ノイズ導入（位置ジッタ・バックグラウンドノイズ）",
+    "path": "work/tasks/T0106_noise_jitter_background.md",
+    "skills": [
+      "S30",
+      "S20",
+      "S60",
+      "S98"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/09_EVALUATION_PROTOCOL.md"
+    ],
+    "depends_on": [
+      "T0007",
+      "T0004"
+    ]
+  },
+  {
+    "id": "T0107",
+    "priority": "P1",
+    "status": "todo",
+    "title": "タクソノミー拡張と期待特徴ルール整備",
+    "path": "work/tasks/T0107_taxonomy_expected_rules.md",
+    "skills": [
+      "S20",
+      "S60",
+      "S98"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/00_INVARIANTS.md"
+    ],
+    "depends_on": [
+      "T0008",
+      "T0002"
+    ]
+  },
+  {
+    "id": "T0108",
+    "priority": "P1",
+    "status": "todo",
+    "title": "実測データ比較パイプライン実装",
+    "path": "work/tasks/T0108_compare_real_pipeline.md",
+    "skills": [
+      "S40",
+      "S60",
+      "S95",
+      "S50"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/05_SECURITY_SECRETS.md",
+      "docs/10_PROCESS_CATALOG.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0008",
+      "T0003"
+    ]
+  }
+]

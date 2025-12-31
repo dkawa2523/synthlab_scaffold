@@ -1,0 +1,23 @@
+C10_Hotspot_Iso:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.C10_Hotspot_Iso
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  mode: random
+  sigma_ratio: 0.05
+  center_radius_ratio: 0.7
+  center_angle: random
+  param_space:
+    sigma_ratio:
+      dist: uniform
+      min: 0.02
+      max: 0.12
+    center_radius_ratio:
+      dist: uniform
+      min: 0.0
+      max: 0.9
+    center_angle_rad:
+      dist: uniform
+      min: 0.0
+      max: 6.283185307179586

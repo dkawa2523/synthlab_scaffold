@@ -1,0 +1,23 @@
+C14_EdgeSource_Spray:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.C14_EdgeSource_Spray
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  angle_center: random
+  angle_width_deg: 15.0
+  radial_scale_norm: 0.05
+  burst_angle_jitter_deg: 4.0
+  param_space:
+    angle_center_rad:
+      dist: uniform
+      min: 0.0
+      max: 6.283185307179586
+    angle_width_deg:
+      dist: uniform
+      min: 6.0
+      max: 30.0
+    radial_scale_norm:
+      dist: uniform
+      min: 0.01
+      max: 0.15

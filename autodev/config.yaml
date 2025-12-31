@@ -1,0 +1,32 @@
+# autodev/config.yaml (v2.2)
+# オーケストレーター設定。Codexの承認停止を回避しつつ、無限リトライを避ける。
+codex:
+  # codex実行コマンド（必要なら "npx codex" 等に変更）
+  executable: "codex"
+
+  # codex exec のデフォルト動作：編集できるようにする（read-only回避）
+  full_auto: true
+
+  # approvals で止めない
+  ask_for_approval: "never"
+
+  # sandbox（安全寄りの既定）
+  sandbox: "workspace-write"
+
+  # どうしても詰まる場合のみ true（危険）
+  use_yolo: false
+
+loop:
+  max_attempts_per_task: 12
+  sleep_seconds_between_attempts: 0.5
+
+policy:
+  enforce_no_questions: true
+  # 失敗が続いたら「診断モード」を強くする
+  escalate_after_attempts: 3
+
+paths:
+  runs_dir: "runs"
+  logs_dir: "autodev/logs"
+  state_file: "autodev/state.json"
+  queue_file: "work/queue.json"

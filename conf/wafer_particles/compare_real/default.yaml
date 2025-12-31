@@ -1,0 +1,15 @@
+real:
+  run_name: null
+  process_name: wafer_particles.process.generate
+  run_dir: null
+  manifest_path: null
+  particles_path: ${oc.env:REAL_PARTICLES_PATH,null}
+  samples_path: ${oc.env:REAL_SAMPLES_PATH,null}
+synthetic:
+  run_name: null
+  process_name: wafer_particles.process.generate
+  run_dir: null
+  manifest_path: null
+  particles_path: null
+  samples_path: null
+  qc_metrics_path: null

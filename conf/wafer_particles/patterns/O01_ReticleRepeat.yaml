@@ -1,0 +1,11 @@
+# Optional: periodic reticle/stepper repeats or measurement artifacts (not pure deposition).
+# Keep disabled by default; enable only for robustness testing.
+O01_ReticleRepeat:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: false
+  name: wafer_particles.pattern.O01_ReticleRepeat
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  pitch_ratio: 0.2
+  tile_ratio: 0.75
+  phase_mode: random

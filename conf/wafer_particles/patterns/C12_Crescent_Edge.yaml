@@ -1,0 +1,24 @@
+C12_Crescent_Edge:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.C12_Crescent_Edge
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  outer_radius_norm: 1.0
+  inner_radius_ratio: 0.75
+  offset_ratio: 0.3
+  angle_center_deg: 0.0
+  edge_margin_norm: 0.02
+  param_space:
+    inner_radius_ratio:
+      dist: uniform
+      min: 0.6
+      max: 0.9
+    offset_ratio:
+      dist: uniform
+      min: 0.1
+      max: 0.5
+    angle_center_rad:
+      dist: uniform
+      min: 0.0
+      max: 6.283185307179586

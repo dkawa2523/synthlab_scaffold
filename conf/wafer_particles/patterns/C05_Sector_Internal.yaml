@@ -1,0 +1,42 @@
+C05_Sector_Internal:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.C05_Sector_Internal
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  angle_width_deg: 60.0
+  r_inner_ratio: 0.2
+  r_outer_ratio: 0.75
+  edge_margin_norm: 0.05
+  theta_vonmises_kappa: 2.5
+  radial_beta_alpha: 2.0
+  radial_beta_beta: 2.0
+  param_space:
+    angle_center_rad:
+      dist: uniform
+      min: 0.0
+      max: 6.283185307179586
+    angle_width_deg:
+      dist: uniform
+      min: 30.0
+      max: 120.0
+    r_inner_ratio:
+      dist: uniform
+      min: 0.05
+      max: 0.4
+    r_outer_ratio:
+      dist: uniform
+      min: 0.5
+      max: 0.85
+    theta_vonmises_kappa:
+      dist: uniform
+      min: 0.2
+      max: 8.0
+    radial_beta_alpha:
+      dist: uniform
+      min: 1.2
+      max: 4.0
+    radial_beta_beta:
+      dist: uniform
+      min: 1.2
+      max: 4.0

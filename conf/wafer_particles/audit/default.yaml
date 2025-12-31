@@ -1,0 +1,19 @@
+input:
+  run_name: null
+  process_name: wafer_particles.process.generate
+  run_dir: null
+  manifest_path: null
+  particles_path: null
+  samples_path: null
+ranges:
+  r_mm:
+    min: 0.0
+    max: 150.0
+  theta_rad:
+    min: 0.0
+    max: 6.283185307179586
+  size_um:
+    min: 0.0
+    min_exclusive: true
+report:
+  max_examples: 5

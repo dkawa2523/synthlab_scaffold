@@ -1,0 +1,39 @@
+real_input:
+  run_name: null
+  process_name: wafer_particles.process.generate
+  run_dir: null
+  manifest_path: null
+  particles_path: ${oc.env:REAL_PARTICLES_PATH,null}
+  samples_path: ${oc.env:REAL_SAMPLES_PATH,null}
+  qc_metrics_path: ${oc.env:REAL_QC_METRICS_PATH,null}
+pattern_set: null
+search_budget: 6
+allow_composite_search: false
+composite_k: 2
+threshold_new_pattern: 0.3
+top_k: 3
+candidate_samples: 1
+max_particles: null
+bins:
+  r:
+    start: 0.0
+    stop: 150.0
+    count: 30
+  theta:
+    start: 0.0
+    stop: 6.283185307179586
+    count: 36
+  size:
+    start: 0.0
+    stop: 10.0
+    count: 20
+score:
+  epsilon: 1e-9
+  weights:
+    hist_r_l1: 1.0
+    hist_theta_l1: 1.0
+    hist_size_l1: 1.0
+    density_l1: 0.0
+composite:
+  top_k: 2
+  max_combinations: 50

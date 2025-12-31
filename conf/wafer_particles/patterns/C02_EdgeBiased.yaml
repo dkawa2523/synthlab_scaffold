@@ -1,0 +1,12 @@
+C02_EdgeBiased:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.C02_EdgeBiased
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  edge_bias: 2.0
+  param_space:
+    edge_bias:
+      dist: uniform
+      min: 1.2
+      max: 4.0

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+from copy import deepcopy
 from dataclasses import dataclass
 from math import atan2, cos, log, pi, sin, sqrt, tau
 from pathlib import Path
@@ -69,6 +70,15 @@ class QcProcess(BaseProcess):
             paths.input_config,
             particles,
         )
+        expectations = _resolve_expectations(qc_cfg)
+        label_defs = _resolve_label_defs_from_input(paths.input_config)
+        label_selection_cfg = _resolve_label_selection(paths.input_config)
+        expected_label_counts = _resolve_expected_label_counts(
+            len(samples),
+            label_selection_cfg,
+            label_defs,
+        )
+        expected_n_particles = _resolve_expected_n_particles(label_defs, paths.input_config)
 
         label_stats, label_rows, summary = _compute_label_stats(
             particles,
@@ -80,6 +90,10 @@ class QcProcess(BaseProcess):
             qc_cfg,
             wafer_radius_mm,
             spatial_cfg,
+            expected_label_counts=expected_label_counts,
+            expected_n_particles=expected_n_particles,
+            label_ratio_tolerance=expectations["label_ratio_tolerance"],
+            n_particles_mean_tolerance=expectations["n_particles_mean_tolerance"],
         )
 
         payload = {
@@ -131,6 +145,248 @@ def _resolve_quantiles(value: Any) -> list[float]:
     if not isinstance(value, Iterable) or isinstance(value, (str, bytes)):
         raise ValueError("quantiles must be a list")
     return [float(item) for item in value]
+
+
+def _resolve_expectations(cfg: Mapping[str, Any]) -> dict[str, float]:
+    expectations_cfg = cfg.get("expectations")
+    if not isinstance(expectations_cfg, Mapping):
+        expectations_cfg = {}
+    label_ratio_tolerance = float(expectations_cfg.get("label_ratio_tolerance", 0.03))
+    n_particles_mean_tolerance = float(expectations_cfg.get("n_particles_mean_tolerance", 0.03))
+    if label_ratio_tolerance < 0:
+        raise ValueError("expectations.label_ratio_tolerance must be non-negative")
+    if n_particles_mean_tolerance < 0:
+        raise ValueError("expectations.n_particles_mean_tolerance must be non-negative")
+    return {
+        "label_ratio_tolerance": label_ratio_tolerance,
+        "n_particles_mean_tolerance": n_particles_mean_tolerance,
+    }
+
+
+def _resolve_label_selection(cfg: Mapping[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(cfg, Mapping):
+        return {}
+    wp_cfg = cfg.get("wafer_particles")
+    if not isinstance(wp_cfg, Mapping):
+        return {}
+    selection = wp_cfg.get("label_selection")
+    if not isinstance(selection, Mapping):
+        return {}
+    return dict(selection)
+
+
+def _resolve_label_defs_from_input(cfg: Mapping[str, Any] | None) -> dict[str, dict[str, Any]]:
+    if not isinstance(cfg, Mapping):
+        return {}
+    wp_cfg = cfg.get("wafer_particles")
+    if not isinstance(wp_cfg, Mapping):
+        return {}
+    patterns_cfg = wp_cfg.get("patterns")
+    if not isinstance(patterns_cfg, Mapping):
+        return {}
+    patterns = {str(label): deepcopy(dict(value)) for label, value in patterns_cfg.items() if isinstance(value, Mapping)}
+    if not patterns:
+        return {}
+    labels_cfg = wp_cfg.get("labels")
+    label_defs: dict[str, dict[str, Any]] = {}
+    if isinstance(labels_cfg, Mapping) and "labels" in labels_cfg:
+        entries = labels_cfg.get("labels")
+        if isinstance(entries, list):
+            for entry in entries:
+                if not isinstance(entry, Mapping):
+                    continue
+                base_name = entry.get("name")
+                if not base_name:
+                    continue
+                base_name = str(base_name)
+                base_cfg = patterns.get(base_name)
+                if base_cfg is None:
+                    continue
+                label_defs[base_name] = deepcopy(base_cfg)
+                variants = entry.get("variants") or []
+                if not isinstance(variants, list):
+                    continue
+                for variant in variants:
+                    if not isinstance(variant, Mapping):
+                        continue
+                    variant_name = variant.get("name")
+                    if not variant_name:
+                        continue
+                    params = variant.get("params") or {}
+                    if not isinstance(params, Mapping):
+                        continue
+                    merged_cfg = deepcopy(base_cfg)
+                    merged_cfg.update(params)
+                    label_defs[str(variant_name)] = merged_cfg
+        for label, cfg in patterns.items():
+            if label not in label_defs:
+                label_defs[label] = deepcopy(cfg)
+    else:
+        label_defs = {label: deepcopy(cfg) for label, cfg in patterns.items()}
+    return label_defs
+
+
+def _resolve_expected_label_counts(
+    n_samples: int,
+    selection_cfg: Mapping[str, Any],
+    label_defs: Mapping[str, Mapping[str, Any]],
+) -> dict[str, int] | None:
+    if n_samples <= 0 or not selection_cfg:
+        return None
+    mode = str(selection_cfg.get("mode", "ratio")).lower()
+    available = list(label_defs.keys())
+    if mode == "fixed":
+        labels = selection_cfg.get("labels")
+        if not isinstance(labels, list) or not labels:
+            return None
+        chosen = [str(label) for label in labels]
+        counts: dict[str, int] = {}
+        for idx in range(n_samples):
+            label = chosen[idx % len(chosen)]
+            counts[label] = counts.get(label, 0) + 1
+        return counts
+    if mode == "random":
+        return None
+    if mode != "ratio":
+        return None
+    ratios = selection_cfg.get("ratios") or {}
+    if not isinstance(ratios, Mapping):
+        return None
+    ratios_map = {str(label): float(weight) for label, weight in ratios.items()}
+    if available:
+        ratios_map = {label: weight for label, weight in ratios_map.items() if label in label_defs}
+    if not ratios_map:
+        labels = selection_cfg.get("labels")
+        labels = [str(label) for label in labels] if isinstance(labels, list) and labels else available
+        if not labels:
+            return None
+        ratios_map = {label: 1.0 for label in labels}
+    labels = list(ratios_map.keys())
+    weights = [float(ratios_map[label]) for label in labels]
+    counts = _allocate_counts(n_samples, weights)
+    return {label: count for label, count in zip(labels, counts)}
+
+
+def _allocate_counts(total: int, weights: list[float]) -> list[int]:
+    if total <= 0:
+        return [0 for _ in weights]
+    if not weights:
+        return []
+    if any(weight < 0 for weight in weights):
+        raise ValueError("label ratios must be non-negative")
+    total_weight = sum(weights)
+    if total_weight <= 0:
+        raise ValueError("label ratios must sum to > 0")
+    raw = [total * weight / total_weight for weight in weights]
+    counts = [int(value) for value in raw]
+    remainder = total - sum(counts)
+    if remainder <= 0:
+        return counts
+    fractions = [value - int(value) for value in raw]
+    order = sorted(range(len(fractions)), key=lambda idx: (-fractions[idx], idx))
+    for idx in range(remainder):
+        counts[order[idx]] += 1
+    return counts
+
+
+def _resolve_expected_n_particles(
+    label_defs: Mapping[str, Mapping[str, Any]],
+    cfg: Mapping[str, Any] | None,
+) -> dict[str, dict[str, Any]]:
+    if not isinstance(cfg, Mapping):
+        return {}
+    wp_cfg = cfg.get("wafer_particles")
+    if not isinstance(wp_cfg, Mapping):
+        return {}
+    global_dist = wp_cfg.get("n_particles_distribution")
+    expected: dict[str, dict[str, Any]] = {}
+    for label, pattern_cfg in label_defs.items():
+        dist_cfg: Any = None
+        if isinstance(pattern_cfg, Mapping) and "n_particles_distribution" in pattern_cfg:
+            dist_cfg = pattern_cfg.get("n_particles_distribution")
+        elif global_dist is not None:
+            dist_cfg = global_dist
+        if dist_cfg is None:
+            continue
+        expected[label] = _normalize_n_particles_distribution(dist_cfg)
+    return expected
+
+
+def _normalize_n_particles_distribution(dist_cfg: Any) -> dict[str, Any]:
+    if isinstance(dist_cfg, Mapping):
+        cfg = dict(dist_cfg)
+        dist_type = str(cfg.get("type") or cfg.get("mode") or "").lower()
+        if not dist_type:
+            if _has_range_keys(cfg):
+                dist_type = "range"
+            elif _has_keys(cfg, ("mean", "mu", "lambda")):
+                dist_type = "poisson"
+            elif _has_keys(cfg, ("n", "p")):
+                dist_type = "negative_binomial"
+            elif _has_keys(cfg, ("value", "count")):
+                dist_type = "fixed"
+        if dist_type in {"fixed", "value"} or not dist_type:
+            value = cfg.get("value", cfg.get("count", cfg.get("n_particles")))
+            if value is None:
+                raise ValueError("n_particles_distribution.value is required")
+            value = float(value)
+            return {"type": "fixed", "mean": value, "min": value, "max": value, "value": value}
+        if dist_type in {"range", "uniform"}:
+            min_value, max_value = _distribution_range_bounds(cfg, "n_particles_distribution")
+            mean = (min_value + max_value) / 2.0
+            return {"type": "range", "mean": mean, "min": min_value, "max": max_value}
+        if dist_type == "poisson":
+            mean = cfg.get("mean", cfg.get("mu", cfg.get("lambda")))
+            if mean is None:
+                raise ValueError("n_particles_distribution.mean is required")
+            mean = float(mean)
+            return {"type": "poisson", "mean": mean}
+        if dist_type in {"negative_binomial", "neg_binomial", "nb"}:
+            mean = cfg.get("mean")
+            dispersion = cfg.get("dispersion", cfg.get("r", cfg.get("k")))
+            if mean is None or dispersion is None:
+                if cfg.get("n") is not None and cfg.get("p") is not None:
+                    dispersion = float(cfg["n"])
+                    p_value = float(cfg["p"])
+                    if dispersion <= 0 or p_value <= 0 or p_value >= 1:
+                        raise ValueError("n_particles_distribution.n must be positive and p must be in (0,1)")
+                    mean = dispersion * (1.0 - p_value) / p_value
+                else:
+                    raise ValueError("negative_binomial requires mean+dispersion or n+p")
+            mean = float(mean)
+            return {"type": "negative_binomial", "mean": mean, "dispersion": float(dispersion)}
+        raise ValueError(f"unsupported n_particles_distribution type: {dist_type}")
+    if isinstance(dist_cfg, (list, tuple)):
+        if len(dist_cfg) != 2:
+            raise ValueError("n_particles_distribution range must have 2 values")
+        min_value = float(dist_cfg[0])
+        max_value = float(dist_cfg[1])
+        if min_value > max_value:
+            raise ValueError("n_particles_distribution range must satisfy min<=max")
+        mean = (min_value + max_value) / 2.0
+        return {"type": "range", "mean": mean, "min": min_value, "max": max_value}
+    value = float(dist_cfg)
+    return {"type": "fixed", "mean": value, "min": value, "max": value, "value": value}
+
+
+def _distribution_range_bounds(cfg: Mapping[str, Any], name: str) -> tuple[float, float]:
+    min_value = cfg.get("min", cfg.get("low", cfg.get("start")))
+    max_value = cfg.get("max", cfg.get("high", cfg.get("stop")))
+    if min_value is None or max_value is None:
+        raise ValueError(f"{name} range requires min/max")
+    min_value = float(min_value)
+    max_value = float(max_value)
+    if min_value > max_value:
+        raise ValueError(f"{name} range must satisfy min<=max")
+    return min_value, max_value
+
+
+def _has_range_keys(cfg: Mapping[str, Any]) -> bool:
+    return any(key in cfg for key in ("min", "max", "low", "high", "start", "stop"))
+
+
+def _has_keys(cfg: Mapping[str, Any], keys: tuple[str, ...]) -> bool:
+    return any(key in cfg and cfg.get(key) is not None for key in keys)
 
 
 def _resolve_edges(cfg: Any, name: str) -> list[float]:
@@ -345,11 +601,20 @@ def _parse_taxonomy(cfg: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
         if not base_name:
             continue
         base_name = str(base_name)
+        base_coarse = entry.get("coarse")
         base_category = entry.get("category")
+        category_value = base_coarse if base_coarse is not None else base_category
         base_rules = _ensure_list(entry.get("expected_rules"))
         base_params = _ensure_mapping(entry.get("params"))
+        base_family = entry.get("family")
+        base_description = entry.get("description")
+        base_generator = entry.get("generator")
         label_map[base_name] = {
-            "category": str(base_category) if base_category else None,
+            "category": str(category_value) if category_value is not None else None,
+            "coarse": str(category_value) if category_value is not None else None,
+            "family": str(base_family) if base_family is not None else None,
+            "description": str(base_description) if base_description is not None else None,
+            "generator": str(base_generator) if base_generator is not None else None,
             "expected_rules": base_rules,
             "params": base_params,
         }
@@ -366,8 +631,26 @@ def _parse_taxonomy(cfg: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
             expected_rules = _ensure_list(variant.get("expected_rules")) or base_rules
             merged_params = dict(base_params)
             merged_params.update(params)
+            variant_coarse = variant.get("coarse")
+            if variant_coarse is None:
+                variant_coarse = variant.get("category")
+            if variant_coarse is None:
+                variant_coarse = category_value
+            variant_family = variant.get("family")
+            if variant_family is None:
+                variant_family = base_family
+            variant_description = variant.get("description")
+            if variant_description is None:
+                variant_description = base_description
+            variant_generator = variant.get("generator")
+            if variant_generator is None:
+                variant_generator = base_generator
             label_map[str(name)] = {
-                "category": str(base_category) if base_category else None,
+                "category": str(variant_coarse) if variant_coarse is not None else None,
+                "coarse": str(variant_coarse) if variant_coarse is not None else None,
+                "family": str(variant_family) if variant_family is not None else None,
+                "description": str(variant_description) if variant_description is not None else None,
+                "generator": str(variant_generator) if variant_generator is not None else None,
                 "expected_rules": expected_rules,
                 "params": merged_params,
             }
@@ -425,6 +708,11 @@ def _compute_label_stats(
     qc_cfg: Mapping[str, Any],
     wafer_radius_mm: float | None,
     spatial_cfg: Mapping[str, Any],
+    *,
+    expected_label_counts: Mapping[str, int] | None,
+    expected_n_particles: Mapping[str, Mapping[str, Any]] | None,
+    label_ratio_tolerance: float,
+    n_particles_mean_tolerance: float,
 ) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
     grouped: dict[str, dict[str, list[float]]] = {}
     coords_by_label_sample: dict[str, dict[str, list[tuple[float, float]]]] = {}
@@ -458,6 +746,9 @@ def _compute_label_stats(
     total_particles = len(particles)
     total_samples = len(samples)
     violations_total = 0
+    label_ratio_violations = 0
+    n_particles_violations = 0
+    expected_total = sum(expected_label_counts.values()) if expected_label_counts else 0
 
     for label in labels:
         values = grouped.get(label, {"r": [], "theta": [], "size": []})
@@ -496,6 +787,22 @@ def _compute_label_stats(
             rules_cfg=_read_mapping(qc_cfg.get("rules"), "wafer_particles.qc.rules"),
         )
         violations_total += len(violations)
+        ratio_check = _build_ratio_check(
+            expected_count=expected_label_counts.get(label, 0) if expected_label_counts else None,
+            expected_total=expected_total,
+            actual_count=n_samples,
+            actual_total=total_samples,
+            tolerance=label_ratio_tolerance,
+        )
+        if ratio_check.get("within_tolerance") is False:
+            label_ratio_violations += 1
+        n_particles_check = _check_n_particles_distribution(
+            expected_n_particles.get(label) if expected_n_particles else None,
+            n_particles_stats,
+            n_particles_mean_tolerance,
+        )
+        if n_particles_check.get("within_tolerance") is False:
+            n_particles_violations += 1
 
         label_stats[label] = {
             "category": meta.get("category"),
@@ -513,6 +820,9 @@ def _compute_label_stats(
             "hist_r": {"counts": hist_r, "out_of_range": r_out},
             "hist_theta": {"counts": hist_theta, "out_of_range": theta_out},
             "rule_checks": rule_checks,
+            "label_ratio": ratio_check,
+            "n_particles_expectation": n_particles_check.get("expected"),
+            "n_particles_check": n_particles_check,
         }
 
         label_rows.append(
@@ -520,9 +830,26 @@ def _compute_label_stats(
                 "label": label,
                 "category": meta.get("category") or "",
                 "n_samples": n_samples,
+                "expected_ratio": ratio_check.get("expected"),
+                "actual_ratio": ratio_check.get("actual"),
+                "ratio_delta": ratio_check.get("delta"),
+                "ratio_within_tolerance": ratio_check.get("within_tolerance"),
                 "n_particles": n_particles,
                 "n_particles_mean": n_particles_stats.get("mean"),
                 "n_particles_std": n_particles_stats.get("std"),
+                "n_particles_min": n_particles_stats.get("min"),
+                "n_particles_max": n_particles_stats.get("max"),
+                "expected_n_particles_mean": n_particles_check.get("expected", {}).get("mean")
+                if n_particles_check.get("expected")
+                else None,
+                "expected_n_particles_min": n_particles_check.get("expected", {}).get("min")
+                if n_particles_check.get("expected")
+                else None,
+                "expected_n_particles_max": n_particles_check.get("expected", {}).get("max")
+                if n_particles_check.get("expected")
+                else None,
+                "n_particles_mean_delta": n_particles_check.get("delta"),
+                "n_particles_within_tolerance": n_particles_check.get("within_tolerance"),
                 "size_mean": size_stats.get("mean"),
                 "size_std": size_stats.get("std"),
                 "r_mean": r_stats.get("mean"),
@@ -539,6 +866,10 @@ def _compute_label_stats(
         "total_particles": total_particles,
         "total_samples": total_samples,
         "rule_violations": violations_total,
+        "label_ratio_violations": label_ratio_violations,
+        "n_particles_violations": n_particles_violations,
+        "label_ratio_tolerance": label_ratio_tolerance,
+        "n_particles_mean_tolerance": n_particles_mean_tolerance,
     }
     return label_stats, label_rows, summary
 
@@ -580,6 +911,88 @@ def _coverage(counts: list[int]) -> float | None:
         return None
     non_zero = sum(1 for count in counts if count > 0)
     return non_zero / len(counts)
+
+
+def _build_ratio_check(
+    *,
+    expected_count: int | None,
+    expected_total: int,
+    actual_count: int,
+    actual_total: int,
+    tolerance: float,
+) -> dict[str, Any]:
+    if expected_count is None or expected_total <= 0 or actual_total <= 0:
+        return {
+            "status": "skipped",
+            "expected": None,
+            "actual": None,
+            "delta": None,
+            "tolerance": tolerance,
+            "within_tolerance": None,
+        }
+    expected_ratio = float(expected_count) / float(expected_total)
+    actual_ratio = float(actual_count) / float(actual_total)
+    delta = actual_ratio - expected_ratio
+    within = abs(delta) <= tolerance
+    return {
+        "status": "checked",
+        "expected": expected_ratio,
+        "actual": actual_ratio,
+        "delta": delta,
+        "tolerance": tolerance,
+        "within_tolerance": within,
+    }
+
+
+def _check_n_particles_distribution(
+    expected: Mapping[str, Any] | None,
+    observed_stats: Mapping[str, Any],
+    tolerance_ratio: float,
+) -> dict[str, Any]:
+    if not expected:
+        return {
+            "status": "skipped",
+            "expected": None,
+            "actual_mean": None,
+            "delta": None,
+            "tolerance": tolerance_ratio,
+            "within_tolerance": None,
+        }
+    mean = observed_stats.get("mean")
+    if mean is None:
+        return {
+            "status": "skipped",
+            "expected": dict(expected),
+            "actual_mean": None,
+            "delta": None,
+            "tolerance": tolerance_ratio,
+            "within_tolerance": None,
+        }
+    expected_mean = expected.get("mean")
+    if expected_mean is None:
+        return {
+            "status": "skipped",
+            "expected": dict(expected),
+            "actual_mean": float(mean),
+            "delta": None,
+            "tolerance": tolerance_ratio,
+            "within_tolerance": None,
+        }
+    expected_mean = float(expected_mean)
+    actual_mean = float(mean)
+    delta = actual_mean - expected_mean
+    if expected_mean == 0:
+        within = actual_mean == 0.0
+    else:
+        within = abs(delta) <= tolerance_ratio * expected_mean
+    return {
+        "status": "checked",
+        "expected": dict(expected),
+        "actual_mean": actual_mean,
+        "delta": delta,
+        "tolerance": tolerance_ratio,
+        "within_tolerance": within,
+    }
 
 
 def _compute_circular_stats(values: list[float]) -> dict[str, Any]:
@@ -1016,9 +1429,20 @@ def _write_label_summary(path: Path, rows: list[dict[str, Any]]) -> None:
         "label",
         "category",
         "n_samples",
+        "expected_ratio",
+        "actual_ratio",
+        "ratio_delta",
+        "ratio_within_tolerance",
         "n_particles",
         "n_particles_mean",
         "n_particles_std",
+        "n_particles_min",
+        "n_particles_max",
+        "expected_n_particles_mean",
+        "expected_n_particles_min",
+        "expected_n_particles_max",
+        "n_particles_mean_delta",
+        "n_particles_within_tolerance",
         "size_mean",
         "size_std",
         "r_mean",

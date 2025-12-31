@@ -29,7 +29,7 @@
   - scratch/radial: 直線フィット残差が小さい（簡易でOK）
   - hotspot: 密度中心が存在し、外側で密度減衰
 
-※ “期待特徴” のルールは taxonomy_v1 と一緒に管理（Hydra YAML）
+※ “期待特徴” のルールは taxonomy_v1 / taxonomy_v2 と一緒に管理（Hydra YAML）
 
 ## 4. 実測との比較（任意・推奨）
 - 実測が少ない場合でも、同一指標で距離を計算し目安にする

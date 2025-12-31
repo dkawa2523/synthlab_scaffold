@@ -1,0 +1,8 @@
+pp_thomas_cluster:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.pp_thomas_cluster
+  mean_particles: 200
+  wafer_radius_mm: 150.0
+  mean_children: 6
+  cluster_sigma_ratio: 0.03

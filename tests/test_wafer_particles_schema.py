@@ -40,20 +40,22 @@ def _sample_tables() -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     ]
 
     particle_defs = [
-        ("s1", 0, 1.0, 0.0, 1.5, "ring"),
-        ("s1", 1, 1.0, math.pi / 2.0, 1.4, "ring"),
-        ("s2", 0, 2.0, math.pi, 2.1, "dot"),
+        ("s1", 0, 0.4, 1.0, 0.0, 1.5, "ring"),
+        ("s1", 1, 0.45, 1.0, math.pi / 2.0, 1.4, "ring"),
+        ("s2", 0, 0.8, 2.0, math.pi, 2.1, "dot"),
     ]
     particles: list[dict[str, object]] = []
-    for sample_id, particle_id, r_mm, theta_rad, size_um, label in particle_defs:
+    for sample_id, particle_id, r_norm, r_mm, theta_rad, size_um, label in particle_defs:
         x_mm, y_mm = polar_to_cartesian_mm(float(r_mm), float(theta_rad))
         particles.append(
             {
                 "sample_id": sample_id,
                 "particle_id": particle_id,
+                "r_norm": r_norm,
                 "r_mm": r_mm,
                 "theta_rad": theta_rad,
                 "size_um": size_um,
+                "label_fine": label,
                 "label": label,
                 "x_mm": x_mm,
                 "y_mm": y_mm,
@@ -80,6 +82,6 @@ def test_schema_validation_round_trip() -> None:
 def test_particles_schema_requires_columns() -> None:
     _, particles = _sample_tables()
     bad_row = dict(particles[0])
-    bad_row.pop("label")
+    bad_row.pop("label_fine")
     with pytest.raises(SchemaValidationError):
         validate_particles_table([bad_row])

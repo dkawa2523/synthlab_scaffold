@@ -1,3 +1,5 @@
 format: parquet
+write_mode: eager
+compression: snappy
 parquet:
   compression: snappy

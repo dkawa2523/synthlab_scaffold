@@ -20,6 +20,9 @@ quantiles:
   - 0.95
 spatial:
   grid_bins: 12
+expectations:
+  label_ratio_tolerance: 0.03
+  n_particles_mean_tolerance: 0.03
 rules:
   ring:
     max_r_std_ratio: 0.08

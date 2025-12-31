@@ -1,24 +1,25 @@
 from __future__ import annotations
 
-from math import sqrt, tau
 from typing import Any, Mapping
 
 from synthlab.framework.registry import register_pattern
 
-from .common import build_particle, resolve_sample_ctx
+from .base import PatternBase, PatternContext
+from .common import build_particle
+from .geometry import sample_uniform_disk
 
 
 @register_pattern("wafer_particles.pattern.random_uniform")
-def generate(
-    cfg: Mapping[str, Any],
-    rng: Any,
-    sample_ctx: Mapping[str, Any] | None = None,
-) -> list[dict[str, float | str]]:
-    ctx = resolve_sample_ctx(cfg, sample_ctx)
+class RandomUniform(PatternBase):
+    pattern_id = "wafer_particles.pattern.random_uniform"
+    tags = ("random",)
 
-    particles: list[dict[str, float | str]] = []
-    for _ in range(ctx.n_particles):
-        r_mm = ctx.wafer_radius_mm * sqrt(rng.random())
-        theta_rad = rng.random() * tau
-        particles.append(build_particle(r_mm, theta_rad))
-    return particles
+    @classmethod
+    def generate(
+        cls,
+        ctx: PatternContext,
+        params: Mapping[str, Any],
+        rng: Any,
+    ) -> list[dict[str, Any]]:
+        points = sample_uniform_disk(rng, ctx.n_particles)
+        return [build_particle(r_norm, theta_rad) for r_norm, theta_rad in points]

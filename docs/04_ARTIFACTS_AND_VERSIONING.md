@@ -84,6 +84,7 @@ config_hash = hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
 推奨列:
 - `x_mm`, `y_mm`（派生。常に同一変換関数で生成）
 - `component`（composite 生成時の成分ラベル）
+- `component_id`（composite 生成時の成分ID）
 - `source`（"synthetic" 等）
 
 ### 4.2 samples（サンプルメタ）
@@ -94,9 +95,26 @@ config_hash = hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
 - `pattern_params` : str（JSON文字列 or 列展開。P0はJSON文字列推奨）
 - `seed_offset` : int（サンプル内seed派生に使った値）
 
+追加列（後方互換・任意）:
+- `label_coarse` : str（taxonomy_v2 の coarse）
+- `label_family` : str（taxonomy_v2 の family）
+- `labels_fine` : str（JSON string array）
+- `label_fine_primary` : str（複合サンプルの代表ラベル）
+- `components_json` : str（composite の components 情報JSON）
+
 ### 4.3 manifest
 - `manifest.json` または `manifest.yaml`
 - データファイルの相対パス、行数、schema_version、label分布など
+
+### 4.4 export bundle（配布用）
+`process=export` は配布用の bundle を以下の構成で出力する（run 直下）。
+- `data/`（particles/samples + index）
+- `splits/`（train/val/test の sample_id）
+- `manifest.json` / `manifest.yaml`
+- `checksums.sha256`（`<hash>  <relative_path>`）
+- `DATASET_CARD.md`
+- `taxonomy_snapshot.yaml`
+- `data/dataset_<dataset_id>.zip|tar.gz`（任意）
 
 ---
 
@@ -111,6 +129,8 @@ config_hash = hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
 - 生成器の変更は config に必ず反映される（新しいrunを作る）
 - `config_hash` と `git_sha` で追跡する
 - datasetの “配布版” を作る場合は `export` process が `dataset_id` を確定させる
+- dataset_id は `schema_version` + `taxonomy_version` + `dataset_id_hash` を用いて安定化する
+  - dataset_id_hash = hash(`config_hash`, `taxonomy_version`, `labeling_spec_hash` (適用時), `metric_set_version` (任意))
 
 ---
 

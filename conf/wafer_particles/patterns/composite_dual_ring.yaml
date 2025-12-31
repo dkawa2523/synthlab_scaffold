@@ -1,0 +1,21 @@
+composite_dual_ring:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.composite
+  n_particles: 240
+  wafer_radius_mm: 150.0
+  components:
+    - pattern: wafer_particles.pattern.ring_narrow
+      weight: 0.55
+      label: ring_outer
+      cfg:
+        radius_ratio: 0.7
+        width_ratio: 0.03
+    - pattern: wafer_particles.pattern.ring_narrow
+      weight: 0.45
+      label: ring_inner
+      cfg:
+        radius_ratio: 0.7
+        width_ratio: 0.03
+      transform:
+        radial_scale: 0.6

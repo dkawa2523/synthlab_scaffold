@@ -66,6 +66,7 @@ class VizProcess(BaseProcess):
         size_edges = _resolve_edges(hist_cfg.get("size"), "hist.size", values=size_values, default_count=30)
 
         wafer_radius_mm = _resolve_wafer_radius_mm(viz_cfg, paths.input_config, particles)
+        component_key = "component" if any(particle.get("component") is not None for particle in particles) else None
 
         plots_dir = writer.run_dir / "plots"
         plot_files: list[str] = []
@@ -78,6 +79,7 @@ class VizProcess(BaseProcess):
                 point_size=point_size,
                 alpha=alpha,
                 wafer_radius_mm=wafer_radius_mm,
+                component_key=component_key,
             )
         )
         plot_files.append(

@@ -1,0 +1,9 @@
+jitter:
+  enabled: false
+  r_std_mm: 0.0
+  theta_std_rad: 0.0
+
+background:
+  enabled: false
+  count: 0
+  fraction: 0.0

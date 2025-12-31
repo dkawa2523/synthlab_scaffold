@@ -1,0 +1,24 @@
+composite_edge_sector_plus_scratch:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.composite
+  n_particles: 240
+  wafer_radius_mm: 150.0
+  components:
+    - pattern: wafer_particles.pattern.edge_sector
+      weight: 0.6
+      label: edge_sector
+      cfg:
+        side: right
+        angle_width_deg: 35.0
+        edge_width_ratio: 0.08
+    - pattern: wafer_particles.pattern.scratch
+      weight: 0.4
+      label: scratch
+      cfg:
+        angle_category: diagonal
+        width_ratio: 0.015
+        length_ratio: 1.1
+      transform:
+        rotate_theta_rad: 0.3
+        theta_jitter_std: 0.02

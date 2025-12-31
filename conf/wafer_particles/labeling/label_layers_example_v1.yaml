@@ -1,0 +1,168 @@
+version: 1
+schema_version: wafer_particles.labeling_spec.v1
+name: example_label_layers_v1
+description: >
+  Example external labeling spec.
+  - Fine labels are the generator pattern_id (phenotype).
+  - Users can define multiple derived label layers (hierarchies) and cause hypotheses here.
+  - This file is intended to be user-editable and can live outside the repo.
+  NOTE: cause_hypotheses are NOT ground-truth. Treat as hypothesis metadata.
+
+# Derived label layers. Keys under layers are arbitrary; the engine must handle any number of layers.
+# For each layer, map fine_label -> layer_value.
+layers:
+  family:
+    C01_Uniform: Background
+    C02_EdgeBiased: Background
+    C03_Ring: RadialBand
+    K01_Donut_Hollow: RadialBand
+    K02_SemiRing_Segment: RadialBand
+    K03_Edge_Arc: RadialBandEdge
+    C04_Sector_Edge: AngularWedge
+    C05_Sector_Internal: AngularWedge
+    C06_RadialLines: LineLike
+    C07_StraightLine: LineLike
+    K04_Scratch_Periodic: LineLike
+    C08_CurvedScratch: LineLike
+    C09_Spiral: Curvilinear
+    C10_Hotspot_Iso: LocalCluster
+    C11_Hotspot_Elliptic: LocalCluster
+    C12_Crescent_Edge: Lune
+    C13_Crescent_Internal: Lune
+    C14_EdgeSource_Spray: EdgeSource
+    C15_EdgeSource_Bursty: EdgeSource
+    O01_ReticleRepeat: PeriodicArtifact
+    O02_Checkerboard: PeriodicArtifact
+
+  location:
+    C01_Uniform: Internal
+    C02_EdgeBiased: Edge
+    C03_Ring: Mixed
+    K01_Donut_Hollow: Internal
+    K02_SemiRing_Segment: Mixed
+    K03_Edge_Arc: Edge
+    C04_Sector_Edge: Edge
+    C05_Sector_Internal: Internal
+    C06_RadialLines: Internal
+    C07_StraightLine: Internal
+    K04_Scratch_Periodic: Internal
+    C08_CurvedScratch: Internal
+    C09_Spiral: Internal
+    C10_Hotspot_Iso: Internal
+    C11_Hotspot_Elliptic: Internal
+    C12_Crescent_Edge: Edge
+    C13_Crescent_Internal: Internal
+    C14_EdgeSource_Spray: Edge
+    C15_EdgeSource_Bursty: Edge
+    O01_ReticleRepeat: Internal
+    O02_Checkerboard: Internal
+
+  geometry:
+    C01_Uniform: Uniform
+    C02_EdgeBiased: RadialBias
+    C03_Ring: Ring
+    K01_Donut_Hollow: Donut
+    K02_SemiRing_Segment: RingSegment
+    K03_Edge_Arc: EdgeArcBand
+    C04_Sector_Edge: Sector
+    C05_Sector_Internal: Sector
+    C06_RadialLines: RadialLines
+    C07_StraightLine: StraightLine
+    K04_Scratch_Periodic: PeriodicLines
+    C08_CurvedScratch: CurvedLine
+    C09_Spiral: Spiral
+    C10_Hotspot_Iso: ClusterIso
+    C11_Hotspot_Elliptic: ClusterElliptic
+    C12_Crescent_Edge: Crescent
+    C13_Crescent_Internal: Crescent
+    C14_EdgeSource_Spray: PointSourceSpray
+    C15_EdgeSource_Bursty: PointSourceBursty
+    O01_ReticleRepeat: RepeatGrid
+    O02_Checkerboard: Checkerboard
+
+# Similarity groups are for human review and UI/reporting (not mandatory for training).
+# The engine should be able to export these groups and show counts per group.
+similarity_groups:
+  - name: Edge-origin / edge-contact
+    description: "Patterns that touch the wafer edge or originate from the edge."
+    members:
+      - C02_EdgeBiased
+      - C04_Sector_Edge
+      - K03_Edge_Arc
+      - C12_Crescent_Edge
+      - C14_EdgeSource_Spray
+      - C15_EdgeSource_Bursty
+  - name: Radial band family
+    description: "Ring/donut/partial ring family; mostly radial-band dominated."
+    members:
+      - C03_Ring
+      - K01_Donut_Hollow
+      - K02_SemiRing_Segment
+      - K03_Edge_Arc
+  - name: Line/scratch family
+    description: "Line-like patterns including straight, curved, radial lines and periodic scratches."
+    members:
+      - C06_RadialLines
+      - C07_StraightLine
+      - K04_Scratch_Periodic
+      - C08_CurvedScratch
+  - name: Local cluster family
+    description: "Local hotspot-like patterns; isotropic/elliptic variants."
+    members:
+      - C10_Hotspot_Iso
+      - C11_Hotspot_Elliptic
+  - name: Periodic / non-particle candidates
+    description: "Often caused by stepper/reticle or measurement artifacts; keep disabled by default."
+    members:
+      - O01_ReticleRepeat
+      - O02_Checkerboard
+
+# Optional: cause hypotheses (metadata). NOT ground-truth labels.
+# Users can add new causes and map them to one or more fine labels.
+cause_hypotheses:
+  CH_FOCUS_RING_COVER_DEBRIS:
+    title: "Focus ring / cover ring vicinity particle source"
+    confidence: low
+    description: >
+      Hypothesis: particles originate near focus ring / cover ring structures and scatter from a local edge source.
+      Use as metadata only, not ground-truth.
+    related_labels:
+      - C14_EdgeSource_Spray
+      - C15_EdgeSource_Bursty
+      - K03_Edge_Arc
+      - C02_EdgeBiased
+
+  CH_TRANSFER_SCRATCH:
+    title: "Transfer / handling scratch-like defects"
+    confidence: medium
+    description: >
+      Hypothesis: line-like defects (straight/curved/periodic) are consistent with scratch/drag mechanisms.
+    related_labels:
+      - C07_StraightLine
+      - C08_CurvedScratch
+      - K04_Scratch_Periodic
+
+  CH_ROTATION_FLOW_SWIRL:
+    title: "Rotation + flow induced swirl"
+    confidence: low
+    description: "Spiral patterns may relate to rotation/flow behaviors (process-dependent)."
+    related_labels:
+      - C09_Spiral
+
+  CH_LOCAL_POINT_SOURCE:
+    title: "Local point source (cluster/hotspot)"
+    confidence: medium
+    description: "Local cluster patterns (iso/elliptic) may indicate local particle sources."
+    related_labels:
+      - C10_Hotspot_Iso
+      - C11_Hotspot_Elliptic
+
+  CH_RETICLE_STEPPER_ARTIFACT:
+    title: "Reticle/stepper or measurement artifact"
+    confidence: low
+    description: >
+      Periodic grid/checkerboard patterns are often not pure particle deposition.
+      Keep optional patterns disabled by default and only enable for robustness testing.
+    related_labels:
+      - O01_ReticleRepeat
+      - O02_Checkerboard

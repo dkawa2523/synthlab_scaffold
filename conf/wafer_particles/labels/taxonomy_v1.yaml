@@ -1,119 +1,170 @@
 version: taxonomy_v1
 domain: wafer_particles
 labels:
+  # ring
   - name: ring_narrow
     category: ring
     expected_rules:
-      - TODO: r variance small (narrow ring)
-      - TODO: theta covers full 0..2pi
+      - r_std_ratio is small relative to wafer_radius (narrow ring)
+      - theta coverage spans most bins (0..2pi)
   - name: ring_wide
     category: ring
     expected_rules:
-      - TODO: r variance larger than ring_narrow
-      - TODO: theta covers full 0..2pi
+      - r_std_ratio is larger than ring_narrow but still ring-like
+      - theta coverage spans most bins (0..2pi)
+
+  # sector
   - name: edge_sector
     category: sector
     expected_rules:
-      - TODO: theta concentrated in sector range
-      - TODO: r near outer edge
+      - theta coverage concentrated in a sector
+      - theta mean aligned to sector center
+      - r mean near wafer edge
     variants:
       - name: edge_sector_right
         params:
           side: right
         expected_rules:
-          - TODO: theta near 0 rad
+          - theta coverage concentrated in a sector
+          - theta mean aligned to sector center
+          - r mean near wafer edge
+          - sector center near 0 rad (right)
       - name: edge_sector_left
         params:
           side: left
         expected_rules:
-          - TODO: theta near pi rad
+          - theta coverage concentrated in a sector
+          - theta mean aligned to sector center
+          - r mean near wafer edge
+          - sector center near pi rad (left)
       - name: edge_sector_top
         params:
           side: top
         expected_rules:
-          - TODO: theta near pi/2 rad
+          - theta coverage concentrated in a sector
+          - theta mean aligned to sector center
+          - r mean near wafer edge
+          - sector center near pi/2 rad (top)
       - name: edge_sector_bottom
         params:
           side: bottom
         expected_rules:
-          - TODO: theta near 3pi/2 rad
+          - theta coverage concentrated in a sector
+          - theta mean aligned to sector center
+          - r mean near wafer edge
+          - sector center near 3pi/2 rad (bottom)
+
+  # line
   - name: scratch
     category: line
     expected_rules:
-      - TODO: line-fit residual small
-      - TODO: perpendicular variance small
+      - theta coverage is narrow (line-like)
+      - points lie close to a fitted line (small perpendicular spread)
     variants:
       - name: scratch_horizontal
         params:
           angle_category: horizontal
         expected_rules:
-          - TODO: line angle near 0 or pi
+          - theta coverage is narrow (line-like)
+          - points lie close to a fitted line (small perpendicular spread)
+          - dominant line angle near 0 or pi (horizontal)
       - name: scratch_vertical
         params:
           angle_category: vertical
         expected_rules:
-          - TODO: line angle near pi/2
+          - theta coverage is narrow (line-like)
+          - points lie close to a fitted line (small perpendicular spread)
+          - dominant line angle near pi/2 (vertical)
       - name: scratch_diagonal
         params:
           angle_category: diagonal
         expected_rules:
-          - TODO: line angle near pi/4
+          - theta coverage is narrow (line-like)
+          - points lie close to a fitted line (small perpendicular spread)
+          - dominant line angle near pi/4 (diagonal)
       - name: scratch_diagonal_rev
         params:
           angle_category: diagonal_rev
         expected_rules:
-          - TODO: line angle near 3pi/4
+          - theta coverage is narrow (line-like)
+          - points lie close to a fitted line (small perpendicular spread)
+          - dominant line angle near 3pi/4 (diagonal rev)
   - name: radial_lines
     category: line
     expected_rules:
-      - TODO: multiple line angles present
-      - TODO: points concentrated on radial lines
+      - multiple line angles are present
+      - points cluster along radial lines through the center
+      - theta coverage has multiple narrow modes
+
+  # hotspot
   - name: hotspot
     category: hotspot
     expected_rules:
-      - TODO: density peak around center point
-      - TODO: density decays with radius from peak
+      - density peak around a center point
+      - density decays with radius from the peak
     variants:
       - name: hotspot_center
         params:
           mode: center
         expected_rules:
-          - TODO: peak at wafer center
+          - density peak around a center point
+          - density decays with radius from the peak
+          - peak near wafer center (low r mean ratio)
       - name: hotspot_edge
         params:
           mode: edge
         expected_rules:
-          - TODO: peak near outer edge
+          - density peak around a center point
+          - density decays with radius from the peak
+          - peak near wafer edge (high r mean ratio)
       - name: hotspot_random
         params:
           mode: random
         expected_rules:
-          - TODO: peak location varies per sample
+          - density peak around a center point
+          - density decays with radius from the peak
+          - peak location varies per sample
+
+  # random
   - name: random_uniform
     category: random
     expected_rules:
-      - TODO: uniform density across wafer area
+      - uniform density across wafer area
+      - theta coverage spans most bins
+      - r histogram follows area-proportional profile
   - name: random_edge_biased
     category: random
     expected_rules:
-      - TODO: density increases toward edge
+      - density increases toward edge (high r mean ratio)
+      - theta coverage spans most bins
+
+  # inhom_poisson
   - name: inhom_poisson
     category: inhom_poisson
     expected_rules:
-      - TODO: grid dispersion above uniform baseline
-      - TODO: lambda(r,theta) variation visible in histograms
+      - grid dispersion above uniform baseline
+      - grid counts show spatial intensity variation
+      - hist_r and hist_theta show structure
+
+  # cluster
   - name: cluster_parent_child
     category: cluster
     expected_rules:
-      - TODO: NN distances shorter than CSR
-      - TODO: grid dispersion > 1 (over-dispersion)
+      - nn mean ratio below CSR expectation
+      - grid dispersion above 1 (over-dispersion)
+      - child points cluster around parent centers
+
+  # cox
   - name: cox_lognormal
     category: cox
     expected_rules:
-      - TODO: over-dispersion in grid counts
-      - TODO: intensity field varies across cells
+      - grid dispersion above 1 (over-dispersion)
+      - intensity field varies across cells
+
+  # composite
   - name: composite
     category: composite
     expected_rules:
-      - TODO: component mixture ratios respected
-      - TODO: each component retains its expected pattern
+      - component mixture ratios are respected
+      - each component retains its expected pattern
+      - label proportions match config

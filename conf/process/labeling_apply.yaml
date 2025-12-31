@@ -1,0 +1,7 @@
+defaults:
+  - wafer_particles/labeling_apply: default
+  - wafer_particles/labeling: default
+  - wafer_particles/io: auto
+  - _self_
+
+name: wafer_particles.process.labeling_apply

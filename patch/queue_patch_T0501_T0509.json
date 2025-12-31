@@ -1,0 +1,170 @@
+{
+  "items": [
+    {
+      "id": "T0501",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Labeling layers & cause hypotheses external file + process=labeling_apply",
+      "path": "work/tasks/T0501_labeling_layers_and_relabel_process.md",
+      "skills": [
+        "S20",
+        "S40",
+        "S70",
+        "S98"
+      ],
+      "contracts": [
+        "docs/00_INVARIANTS.md",
+        "docs/03_CONFIG_CONVENTIONS.md",
+        "docs/04_ARTIFACTS_AND_VERSIONING.md"
+      ]
+    },
+    {
+      "id": "T0502",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Param-space sampling + strict config validation + doctor gate",
+      "path": "work/tasks/T0502_param_space_and_doctor_validation.md",
+      "skills": [
+        "S20",
+        "S40",
+        "S70",
+        "S98"
+      ],
+      "contracts": [
+        "docs/00_INVARIANTS.md",
+        "docs/03_CONFIG_CONVENTIONS.md"
+      ],
+      "depends_on": [
+        "T0501"
+      ]
+    },
+    {
+      "id": "T0503",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Pattern engine refactor (base interface, registry, geometry/masks primitives)",
+      "path": "work/tasks/T0503_pattern_engine_refactor.md",
+      "skills": [
+        "S40",
+        "S70",
+        "S98"
+      ],
+      "contracts": [
+        "docs/11_PLUGIN_REGISTRY.md",
+        "docs/00_INVARIANTS.md"
+      ],
+      "depends_on": [
+        "T0502"
+      ]
+    },
+    {
+      "id": "T0504",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Implement core patterns C01–C15",
+      "path": "work/tasks/T0504_core_patterns_C01_C15.md",
+      "skills": [
+        "S40",
+        "S70"
+      ],
+      "contracts": [
+        "docs/11_PLUGIN_REGISTRY.md"
+      ],
+      "depends_on": [
+        "T0503"
+      ]
+    },
+    {
+      "id": "T0505",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Implement keep patterns K01–K04 + optional patterns O01–O02",
+      "path": "work/tasks/T0505_keep_optional_patterns_K_O.md",
+      "skills": [
+        "S40",
+        "S70"
+      ],
+      "contracts": [
+        "docs/11_PLUGIN_REGISTRY.md"
+      ],
+      "depends_on": [
+        "T0504"
+      ]
+    },
+    {
+      "id": "T0506",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Process=compose (random overlay) with multi-label + component tracing",
+      "path": "work/tasks/T0506_process_compose_multilabel.md",
+      "skills": [
+        "S40",
+        "S70"
+      ],
+      "contracts": [
+        "docs/10_PROCESS_CATALOG.md",
+        "docs/04_ARTIFACTS_AND_VERSIONING.md"
+      ],
+      "depends_on": [
+        "T0505"
+      ]
+    },
+    {
+      "id": "T0507",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Export & dataset versioning upgrades (multi-label + labeling spec hash + dataset card)",
+      "path": "work/tasks/T0507_export_dataset_versioning.md",
+      "skills": [
+        "S20",
+        "S40",
+        "S70"
+      ],
+      "contracts": [
+        "docs/04_ARTIFACTS_AND_VERSIONING.md"
+      ],
+      "depends_on": [
+        "T0506",
+        "T0501"
+      ]
+    },
+    {
+      "id": "T0508",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Process=pattern_coverage (new pattern needed?) + composite search report",
+      "path": "work/tasks/T0508_pattern_coverage_process.md",
+      "skills": [
+        "S40",
+        "S70",
+        "S98"
+      ],
+      "contracts": [
+        "docs/09_EVALUATION_PROTOCOL.md",
+        "docs/10_PROCESS_CATALOG.md"
+      ],
+      "depends_on": [
+        "T0507",
+        "T0505"
+      ]
+    },
+    {
+      "id": "T0509",
+      "priority": "P1",
+      "status": "todo",
+      "title": "Profiles for parameter ranges + operational docs update",
+      "path": "work/tasks/T0509_profiles_and_docs.md",
+      "skills": [
+        "S20",
+        "S95",
+        "S70"
+      ],
+      "contracts": [
+        "docs/03_CONFIG_CONVENTIONS.md"
+      ],
+      "depends_on": [
+        "T0507"
+      ]
+    }
+  ]
+}

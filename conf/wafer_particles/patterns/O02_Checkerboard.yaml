@@ -1,0 +1,11 @@
+# Optional: periodic checkerboard artifacts (reticle/stepper or measurement effects).
+# Keep disabled by default; enable only for robustness testing.
+O02_Checkerboard:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: false
+  name: wafer_particles.pattern.O02_Checkerboard
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  pitch_ratio: 0.2
+  tile_ratio: 0.9
+  phase_mode: random

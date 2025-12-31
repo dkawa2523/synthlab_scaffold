@@ -1,0 +1,33 @@
+C11_Hotspot_Elliptic:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.C11_Hotspot_Elliptic
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  mode: random
+  sigma_x_ratio: 0.08
+  sigma_y_ratio: 0.03
+  rotation_deg: 30.0
+  center_radius_ratio: 0.7
+  center_angle: random
+  param_space:
+    sigma_x_ratio:
+      dist: uniform
+      min: 0.03
+      max: 0.12
+    sigma_y_ratio:
+      dist: uniform
+      min: 0.01
+      max: 0.08
+    rotation_rad:
+      dist: uniform
+      min: 0.0
+      max: 6.283185307179586
+    center_radius_ratio:
+      dist: uniform
+      min: 0.0
+      max: 0.9
+    center_angle_rad:
+      dist: uniform
+      min: 0.0
+      max: 6.283185307179586

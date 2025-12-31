@@ -1,0 +1,28 @@
+C13_Crescent_Internal:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.C13_Crescent_Internal
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  outer_radius_ratio: 0.7
+  inner_radius_ratio: 0.55
+  offset_ratio: 0.25
+  angle_center_deg: 0.0
+  edge_margin_norm: 0.05
+  param_space:
+    outer_radius_ratio:
+      dist: uniform
+      min: 0.4
+      max: 0.8
+    inner_radius_ratio:
+      dist: uniform
+      min: 0.3
+      max: 0.7
+    offset_ratio:
+      dist: uniform
+      min: 0.1
+      max: 0.4
+    angle_center_rad:
+      dist: uniform
+      min: 0.0
+      max: 6.283185307179586

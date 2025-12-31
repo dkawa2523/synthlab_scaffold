@@ -1,0 +1,20 @@
+version: 1
+name: etch_rie_example
+description: >
+  Example profile for etch/RIE-like processes. Values are placeholders and must be calibrated with real data.
+  This file demonstrates how to override pattern parameter distributions from a single switch.
+overrides:
+  wafer_particles:
+    n_particles_distribution:
+      type: poisson
+      mean: 350
+    size_model_defaults:
+      clamp_um: {min: 0.08, max: 4.0}
+    patterns:
+      ring_narrow:
+        param_space:
+          radius_ratio: {dist: uniform, min: 0.6, max: 0.82}
+          width_ratio: {dist: uniform, min: 0.015, max: 0.05}
+      random_edge_biased:
+        param_space:
+          edge_bias: {dist: uniform, min: 1.5, max: 5.0}

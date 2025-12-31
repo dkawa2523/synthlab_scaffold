@@ -1,0 +1,7 @@
+pp_strauss_repulsive:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.pp_strauss_repulsive
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  min_distance_ratio: 0.03

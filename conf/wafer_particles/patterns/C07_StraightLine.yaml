@@ -1,0 +1,27 @@
+C07_StraightLine:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.C07_StraightLine
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  angle_deg: 0.0
+  segment_half_length_ratio: 0.6
+  width_ratio: 0.02
+  offset_ratio: 0.0
+  param_space:
+    angle_deg:
+      dist: uniform
+      min: 0.0
+      max: 180.0
+    segment_half_length_ratio:
+      dist: uniform
+      min: 0.3
+      max: 0.9
+    width_ratio:
+      dist: uniform
+      min: 0.005
+      max: 0.05
+    offset_ratio:
+      dist: uniform
+      min: -0.3
+      max: 0.3

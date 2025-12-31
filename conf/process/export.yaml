@@ -1,5 +1,6 @@
 defaults:
   - wafer_particles/export: default
+  - wafer_particles/labeling: default
   - wafer_particles/io: auto
   - _self_
 

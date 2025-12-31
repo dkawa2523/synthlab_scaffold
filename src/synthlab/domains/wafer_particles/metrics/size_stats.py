@@ -102,9 +102,11 @@ def _read_size(particle: dict[str, Any], key: str) -> float:
 
 
 def _read_label(particle: dict[str, Any], key: str) -> str:
-    if key not in particle:
-        raise ValueError(f"particle missing {key}")
-    return str(particle[key])
+    if key in particle:
+        return str(particle[key])
+    if key == "label" and "label_fine" in particle:
+        return str(particle["label_fine"])
+    raise ValueError(f"particle missing {key}")
 
 
 def _format_quantile_key(q: float) -> str:

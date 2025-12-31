@@ -1,0 +1,16 @@
+process_name: wafer_particles.process.generate
+a_run: null
+b_run: null
+bins:
+  r:
+    start: 0.0
+    stop: 150.0
+    count: 30
+  theta:
+    start: 0.0
+    stop: 6.283185307179586
+    count: 36
+smoothing:
+  epsilon: 1e-9
+spatial:
+  nn_max_points: null

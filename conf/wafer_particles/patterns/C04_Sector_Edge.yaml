@@ -1,0 +1,37 @@
+C04_Sector_Edge:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.C04_Sector_Edge
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  side: right
+  angle_width_deg: 50.0
+  edge_width_ratio: 0.15
+  theta_vonmises_kappa: 4.0
+  radial_beta_alpha: 2.0
+  radial_beta_beta: 1.2
+  param_space:
+    angle_center_rad:
+      dist: uniform
+      min: 0.0
+      max: 6.283185307179586
+    angle_width_deg:
+      dist: uniform
+      min: 20.0
+      max: 90.0
+    edge_width_ratio:
+      dist: uniform
+      min: 0.05
+      max: 0.3
+    theta_vonmises_kappa:
+      dist: uniform
+      min: 0.5
+      max: 10.0
+    radial_beta_alpha:
+      dist: uniform
+      min: 1.2
+      max: 4.0
+    radial_beta_beta:
+      dist: uniform
+      min: 0.8
+      max: 3.5

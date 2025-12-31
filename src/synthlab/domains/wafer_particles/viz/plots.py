@@ -15,11 +15,15 @@ def plot_label_samples(
     point_size: float,
     alpha: float,
     wafer_radius_mm: float | None,
+    component_key: str | None = None,
 ) -> list[str]:
     plt = _get_pyplot()
     out_dir.mkdir(parents=True, exist_ok=True)
     sample_id_set = {sample_id for ids in sample_ids_by_label.values() for sample_id in ids}
     particles_by_sample = _collect_particles_by_sample(particles, sample_id_set)
+    component_palette = _resolve_component_palette(particles_by_sample, component_key)
+    if component_key and not component_palette:
+        component_key = None
 
     outputs: list[str] = []
     for label, sample_ids in sample_ids_by_label.items():
@@ -32,8 +36,22 @@ def plot_label_samples(
         for idx, sample_id in enumerate(sample_ids):
             ax = flat_axes[idx]
             sample_particles = particles_by_sample.get(sample_id, [])
-            xs, ys = _extract_xy(sample_particles, max_points=max_points)
-            ax.scatter(xs, ys, s=point_size, alpha=alpha)
+            if max_points is not None and max_points > 0:
+                sample_particles = list(_limit_points(sample_particles, max_points))
+            if component_key:
+                grouped = _group_by_component(sample_particles, component_key)
+                for component, group in grouped.items():
+                    xs, ys = _extract_xy(group, max_points=None)
+                    if not xs:
+                        continue
+                    label_text = "unknown" if component is None else str(component)
+                    color = component_palette.get(label_text, "#4C72B0")
+                    ax.scatter(xs, ys, s=point_size, alpha=alpha, color=color, label=label_text)
+                if len(grouped) > 1:
+                    ax.legend(loc="upper right", fontsize="small")
+            else:
+                xs, ys = _extract_xy(sample_particles, max_points=None)
+                ax.scatter(xs, ys, s=point_size, alpha=alpha)
             if wafer_radius_mm is not None:
                 ax.set_xlim(-wafer_radius_mm, wafer_radius_mm)
                 ax.set_ylim(-wafer_radius_mm, wafer_radius_mm)
@@ -127,6 +145,44 @@ def _limit_points(
     return ordered[:max_points]
 
 
+def _group_by_component(
+    particles: Sequence[Mapping[str, Any]],
+    component_key: str,
+) -> dict[str | None, list[Mapping[str, Any]]]:
+    grouped: dict[str | None, list[Mapping[str, Any]]] = {}
+    for particle in particles:
+        component = particle.get(component_key)
+        key = None if component is None else str(component)
+        grouped.setdefault(key, []).append(particle)
+    return grouped
+
+
+def _resolve_component_palette(
+    particles_by_sample: Mapping[str, Sequence[Mapping[str, Any]]],
+    component_key: str | None,
+) -> dict[str, str]:
+    if not component_key:
+        return {}
+    components: list[str] = []
+    seen: set[str] = set()
+    has_unknown = False
+    for particles in particles_by_sample.values():
+        for particle in particles:
+            component = particle.get(component_key)
+            if component is None:
+                has_unknown = True
+                continue
+            component = str(component)
+            if component in seen:
+                continue
+            seen.add(component)
+            components.append(component)
+    if has_unknown:
+        components.append("unknown")
+    palette = _COMPONENT_COLORS
+    return {component: palette[idx % len(palette)] for idx, component in enumerate(sorted(components))}
+
+
 def _safe_label(label: str) -> str:
     safe = re.sub(r"[^A-Za-z0-9]+", "_", label).strip("_")
     return safe.lower() or "label"
@@ -141,3 +197,13 @@ def _get_pyplot():
     except Exception as exc:
         raise RuntimeError("matplotlib is required for viz process") from exc
     return plt
+
+
+_COMPONENT_COLORS = [
+    "#4C72B0",
+    "#55A868",
+    "#C44E52",
+    "#8172B2",
+    "#CCB974",
+    "#64B5CD",
+]

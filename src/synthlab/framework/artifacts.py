@@ -144,6 +144,7 @@ class ArtifactWriter:
         (self.run_dir / "config" / "overrides.txt").write_text(overrides_text, encoding="utf-8")
 
     def _write_meta(self) -> None:
+        profile_name, profile_hash = _profile_meta(self.cfg)
         meta = {
             "run_name": self.run_name,
             "process_name": self.process_name,
@@ -154,6 +155,8 @@ class ArtifactWriter:
             "domain": _domain_name(self.cfg),
             "schema_version": self.cfg.get("schema_version"),
             "notes": self.cfg.get("notes"),
+            "profile_name": profile_name,
+            "profile_hash": profile_hash,
             "env": {
                 "python": sys.version.split()[0],
                 "executable": sys.executable,
@@ -209,3 +212,15 @@ def _domain_name(cfg: dict[str, Any]) -> Any:
     if isinstance(domain, dict):
         return domain.get("name")
     return domain
+
+
+def _profile_meta(cfg: dict[str, Any]) -> tuple[str | None, str | None]:
+    wp_cfg = cfg.get("wafer_particles")
+    if not isinstance(wp_cfg, dict):
+        return None, None
+    profile_cfg = wp_cfg.get("profiles")
+    if not isinstance(profile_cfg, dict):
+        return None, None
+    name = profile_cfg.get("name")
+    profile_hash = compute_config_hash(dict(profile_cfg))
+    return (str(name) if name is not None else None, profile_hash)

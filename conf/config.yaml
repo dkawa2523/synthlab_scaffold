@@ -2,6 +2,8 @@ defaults:
   - domain: wafer_particles
   - process: doctor
   - wafer_particles/labels: taxonomy_v1
+  - wafer_particles/profiles: default
+  - policy: default
   - _self_
 
 seed: ???

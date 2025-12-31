@@ -1,0 +1,6 @@
+[2025-12-31T03:03:30.382672+00:00] dispatch process=wafer_particles.process.doctor
+[2025-12-31T03:03:30.382751+00:00] doctor start
+/Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/processes/doctor.py:602: RuntimeWarning: component.label is deprecated; use component_label_fine
+  particles = generator.generate(ctx, entry.cfg, rng)
+[2025-12-31T03:03:30.605039+00:00] doctor complete
+[2025-12-31T03:03:30.605098+00:00] process completed

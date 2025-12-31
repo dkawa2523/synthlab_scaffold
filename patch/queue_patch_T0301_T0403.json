@@ -1,0 +1,125 @@
+[
+  {
+    "id": "T0301",
+    "priority": "P0",
+    "status": "todo",
+    "title": "生成スケール最適化（ストリーミング書き出し/チャンク生成）",
+    "path": "work/tasks/T0301_scale_generation_streaming.md",
+    "skills": [
+      "S40",
+      "S50",
+      "S20"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/10_PROCESS_CATALOG.md",
+      "docs/03_CONFIG_CONVENTIONS.md"
+    ],
+    "depends_on": [
+      "T0007",
+      "T0003"
+    ]
+  },
+  {
+    "id": "T0302",
+    "priority": "P0",
+    "status": "todo",
+    "title": "生成設定の高度化（ラベル比率/粒子数分布/パラメータ範囲をYAMLで制御）",
+    "path": "work/tasks/T0302_label_distribution_control.md",
+    "skills": [
+      "S20",
+      "S40",
+      "S60",
+      "S50"
+    ],
+    "contracts": [
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0301"
+    ]
+  },
+  {
+    "id": "T0303",
+    "priority": "P0",
+    "status": "todo",
+    "title": "データ監査（Data Audit）Process導入（重複/欠損/範囲外/リーク検知）",
+    "path": "work/tasks/T0303_data_audit_process.md",
+    "skills": [
+      "S60",
+      "S40",
+      "S50"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/10_PROCESS_CATALOG.md"
+    ],
+    "depends_on": [
+      "T0302",
+      "T0102"
+    ]
+  },
+  {
+    "id": "T0403",
+    "priority": "P0",
+    "status": "todo",
+    "title": "実測データ取扱いガードレール（誤コミット防止/パス規約/ログ最小化）",
+    "path": "work/tasks/T0403_real_data_guardrails.md",
+    "skills": [
+      "S95",
+      "S10",
+      "S20"
+    ],
+    "contracts": [
+      "docs/05_SECURITY_SECRETS.md",
+      "docs/00_INVARIANTS.md"
+    ],
+    "depends_on": [
+      "T0303"
+    ]
+  },
+  {
+    "id": "T0401",
+    "priority": "P1",
+    "status": "todo",
+    "title": "実測少数データからのパターンパラメータ推定（キャリブレーション入口）",
+    "path": "work/tasks/T0401_real_to_param_estimation.md",
+    "skills": [
+      "S60",
+      "S40",
+      "S50"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/10_PROCESS_CATALOG.md",
+      "docs/05_SECURITY_SECRETS.md"
+    ],
+    "depends_on": [
+      "T0403",
+      "T0102"
+    ]
+  },
+  {
+    "id": "T0402",
+    "priority": "P1",
+    "status": "todo",
+    "title": "距離最小化による自動キャリブレーション（パラメータ探索ループ）",
+    "path": "work/tasks/T0402_distance_minimization_calibration_loop.md",
+    "skills": [
+      "S60",
+      "S40",
+      "S50"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/10_PROCESS_CATALOG.md"
+    ],
+    "depends_on": [
+      "T0401"
+    ]
+  }
+]

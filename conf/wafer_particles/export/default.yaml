@@ -5,6 +5,8 @@ input:
   manifest_path: null
   particles_path: null
   samples_path: null
+apply_labeling_spec: false
+labeling_spec_path: null
 split:
   mode: ratio
   seed_offset: 0
@@ -13,3 +15,5 @@ split:
     train: 0.8
     val: 0.1
     test: 0.1
+package:
+  format: none

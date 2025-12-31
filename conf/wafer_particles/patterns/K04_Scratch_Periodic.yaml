@@ -1,0 +1,12 @@
+K04_Scratch_Periodic:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.K04_Scratch_Periodic
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  angle_category: horizontal
+  length_ratio: 1.0
+  width_ratio: 0.01
+  spacing_ratio: 0.12
+  n_lines: 5
+  offset_mode: random

@@ -1,0 +1,1130 @@
+OpenAI Codex v0.77.0 (research preview)
+--------
+workdir: /Users/kawahito/Desktop/synthlab_scaffold
+model: gpt-5.2-codex
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: auto
+session id: 019b6e4a-9033-7d00-88db-218ea2254cd2
+--------
+user
+# AUTODEV TASK RUN
+
+Target Task: T0105 — パターン生成バリエーション拡張（任意角度セクタ/リング＋ホットスポット合成）
+
+## Contracts (MUST READ)
+
+- docs/11_PLUGIN_REGISTRY.md
+- docs/00_INVARIANTS.md
+- docs/09_EVALUATION_PROTOCOL.md
+
+## Skills to follow
+
+- agentskills/skills/S30_PLUGIN_EXTENSION.md
+- agentskills/skills/S20_HYDRA_CONFIG.md
+- agentskills/skills/S70_VISUALIZATION_DS.md
+- agentskills/skills/S98_GOVERNANCE.md
+
+## Hard rules (no stalls)
+
+- Do NOT ask the user questions. Make reasonable defaults and proceed.
+- If ambiguity exists, choose the option that preserves docs/00 invariants and is minimal.
+- Always keep changes small & reviewable; list files changed at the end.
+
+## AutoDev policy
+
+- If you ask questions/confirmation, the loop will treat it as failure and retry.
+
+## Task file content
+
+(from /Users/kawahito/Desktop/synthlab_scaffold/work/tasks/T0105_sector_custom_and_composite.md)
+
+```md
+# TASK: T0105 パターン生成バリエーション拡張（任意角度セクタ/リング＋ホットスポット合成）(P1)
+
+## Contracts
+- docs/11_PLUGIN_REGISTRY.md
+- docs/00_INVARIANTS.md
+- docs/09_EVALUATION_PROTOCOL.md
+
+## Summary
+セクタ（edge_sector）の **任意角度中心**対応と、`composite` を使った **リング＋ホットスポット**の代表例を追加する。
+
+## Scope
+- `edge_sector` に `mode: custom`（または `side: custom`）を追加し、`angle_center_rad` を受け取れるようにする
+- `composite` の例を `conf/wafer_particles/patterns/` に追加（ring + hotspot）
+- 生成結果に `component` 列がある場合、両成分が識別できるようにする
+
+## Acceptance Criteria
+- [ ] `pytest -q tests/test_T0105_sector_custom_and_composite.py` が通る
+- [ ] custom angle の sector で、theta が指定中心近傍に偏ることが統計的に確認できる（テスト内で簡易チェック）
+- [ ] composite（ring+hotspot）で、2成分が生成されていることが確認できる（component列 or 2つのクラスタ特性）
+
+## Implementation Notes
+- 既存の taxonomy/label を増やさず、同じ label でパラメータ差分として扱ってよい
+- 再現性（seed）と入出力（artifact契約）を壊さない
+
+## Verification
+- `pytest -q tests/test_T0105_sector_custom_and_composite.py`
+
+```
+
+## Contract: docs/00_INVARIANTS.md
+```md
+# 00_INVARIANTS — 不変条件（契約）
+
+## 0. この文書の位置づけ
+この文書は「以後すべての実装/タスク/レビューが従う不変契約」です。
+例外は **blocked運用**でのみ許可します。
+
+---
+
+## 1. 用語
+- **Domain**: データ型のまとまり（例：wafer_particles、画像、時系列）
+- **Process**: 実行単位（generate/qc/viz/train/eval/export/doctor…）
+- **Artifact**: Processの出力（runディレクトリ）。再現・比較の最小単位
+- **Plugin**: 拡張点（pattern/size_model/metric/viz/process など）
+- **Resolved Config**: Hydra で解決済みの設定（YAML）。真実の情報
+
+---
+
+## 2. 不変条件（MUST）
+### 2.1 設定が真実（Config is the Source of Truth）
+- すべての実行は Hydra 設定（YAML）で宣言される
+- Artifact には必ず以下を保存する
+  - 解決済み config（resolved.yaml）
+  - override（overrides.txt）
+  - seed
+  - 実行環境メタ（OS/Python/依存）
+
+### 2.2 再現性（Determinism）
+- 乱数は **単一の seed** と **明示的な RNG 注入**で制御する
+- グローバル乱数（np.random.* の暗黙利用、random モジュール直叩き）は禁止
+- 同じ resolved config + seed から、同一データ・同一統計が再現できること
+
+### 2.3 Processの純度（Process Purity）
+- Process は「入力Artifact/入力ファイル → 出力Artifact」を明確にする
+- Process は run ディレクトリ外に副作用を書かない（例外：明示された cache/ がある場合のみ）
+- Process は構成上、他の Process の内部実装に依存しない（I/O契約に依存）
+
+### 2.4 Artifactは追記・改変しない（Immutability）
+- 生成済み artifact は原則「write-once」
+- 再生成/改良は新しい run として出力する（比較可能性のため）
+- 例外的な上書きは blocked運用でのみ許可
+
+### 2.5 比較可能性（Comparability）
+- 比較は「同一評価プロトコル（docs/09）」「同一スキーマ」「同一seed方針」でのみ行う
+- 生成器の変更で評価が変わる場合、必ず差分を meta に残す（git sha / config hash）
+
+### 2.6 Skew禁止（Train/Inference / Generate/Analyze のズレ禁止）
+- 同じ artifact を入力にする解析/QC/viz は同じスキーマ・同じ前処理を用いる
+- “見た目だけ合う” 生成（vizで見えるが粒子データとしては壊れている等）を禁止
+- 変換（r,theta→x,y 等）は単一実装に統一し、複数実装の分岐を禁止
+
+### 2.7 拡張はPluginで行う（No Big if/else）
+- パターン追加、サイズモデル追加、評価指標追加、可視化追加は Plugin Registry を通す
+- 巨大な条件分岐で増殖させない（コード肥大化・レビュー困難を防ぐ）
+
+### 2.8 観測可能性（Observability）
+- すべての run は metrics と plots を持つ（最低限）
+- ログ（console.log相当）を run に残す（クラッシュ時に再現可能にする）
+
+---
+
+## 3. Blocked運用（不変契約の変更手順）
+不変契約に抵触する変更が必要になった場合:
+
+1) まず **blocked** の解除タスクを作る（work/tasks に追加）
+   - 解除タスクは `unblocks: [対象タスクID]` を持つ  
+2) docs の更新（どの不変条件がなぜ変わるか、影響範囲、移行手順）
+3) 互換性/移行計画（artifact/schema/version の扱い）
+4) Verification を通してから実装再開
+
+---
+
+## 4. TODO（根拠が無い点）
+- 生成データを社内レイクに登録する正式手順（権限/監査）: TODO
+- 実測データの匿名化・取り扱い規定（会社ポリシー依存）: TODO
+
+```
+
+## Contract: docs/11_PLUGIN_REGISTRY.md
+```md
+# 11_PLUGIN_REGISTRY — 拡張（モデル/特徴量/Process）登録規約
+
+## 1. 目的
+- 新しいパターン/サイズモデル/メトリクス/可視化/Process を追加しても
+  - if/else が肥大化しない
+  - ディレクトリが無秩序にならない
+  - レビューが容易
+を保証する。
+
+## 2. Plugin種別（v1）
+- PatternGenerator（点座標を生成）
+- SizeModel（粒径を割り当て）
+- Metric（QC指標）
+- Visualizer（プロット生成）
+- Process（generate/qc/viz/export/train…）
+
+## 3. 登録の原則（MUST）
+- plugin は **名前（key）**で登録される
+- key は namespaced にする（衝突防止）
+  - 例: `wafer_particles.pattern.ring_narrow`
+- plugin は **純関数的**に扱う（入力+cfg+rng → 出力）
+- plugin が Hydra/OmegaConf に依存しない（cfgはPythonオブジェクト/辞書として受け取る）
+
+## 4. Interface（概念）
+### PatternGenerator
+- input: `cfg`, `rng`, `sample_ctx`
+- output: `particles`（r,theta など）
+
+### SizeModel
+- input: `cfg`, `rng`, `particles`
+- output: `particles`（size_um 列追加）
+
+### Metric
+- input: `cfg`, `tables`
+- output: dict（json化可能）
+
+### Visualizer
+- input: `cfg`, `tables`, `out_dir`
+- output: files（png/html）
+
+## 5. 追加手順（MUST）
+1) 実装を追加（domains/<domain>/...）
+2) registry に登録（decorator または register関数）
+3) Hydra config を追加（conf/ の group）
+4) tests を追加（再現性/最低限のスモーク）
+5) docs（taxonomy/期待特徴）を更新（必要なら）
+
+## 6. “巨大ファイル化” 防止ルール
+- 1ファイル 300行を超える場合、分割を検討
+- patterns は 1パターン=1ファイル を基本（ただし超小規模ならまとめてもよい）
+- registry は “登録だけ” を持ち、実装ロジックを置かない
+
+## 7. TODO
+- entrypoints（setuptools entry points）による外部pluginロード: TODO（P1以降）
+
+```
+
+## Contract: docs/09_EVALUATION_PROTOCOL.md
+```md
+# 09_EVALUATION_PROTOCOL — 評価プロトコル（QC/比較ルール）
+
+## 1. 目的
+- 擬似データが「意図したラベル/パターン」を満たすか
+- 擬似データが「学習データとして扱いやすい品質」を持つか
+- run間比較（改善の効果測定）を正しく行う
+
+## 2. 原則（MUST）
+- 同一 seed 方針・同一 bin 定義・同一 metric 定義で比較する
+- 評価コード/設定も artifact に保存する（docs/04）
+- “見た目だけ良い” を禁止：必ず粒子テーブルで評価する（docs/00）
+
+## 3. QC（生成品質）メトリクス（wafer_particles v1）
+### 3.1 分布系（必須）
+- 粒子数 `n_particles` の分布（label別）
+- 半径方向ヒストグラム `hist_r`（同一bin）
+- 角度方向ヒストグラム `hist_theta`（同一bin）
+- 粒径分布（平均、分散、分位点、KS距離の計算準備）
+
+### 3.2 空間構造（推奨）
+- 最近傍距離分布（NN distance）
+- ペア相関（近距離でのクラスタ/反発の指標）
+- 簡易 Ripley’s K/L（P1で導入可）
+
+### 3.3 ラベル整合性（必須）
+- label別に「期待特徴」が満たされるか（ルールチェック）
+  - ring系: rの分散が閾値内、thetaが広く分布
+  - sector系: thetaが狭い範囲に集中
+  - scratch/radial: 直線フィット残差が小さい（簡易でOK）
+  - hotspot: 密度中心が存在し、外側で密度減衰
+
+※ “期待特徴” のルールは taxonomy_v1 と一緒に管理（Hydra YAML）
+
+## 4. 実測との比較（任意・推奨）
+- 実測が少ない場合でも、同一指標で距離を計算し目安にする
+- 実測データ取り込みはセキュリティ規定に従う（docs/05）
+- TODO: 実測比較の正式手順（データ共有方法）
+
+## 5. 下流学習での評価（将来）
+- synthetic で学習 → real でテスト（リーク防止）
+- 同一 split/seed を守る
+- metric（F1/PR-AUC/混同行列）を artifact に保存
+- TODO: 学習パイプラインの具体仕様（P1）
+
+## 6. 比較ルール（MUST）
+- run A と run B の比較は
+  - 同一 schema_version
+  - 同一 evaluation config（bin等）
+  - 同一 seed 方針
+  - 同一 dataset_id（比較目的が generator のみの場合は dataset_id を固定するなど）
+  を満たすこと
+
+## 7. TODO
+- “良い擬似データ” の合格基準（閾値・許容範囲）: TODO（実測/運用で決める）
+
+```
+
+## Deliverables
+
+- Implement changes to satisfy Acceptance Criteria and Verification.
+- Print a concise summary: files changed + how to run verification.
+mcp: context7 starting
+mcp: context7 ready
+mcp startup: ready: context7
+
+thinking
+**Checking skill files**
+exec
+/bin/zsh -lc ls in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 273ms:
+README.md
+__pycache__
+agentskills
+autodev
+conf
+docs
+patch
+requirements.txt
+runs
+src
+synthlab
+tests
+work
+
+thinking
+**Reading skill files**
+exec
+/bin/zsh -lc 'ls agentskills/skills' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 259ms:
+S10_ARCHITECTURE.md
+S20_HYDRA_CONFIG.md
+S30_PLUGIN_EXTENSION.md
+S40_PROCESS_IMPLEMENTATION.md
+S50_ARTIFACT_AND_IO.md
+S60_EVALUATION_QC.md
+S70_VISUALIZATION_DS.md
+S95_SECURITY.md
+S98_GOVERNANCE.md
+
+thinking
+**Reading specific skill files**
+exec
+/bin/zsh -lc 'cat agentskills/skills/S30_PLUGIN_EXTENSION.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 394ms:
+# S30 — Plugin Extension & Registry
+
+## 目的
+- 新しいパターン/サイズモデル/メトリクス/可視化を “増殖可能な形” で追加する
+- if/else を増やさず、registry による拡張を守る
+
+## 参照（MUST）
+- docs/11_PLUGIN_REGISTRY.md
+- docs/00_INVARIANTS.md
+- docs/03_CONFIG_CONVENTIONS.md
+
+## 手順
+1) plugin 種別を決める（pattern / size_model / metric / viz / process）
+2) namespaced key を決める
+   - 例: `wafer_particles.pattern.ring_narrow`
+3) 実装を 1ファイル 1責務で追加
+4) registry に登録（重複登録防止）
+5) Hydra config を追加（conf/ group）
+6) スモークテスト追加（再現性 + 最低1サンプル生成/計算）
+
+
+thinking
+**Identifying required components**
+exec
+/bin/zsh -lc 'cat agentskills/skills/S20_HYDRA_CONFIG.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 266ms:
+# S20 — Hydra Config Conventions
+
+## 目的
+- Hydra（YAML）で設定を拡張しても破綻しないようにする
+- defaults/group/override/run dir/seed を不変契約に沿って維持
+
+## 参照（MUST）
+- docs/03_CONFIG_CONVENTIONS.md
+- docs/00_INVARIANTS.md
+- docs/04_ARTIFACTS_AND_VERSIONING.md
+
+## 手順
+1) 追加したい設定を “group” に落とす
+   - domain/process/wafer_particles/patterns/size_models/qc/viz/io など
+2) defaults を更新
+   - 既定値を増やすときは互換性に注意（既存runの再現性）
+3) override を想定してキー設計
+   - 例: `wafer_particles.n_samples=10000`
+4) seed の扱い
+   - root seed 以外を増やさない
+
+thinking
+**Reviewing specific sections S70 and S98**
+exec
+/bin/zsh -lc 'cat agentskills/skills/S70_VISUALIZATION_DS.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 259ms:
+# S70 — Visualization & DS Workflow (Data Scientist)
+
+## 目的
+- 生成した擬似データの中身を把握しやすくする（レビュー/説明/分析）
+- 将来ドメインでも使える “可視化の骨格” を作る
+
+## 参照（MUST）
+- docs/04_ARTIFACTS_AND_VERSIONING.md
+- docs/09_EVALUATION_PROTOCOL.md
+
+## 手順
+1) 最低限の可視化を揃える
+   - wafer散布図（r/theta→x/y）
+   - 半径ヒスト、角度ヒスト、粒径ヒスト
+2) ラベル別の代表サンプルを保存
+3) 図は plots/ に保存し、再実行で更新は新runへ（不変契約）
+4) 解析導線（どの図を見るべきか）を README で補助
+
+## 事故りやすい点
+- 図だけ作って “粒子データとして壊れている” のに気づかない
+
+thinking
+**Noticing a brief note**
+exec
+/bin/zsh -lc 'cat agentskills/skills/S98_GOVERNANCE.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 261ms:
+# S98 — Governance: Tests/Review/Release
+
+## 目的
+- “何十回も Codex で反復開発” しても品質が落ちないようにする
+- テスト/レビュー/DoD を統一する
+
+## 参照（MUST）
+- docs/00_INVARIANTS.md
+- docs/04_ARTIFACTS_AND_VERSIONING.md
+
+## 手順
+1) 変更が入ったら必ずテスト観点を追加
+   - 再現性
+   - スキーマ
+   - スモーク（generate→qc→viz）
+2) PRレビュー観点（手動でもOK）
+   - 依存方向が壊れていない
+   - if/else 増殖していない（plugin化されている）
+   - artifact契約が守られている
+3) リリース/配布を想定し、README/例を更新
+
+thinking
+**Preparing to analyze task and repo**
+exec
+/bin/zsh -lc "rg --files -g '*sector*' conf src tests" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 294ms:
+conf/wafer_particles/patterns/edge_sector.yaml
+src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+
+thinking
+**Opening files**
+exec
+/bin/zsh -lc 'cat conf/wafer_particles/patterns/edge_sector.yaml' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 256ms:
+edge_sector:
+  name: wafer_particles.pattern.edge_sector
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  side: right
+  angle_width_deg: 40.0
+  edge_width_ratio: 0.1
+
+thinking
+**Verifying pattern implementation**
+exec
+/bin/zsh -lc 'cat src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 263ms:
+from __future__ import annotations
+
+from math import radians, tau
+from typing import Any, Mapping
+
+from synthlab.framework.registry import register_pattern
+
+from .common import build_particle, resolve_sample_ctx
+
+_SIDE_TO_CENTER_RAD = {
+    "right": 0.0,
+    "top": tau / 4.0,
+    "left": tau / 2.0,
+    "bottom": 3.0 * tau / 4.0,
+}
+
+
+@register_pattern("wafer_particles.pattern.edge_sector")
+def generate(
+    cfg: Mapping[str, Any],
+
+thinking
+**Examining angle center customization**
+exec
+/bin/zsh -lc 'rg -n "composite" conf src tests' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 276ms:
+conf/process/generate.yaml:14:  - wafer_particles/patterns: composite
+tests/test_wafer_particles_patterns.py:31:    "wafer_particles.pattern.composite",
+tests/test_wafer_particles_patterns.py:88:            "wafer_particles.pattern.composite",
+tests/test_wafer_particles_patterns.py:140:        if key == "wafer_particles.pattern.composite":
+tests/test_wafer_particles_patterns.py:162:def test_composite_sets_component_label() -> None:
+tests/test_wafer_particles_patterns.py:169:    particles = _generate("wafer_particles.pattern.composite", cfg, seed=5)
+conf/wafer_particles/labels/taxonomy_v1.yaml:115:  - name: composite
+conf/wafer_particles/labels/taxonomy_v1.yaml:116:    category: composite
+conf/wafer_particles/patterns/composite.yaml:1:composite:
+conf/wafer_particles/patterns/composite.yaml:2:  name: wafer_particles.pattern.composite
+src/synthlab/domains/wafer_particles/generators/patterns/__init__.py:5:    composite,
+src/synthlab/domains/wafer_particles/generators/patterns/__init__.py:20:    "composite",
+src/synthlab/domains/wafer_particles/generators/patterns/composite.py:9:_PATTERN_KEY = "wafer_particles.pattern.composite"
+src/synthlab/domains/wafer_particles/generators/patterns/composite.py:21:        raise ValueError("composite requires components")
+src/synthlab/domains/wafer_particles/generators/patterns/composite.py:26:        raise ValueError("composite weights must be positive")
+src/synthlab/domains/wafer_particles/generators/patterns/composite.py:37:            raise ValueError("composite cannot reference itself")
+
+thinking
+**Opening composite config and pattern**
+exec
+/bin/zsh -lc 'cat conf/wafer_particles/patterns/composite.yaml' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 349ms:
+composite:
+  name: wafer_particles.pattern.composite
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  components:
+    - pattern: wafer_particles.pattern.ring_narrow
+      weight: 0.6
+      label: ring
+      cfg:
+        radius_ratio: 0.7
+        width_ratio: 0.03
+    - pattern: wafer_particles.pattern.random_uniform
+      weight: 0.4
+      label: background
+
+thinking
+**Opening composite pattern**
+exec
+/bin/zsh -lc 'cat src/synthlab/domains/wafer_particles/generators/patterns/composite.py' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 270ms:
+from __future__ import annotations
+
+from typing import Any, Mapping
+
+from synthlab.framework.registry import get_pattern, register_pattern
+
+from .common import resolve_sample_ctx
+
+_PATTERN_KEY = "wafer_particles.pattern.composite"
+
+
+@register_pattern(_PATTERN_KEY)
+def generate(
+    cfg: Mapping[str, Any],
+    rng: Any,
+    sample_ctx: Mapping[str, Any] | None = None,
+) -> list[dict[str, float | str]]:
+    ctx = resolve_sample_ctx(cfg, sample_ctx)
+    components = cfg.get("components")
+    if not components:
+
+thinking
+**Planning new composite pattern addition**
+exec
+/bin/zsh -lc 'cat work/tasks/T0105_sector_custom_and_composite.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 267ms:
+# TASK: T0105 パターン生成バリエーション拡張（任意角度セクタ/リング＋ホットスポット合成）(P1)
+
+## Contracts
+- docs/11_PLUGIN_REGISTRY.md
+- docs/00_INVARIANTS.md
+- docs/09_EVALUATION_PROTOCOL.md
+
+## Summary
+セクタ（edge_sector）の **任意角度中心**対応と、`composite` を使った **リング＋ホットスポット**の代表例を追加する。
+
+## Scope
+- `edge_sector` に `mode: custom`（または `side: custom`）を追加し、`angle_center_rad` を受け取れるようにする
+- `composite` の例を `conf/wafer_particles/patterns/` に追加（ring + hotspot）
+- 生成結果に `component` 列がある場合、両成分が識別できるようにする
+
+## Acceptance Criteria
+- [ ] `pytest -q tests/test_T0105_sector_custom_and_composite.py` が通る
+- [ ] custom angle の sector で、theta が指定中心近傍に偏ることが統計的に確認できる（テスト内で簡易チェック）
+- [ ] composite（ring+hotspot）で、2成分が生成されていることが確認できる（component列 or 2つのクラスタ特性）
+
+
+thinking
+**Requesting test file to understand expectations**
+exec
+/bin/zsh -lc 'cat tests/test_T0105_sector_custom_and_composite.py' in /Users/kawahito/Desktop/synthlab_scaffold exited 1 in 274ms:
+cat: tests/test_T0105_sector_custom_and_composite.py: No such file or directory
+
+thinking
+**Searching for test files**
+exec
+/bin/zsh -lc 'ls tests' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 400ms:
+README.md
+__pycache__
+test_artifacts.py
+test_plugin_registry.py
+test_process_smoke.py
+test_wafer_particles_patterns.py
+test_wafer_particles_schema.py
+test_wafer_particles_size_models.py
+
+thinking
+**Preparing to add missing test file**
+exec
+/bin/zsh -lc 'ls conf/wafer_particles/patterns' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 260ms:
+cluster_parent_child.yaml
+composite.yaml
+cox_lognormal.yaml
+edge_sector.yaml
+hotspot.yaml
+inhom_poisson.yaml
+radial_lines.yaml
+random_edge_biased.yaml
+random_uniform.yaml
+ring_narrow.yaml
+ring_wide.yaml
+scratch.yaml
+
+thinking
+**Planning custom mode and angle handling**
+exec
+/bin/zsh -lc 'cat tests/test_wafer_particles_patterns.py' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 266ms:
+from __future__ import annotations
+
+import math
+import random
+import statistics
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+import synthlab.domains.wafer_particles.generators.patterns  # noqa: E402,F401
+from synthlab.framework.registry import get_pattern, list_patterns  # noqa: E402
+
+
+PATTERN_KEYS = [
+    "wafer_particles.pattern.ring_narrow",
+
+thinking
+**Preparing to add custom angle tests**
+exec
+/bin/zsh -lc 'rg -n "wafer_particles/patterns" conf -g "*.yaml"' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 254ms:
+conf/process/generate.yaml:3:  - wafer_particles/patterns: ring_narrow
+conf/process/generate.yaml:4:  - wafer_particles/patterns: ring_wide
+conf/process/generate.yaml:5:  - wafer_particles/patterns: edge_sector
+conf/process/generate.yaml:6:  - wafer_particles/patterns: scratch
+conf/process/generate.yaml:7:  - wafer_particles/patterns: radial_lines
+conf/process/generate.yaml:8:  - wafer_particles/patterns: hotspot
+conf/process/generate.yaml:9:  - wafer_particles/patterns: random_uniform
+conf/process/generate.yaml:10:  - wafer_particles/patterns: random_edge_biased
+conf/process/generate.yaml:11:  - wafer_particles/patterns: inhom_poisson
+conf/process/generate.yaml:12:  - wafer_particles/patterns: cluster_parent_child
+conf/process/generate.yaml:13:  - wafer_particles/patterns: cox_lognormal
+conf/process/generate.yaml:14:  - wafer_particles/patterns: composite
+
+thinking
+**Planning pattern configuration updates**
+exec
+/bin/zsh -lc 'cat conf/wafer_particles/patterns/hotspot.yaml' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 283ms:
+hotspot:
+  name: wafer_particles.pattern.hotspot
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  mode: center
+  sigma_ratio: 0.05
+  center_radius_ratio: 0.9
+  center_angle: random
+
+thinking
+**Reviewing ring configuration**
+exec
+/bin/zsh -lc 'cat conf/wafer_particles/patterns/ring_narrow.yaml' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 260ms:
+ring_narrow:
+  name: wafer_particles.pattern.ring_narrow
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  radius_ratio: 0.7
+  width_ratio: 0.03
+
+thinking
+**Inspecting pattern and context usage**
+exec
+/bin/zsh -lc 'cat src/synthlab/domains/wafer_particles/generators/patterns/common.py' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 276ms:
+from __future__ import annotations
+
+from dataclasses import dataclass
+from math import atan2, cos, exp, sin, sqrt, tau
+from typing import Any, Mapping
+
+Particle = dict[str, float | str]
+
+
+@dataclass(frozen=True)
+class SampleContext:
+    n_particles: int
+    wafer_radius_mm: float
+
+
+def resolve_sample_ctx(
+    cfg: Mapping[str, Any],
+    sample_ctx: Mapping[str, Any] | SampleContext | None,
+    *,
+    default_n_particles: int = 100,
+
+thinking
+**Planning angle center mode and composite pattern configs**
+
+I’m designing to enhance angle center resolution by adding explicit "custom" mode or side, requiring angle_center_rad/deg when custom is set, while preserving backward compatibility. I’ll also create a new composite pattern config file for the ring plus hotspot combo, aligning naming with existing Hydra group conventions and verifying with docs. Let's make sure the tests and examples reflect these changes clearly.
+exec
+/bin/zsh -lc 'cat docs/03_CONFIG_CONVENTIONS.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 286ms:
+# 03_CONFIG_CONVENTIONS — Hydra（YAML）運用規約
+
+## 1. 原則
+- **すべて YAML**（Hydra）
+- defaults リストで「構成」を表す
+- すべての run は resolved config を artifact に保存（docs/04）
+- seed は root に 1つ（docs/00）
+
+## 2. conf/ 構造（推奨）
+```
+conf/
+  config.yaml               # root（defaults）
+  domain/
+    wafer_particles.yaml
+  process/
+    generate.yaml
+    qc.yaml
+    viz.yaml
+    export.yaml
+    doctor.yaml
+
+thinking
+**Preparing new test and config updates**
+exec
+/bin/zsh -lc 'cat conf/process/generate.yaml' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 272ms:
+defaults:
+  - wafer_particles/size_models: lognormal
+  - wafer_particles/patterns: ring_narrow
+  - wafer_particles/patterns: ring_wide
+  - wafer_particles/patterns: edge_sector
+  - wafer_particles/patterns: scratch
+  - wafer_particles/patterns: radial_lines
+  - wafer_particles/patterns: hotspot
+  - wafer_particles/patterns: random_uniform
+  - wafer_particles/patterns: random_edge_biased
+  - wafer_particles/patterns: inhom_poisson
+  - wafer_particles/patterns: cluster_parent_child
+  - wafer_particles/patterns: cox_lognormal
+  - wafer_particles/patterns: composite
+  - wafer_particles/io: auto
+  - _self_
+
+name: wafer_particles.process.generate
+
+wafer_particles:
+
+thinking
+**Planning pattern tests and validation**
+exec
+/bin/zsh -lc 'rg -n "conf/wafer_particles/patterns" tests' in /Users/kawahito/Desktop/synthlab_scaffold exited 1 in 311ms:
+
+
+thinking
+**Planning config loading test**
+exec
+/bin/zsh -lc 'rg -n "OmegaConf|hydra" src tests' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 346ms:
+tests/test_artifacts.py:16:def test_compute_config_hash_ignores_run_name_and_hydra() -> None:
+tests/test_artifacts.py:20:        "hydra": {"runtime": "x"},
+tests/test_artifacts.py:27:        "hydra": {"runtime": "y"},
+src/synthlab/framework/artifacts.py:20:        canonical.pop("hydra", None)
+
+thinking
+**Checking dependencies for tests**
+exec
+/bin/zsh -lc 'cat requirements.txt' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 262ms:
+matplotlib==3.10.8
+numpy==1.26.4
+pyarrow==22.0.0
+
+thinking
+**Planning detailed pattern tests**
+
+I'll set up new tests for the edge_sector pattern focusing on custom angle handling via mode or side set to "custom" and verifying particles fall within expected angular bounds. Also, I'll design tests for composite ring-hotspot patterns to confirm components and labels behave correctly, all while creating necessary configs and sample contexts to keep tests reliable and efficient.
+exec
+/bin/zsh -lc 'cat src/synthlab/domains/wafer_particles/generators/patterns/hotspot.py' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 295ms:
+from __future__ import annotations
+
+from math import cos, radians, sin, tau
+from typing import Any, Mapping
+
+from synthlab.framework.registry import register_pattern
+
+from .common import build_particle, cartesian_to_polar_mm, resolve_sample_ctx
+
+
+@register_pattern("wafer_particles.pattern.hotspot")
+def generate(
+    cfg: Mapping[str, Any],
+    rng: Any,
+    sample_ctx: Mapping[str, Any] | None = None,
+) -> list[dict[str, float | str]]:
+    ctx = resolve_sample_ctx(cfg, sample_ctx)
+    sigma_mm = _resolve_sigma_mm(cfg, ctx.wafer_radius_mm)
+    center_x_mm, center_y_mm = _resolve_center(cfg, rng, ctx.wafer_radius_mm)
+
+
+thinking
+**Designing custom mode and composite tests for edge_sector**
+
+I'm planning to add a custom mode to the edge_sector pattern that requires angle_center_rad, enforce a validation to raise errors if missing, and create a composite pattern combining ring and hotspot components with a new config file. I'll also write thorough tests capturing angle bias and composite integrity, ensuring the existing interfaces and plugin registry remain stable while avoiding unnecessary changes to initialization or default configs. Let's implement these carefully with helper functions and configuration updates as outlined.
+file update
+M /Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+@@ -40,2 +40,10 @@
+ def _resolve_angle_center_rad(cfg: Mapping[str, Any]) -> float:
++    mode = str(cfg.get("mode", "")).lower()
++    side = str(cfg.get("side", "right")).lower()
++    if mode == "custom" or side == "custom":
++        if "angle_center_rad" in cfg:
++            return float(cfg["angle_center_rad"])
++        if "angle_center_deg" in cfg:
++            return radians(float(cfg["angle_center_deg"]))
++        raise ValueError("custom edge_sector requires angle_center_rad or angle_center_deg")
+     if "angle_center_rad" in cfg:
+@@ -44,3 +52,2 @@
+         return radians(float(cfg["angle_center_deg"]))
+-    side = str(cfg.get("side", "right")).lower()
+     return _SIDE_TO_CENTER_RAD.get(side, 0.0)
+apply_patch(auto_approved=true) exited 0 in 31ms:
+Success. Updated the following files:
+M src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+file update:
+diff --git a/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py b/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+index 00a3787c8db3d95902f343975bba905fffd27702..bcb2fb46fb367252f005ccfde83940ab0958c20e
+--- a/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
++++ b/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+@@ -38,11 +38,18 @@
+ 
+ 
+ def _resolve_angle_center_rad(cfg: Mapping[str, Any]) -> float:
++    mode = str(cfg.get("mode", "")).lower()
++    side = str(cfg.get("side", "right")).lower()
++    if mode == "custom" or side == "custom":
++        if "angle_center_rad" in cfg:
++            return float(cfg["angle_center_rad"])
++        if "angle_center_deg" in cfg:
++            return radians(float(cfg["angle_center_deg"]))
++        raise ValueError("custom edge_sector requires angle_center_rad or angle_center_deg")
+     if "angle_center_rad" in cfg:
+         return float(cfg["angle_center_rad"])
+     if "angle_center_deg" in cfg:
+         return radians(float(cfg["angle_center_deg"]))
+-    side = str(cfg.get("side", "right")).lower()
+     return _SIDE_TO_CENTER_RAD.get(side, 0.0)
+ 
+ 
+
+file update:
+diff --git a/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py b/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+index 00a3787c8db3d95902f343975bba905fffd27702..bcb2fb46fb367252f005ccfde83940ab0958c20e
+--- a/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
++++ b/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+@@ -38,11 +38,18 @@
+ 
+ 
+ def _resolve_angle_center_rad(cfg: Mapping[str, Any]) -> float:
++    mode = str(cfg.get("mode", "")).lower()
++    side = str(cfg.get("side", "right")).lower()
++    if mode == "custom" or side == "custom":
++        if "angle_center_rad" in cfg:
++            return float(cfg["angle_center_rad"])
++        if "angle_center_deg" in cfg:
++            return radians(float(cfg["angle_center_deg"]))
++        raise ValueError("custom edge_sector requires angle_center_rad or angle_center_deg")
+     if "angle_center_rad" in cfg:
+         return float(cfg["angle_center_rad"])
+     if "angle_center_deg" in cfg:
+         return radians(float(cfg["angle_center_deg"]))
+-    side = str(cfg.get("side", "right")).lower()
+     return _SIDE_TO_CENTER_RAD.get(side, 0.0)
+ 
+ 
+
+
+thinking
+**Adding YAML config file**
+exec
+/bin/zsh -lc "cat <<'EOF' > conf/wafer_particles/patterns/composite_ring_hotspot.yaml
+composite_ring_hotspot:
+  name: wafer_particles.pattern.composite
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  components:
+    - pattern: wafer_particles.pattern.ring_narrow
+      weight: 0.6
+      label: ring
+      cfg:
+        radius_ratio: 0.7
+        width_ratio: 0.03
+    - pattern: wafer_particles.pattern.hotspot
+      weight: 0.4
+      label: hotspot
+      cfg:
+        mode: edge
+        sigma_ratio: 0.04
+        center_radius_ratio: 0.85
+        center_angle: random
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 300ms:
+
+file update:
+diff --git a/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py b/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+index 00a3787c8db3d95902f343975bba905fffd27702..bcb2fb46fb367252f005ccfde83940ab0958c20e
+--- a/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
++++ b/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+@@ -38,11 +38,18 @@
+ 
+ 
+ def _resolve_angle_center_rad(cfg: Mapping[str, Any]) -> float:
++    mode = str(cfg.get("mode", "")).lower()
++    side = str(cfg.get("side", "right")).lower()
++    if mode == "custom" or side == "custom":
++        if "angle_center_rad" in cfg:
++            return float(cfg["angle_center_rad"])
++        if "angle_center_deg" in cfg:
++            return radians(float(cfg["angle_center_deg"]))
++        raise ValueError("custom edge_sector requires angle_center_rad or angle_center_deg")
+     if "angle_center_rad" in cfg:
+         return float(cfg["angle_center_rad"])
+     if "angle_center_deg" in cfg:
+         return radians(float(cfg["angle_center_deg"]))
+-    side = str(cfg.get("side", "right")).lower()
+     return _SIDE_TO_CENTER_RAD.get(side, 0.0)
+ 
+ 
+
+
+thinking
+**Creating detailed test file for patterns**
+exec
+/bin/zsh -lc "cat <<'EOF' > tests/test_T0105_sector_custom_and_composite.py
+from __future__ import annotations
+
+import math
+import random
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+import synthlab.domains.wafer_particles.generators.patterns  # noqa: E402,F401
+from synthlab.framework.registry import get_pattern  # noqa: E402
+
+
+def _sample_ctx(n_particles: int = 512, wafer_radius_mm: float = 100.0) -> dict[str, float | int]:
+    return {\"n_particles\": n_particles, \"wafer_radius_mm\": wafer_radius_mm}
+
+
+def _generate(
+    pattern_key: str,
+    cfg: dict[str, object],
+    *,
+    seed: int = 123,
+    n_particles: int = 512,
+) -> list[dict[str, float | str]]:
+    rng = random.Random(seed)
+    generator = get_pattern(pattern_key)
+    return generator(cfg, rng, _sample_ctx(n_particles=n_particles))
+
+
+def _circular_mean(angles: list[float]) -> float:
+    sin_sum = sum(math.sin(angle) for angle in angles)
+    cos_sum = sum(math.cos(angle) for angle in angles)
+    return math.atan2(sin_sum, cos_sum) % math.tau
+
+
+def _angular_distance(angle_a: float, angle_b: float) -> float:
+    delta = abs(angle_a - angle_b) % math.tau
+    if delta > math.pi:
+        delta = math.tau - delta
+    return delta
+
+
+def test_edge_sector_custom_angle_bias() -> None:
+    center_rad = 2.3
+    width_rad = math.radians(30.0)
+    cfg = {
+        \"mode\": \"custom\",
+        \"angle_center_rad\": center_rad,
+        \"angle_width_rad\": width_rad,
+        \"edge_width_ratio\": 0.05,
+    }
+    particles = _generate(\"wafer_particles.pattern.edge_sector\", cfg, seed=21, n_particles=600)
+    thetas = [float(particle[\"theta_rad\"]) for particle in particles]
+
+    mean_angle = _circular_mean(thetas)
+    mean_offset = _angular_distance(mean_angle, center_rad)
+    assert mean_offset < width_rad * 0.2
+
+    avg_offset = sum(_angular_distance(theta, center_rad) for theta in thetas) / len(thetas)
+    assert avg_offset < width_rad * 0.35
+
+
+def test_composite_ring_hotspot_components() -> None:
+    cfg = {
+        \"components\": [
+            {
+                \"pattern\": \"wafer_particles.pattern.ring_narrow\",
+                \"weight\": 0.6,
+                \"label\": \"ring\",
+                \"cfg\": {\"radius_ratio\": 0.7, \"width_ratio\": 0.03},
+            },
+            {
+                \"pattern\": \"wafer_particles.pattern.hotspot\",
+                \"weight\": 0.4,
+                \"label\": \"hotspot\",
+                \"cfg\": {\"mode\": \"center\", \"sigma_ratio\": 0.04},
+            },
+        ]
+    }
+    particles = _generate(\"wafer_particles.pattern.composite\", cfg, seed=5, n_particles=200)
+
+    components = [particle.get(\"component\") for particle in particles]
+    assert all(component is not None for component in components)
+    labels = {str(component) for component in components}
+    assert labels == {\"ring\", \"hotspot\"}
+    assert components.count(\"ring\") > 0
+    assert components.count(\"hotspot\") > 0
+EOF" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 298ms:
+
+file update:
+diff --git a/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py b/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+index 00a3787c8db3d95902f343975bba905fffd27702..bcb2fb46fb367252f005ccfde83940ab0958c20e
+--- a/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
++++ b/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+@@ -38,11 +38,18 @@
+ 
+ 
+ def _resolve_angle_center_rad(cfg: Mapping[str, Any]) -> float:
++    mode = str(cfg.get("mode", "")).lower()
++    side = str(cfg.get("side", "right")).lower()
++    if mode == "custom" or side == "custom":
++        if "angle_center_rad" in cfg:
++            return float(cfg["angle_center_rad"])
++        if "angle_center_deg" in cfg:
++            return radians(float(cfg["angle_center_deg"]))
++        raise ValueError("custom edge_sector requires angle_center_rad or angle_center_deg")
+     if "angle_center_rad" in cfg:
+         return float(cfg["angle_center_rad"])
+     if "angle_center_deg" in cfg:
+         return radians(float(cfg["angle_center_deg"]))
+-    side = str(cfg.get("side", "right")).lower()
+     return _SIDE_TO_CENTER_RAD.get(side, 0.0)
+ 
+ 
+
+
+thinking
+**Verifying component types and config updates**
+exec
+/bin/zsh -lc 'pytest -q tests/test_T0105_sector_custom_and_composite.py' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 2.10s:
+..                                                                       [100%]
+2 passed in 0.15s
+file update:
+diff --git a/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py b/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+index 00a3787c8db3d95902f343975bba905fffd27702..bcb2fb46fb367252f005ccfde83940ab0958c20e
+--- a/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
++++ b/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+@@ -38,11 +38,18 @@
+ 
+ 
+ def _resolve_angle_center_rad(cfg: Mapping[str, Any]) -> float:
++    mode = str(cfg.get("mode", "")).lower()
++    side = str(cfg.get("side", "right")).lower()
++    if mode == "custom" or side == "custom":
++        if "angle_center_rad" in cfg:
++            return float(cfg["angle_center_rad"])
++        if "angle_center_deg" in cfg:
++            return radians(float(cfg["angle_center_deg"]))
++        raise ValueError("custom edge_sector requires angle_center_rad or angle_center_deg")
+     if "angle_center_rad" in cfg:
+         return float(cfg["angle_center_rad"])
+     if "angle_center_deg" in cfg:
+         return radians(float(cfg["angle_center_deg"]))
+-    side = str(cfg.get("side", "right")).lower()
+     return _SIDE_TO_CENTER_RAD.get(side, 0.0)
+ 
+ 
+
+
+thinking
+**Summarizing final implementation details**
+
+I’m outlining the completed work that added custom angle handling in edge_sector, included a ring+hotspot composite pattern, and created tests verifying angle bias and component labeling. I’m also noting the skills applied, test command used, and providing clear file references along with gentle suggestions for next steps the user might consider.
+codex
+Added custom-angle handling for `edge_sector` and a ring+hotspot composite example, with tests that validate angle bias and component labeling.
+
+Skills used: S30_PLUGIN_EXTENSION (pattern extension), S20_HYDRA_CONFIG (config addition), S70_VISUALIZATION_DS (distribution checks), S98_GOVERNANCE (test coverage).
+
+**Details**
+- `src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py`: honor `mode: custom`/`side: custom` with explicit angle center while keeping existing defaults.
+- `conf/wafer_particles/patterns/composite_ring_hotspot.yaml`: new composite example with labeled ring + hotspot components.
+- `tests/test_T0105_sector_custom_and_composite.py`: tests for custom-center bias and composite component IDs.
+
+**Tests**
+- `pytest -q tests/test_T0105_sector_custom_and_composite.py` (passed)
+
+**Next steps**
+1) Run the full suite with `pytest -q`.
+2) Try the new config via `wafer_particles/patterns=composite_ring_hotspot` in a generate run.
+
+**Files changed**
+- `src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py`
+- `conf/wafer_particles/patterns/composite_ring_hotspot.yaml`
+- `tests/test_T0105_sector_custom_and_composite.py`
+file update:
+diff --git a/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py b/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+index 00a3787c8db3d95902f343975bba905fffd27702..bcb2fb46fb367252f005ccfde83940ab0958c20e
+--- a/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
++++ b/src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py
+@@ -38,11 +38,18 @@
+ 
+ 
+ def _resolve_angle_center_rad(cfg: Mapping[str, Any]) -> float:
++    mode = str(cfg.get("mode", "")).lower()
++    side = str(cfg.get("side", "right")).lower()
++    if mode == "custom" or side == "custom":
++        if "angle_center_rad" in cfg:
++            return float(cfg["angle_center_rad"])
++        if "angle_center_deg" in cfg:
++            return radians(float(cfg["angle_center_deg"]))
++        raise ValueError("custom edge_sector requires angle_center_rad or angle_center_deg")
+     if "angle_center_rad" in cfg:
+         return float(cfg["angle_center_rad"])
+     if "angle_center_deg" in cfg:
+         return radians(float(cfg["angle_center_deg"]))
+-    side = str(cfg.get("side", "right")).lower()
+     return _SIDE_TO_CENTER_RAD.get(side, 0.0)
+ 
+ 
+
+tokens used
+51,671
+Added custom-angle handling for `edge_sector` and a ring+hotspot composite example, with tests that validate angle bias and component labeling.
+
+Skills used: S30_PLUGIN_EXTENSION (pattern extension), S20_HYDRA_CONFIG (config addition), S70_VISUALIZATION_DS (distribution checks), S98_GOVERNANCE (test coverage).
+
+**Details**
+- `src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py`: honor `mode: custom`/`side: custom` with explicit angle center while keeping existing defaults.
+- `conf/wafer_particles/patterns/composite_ring_hotspot.yaml`: new composite example with labeled ring + hotspot components.
+- `tests/test_T0105_sector_custom_and_composite.py`: tests for custom-center bias and composite component IDs.
+
+**Tests**
+- `pytest -q tests/test_T0105_sector_custom_and_composite.py` (passed)
+
+**Next steps**
+1) Run the full suite with `pytest -q`.
+2) Try the new config via `wafer_particles/patterns=composite_ring_hotspot` in a generate run.
+
+**Files changed**
+- `src/synthlab/domains/wafer_particles/generators/patterns/edge_sector.py`
+- `conf/wafer_particles/patterns/composite_ring_hotspot.yaml`
+- `tests/test_T0105_sector_custom_and_composite.py`

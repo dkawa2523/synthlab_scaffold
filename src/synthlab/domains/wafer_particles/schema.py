@@ -50,15 +50,19 @@ PARTICLES_SCHEMA = TableSchema(
     required=(
         ColumnSpec("sample_id", "str"),
         ColumnSpec("particle_id", "int"),
+        ColumnSpec("r_norm", "float", min_value=0.0, max_value=1.0),
         ColumnSpec("r_mm", "float"),
         ColumnSpec("theta_rad", "float", min_value=0.0, max_value=tau),
         ColumnSpec("size_um", "float"),
+        ColumnSpec("label_fine", "str"),
         ColumnSpec("label", "str"),
     ),
     optional=(
         ColumnSpec("x_mm", "float"),
         ColumnSpec("y_mm", "float"),
+        ColumnSpec("component_label_fine", "str"),
         ColumnSpec("component", "str"),
+        ColumnSpec("component_id", "int"),
         ColumnSpec("source", "str"),
     ),
 )
@@ -71,6 +75,13 @@ SAMPLES_SCHEMA = TableSchema(
         ColumnSpec("n_particles", "int"),
         ColumnSpec("pattern_params", "str"),
         ColumnSpec("seed_offset", "int"),
+    ),
+    optional=(
+        ColumnSpec("label_coarse", "str"),
+        ColumnSpec("label_family", "str"),
+        ColumnSpec("labels_fine", "str"),
+        ColumnSpec("label_fine_primary", "str"),
+        ColumnSpec("components_json", "str"),
     ),
 )
 

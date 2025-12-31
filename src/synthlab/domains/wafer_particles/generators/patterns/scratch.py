@@ -5,7 +5,9 @@ from typing import Any, Mapping
 
 from synthlab.framework.registry import register_pattern
 
-from .common import build_particle, cartesian_to_polar_mm, resolve_sample_ctx
+from .base import PatternBase, PatternContext
+from .common import build_particle, mm_to_norm
+from .geometry import sample_line_segment
 
 _ANGLE_CATEGORIES = {
     "horizontal": 0.0,
@@ -16,45 +18,37 @@ _ANGLE_CATEGORIES = {
 
 
 @register_pattern("wafer_particles.pattern.scratch")
-def generate(
-    cfg: Mapping[str, Any],
-    rng: Any,
-    sample_ctx: Mapping[str, Any] | None = None,
-) -> list[dict[str, float | str]]:
-    ctx = resolve_sample_ctx(cfg, sample_ctx)
-    angle_rad = _resolve_angle_rad(cfg)
-    length_mm = _resolve_length_mm(cfg, ctx.wafer_radius_mm)
-    width_mm = _resolve_width_mm(cfg, ctx.wafer_radius_mm)
-    offset_mm = _resolve_offset_mm(cfg, ctx.wafer_radius_mm)
+class Scratch(PatternBase):
+    pattern_id = "wafer_particles.pattern.scratch"
+    tags = ("scratch", "line")
 
-    dir_x = cos(angle_rad)
-    dir_y = sin(angle_rad)
-    perp_x = -dir_y
-    perp_y = dir_x
+    @classmethod
+    def generate(
+        cls,
+        ctx: PatternContext,
+        params: Mapping[str, Any],
+        rng: Any,
+    ) -> list[dict[str, Any]]:
+        angle_rad = _resolve_angle_rad(params)
+        length_norm = _resolve_length_norm(params, ctx)
+        width_norm = _resolve_width_norm(params, ctx)
+        offset_norm = _resolve_offset_norm(params, ctx)
 
-    particles: list[dict[str, float | str]] = []
-    max_attempts = ctx.n_particles * 20
-    attempts = 0
-    while len(particles) < ctx.n_particles and attempts < max_attempts:
-        attempts += 1
-        t = (rng.random() - 0.5) * length_mm
-        jitter = (rng.random() - 0.5) * width_mm
-        x_mm = dir_x * t + perp_x * (offset_mm + jitter)
-        y_mm = dir_y * t + perp_y * (offset_mm + jitter)
-        r_mm, theta_rad = cartesian_to_polar_mm(x_mm, y_mm)
-        if r_mm <= ctx.wafer_radius_mm:
-            particles.append(build_particle(r_mm, theta_rad))
+        perp_x = -sin(angle_rad)
+        perp_y = cos(angle_rad)
+        center_x = perp_x * offset_norm
+        center_y = perp_y * offset_norm
 
-    while len(particles) < ctx.n_particles:
-        t = (rng.random() - 0.5) * length_mm
-        x_mm = dir_x * t + perp_x * offset_mm
-        y_mm = dir_y * t + perp_y * offset_mm
-        r_mm, theta_rad = cartesian_to_polar_mm(x_mm, y_mm)
-        if r_mm > ctx.wafer_radius_mm:
-            r_mm = ctx.wafer_radius_mm
-        particles.append(build_particle(r_mm, theta_rad))
-
-    return particles
+        points = sample_line_segment(
+            rng,
+            ctx.n_particles,
+            center_x=center_x,
+            center_y=center_y,
+            angle_rad=angle_rad,
+            length_norm=length_norm,
+            width_norm=width_norm,
+        )
+        return [build_particle(r_norm, theta_rad) for r_norm, theta_rad in points]
 
 
 def _resolve_angle_rad(cfg: Mapping[str, Any]) -> float:
@@ -66,32 +60,36 @@ def _resolve_angle_rad(cfg: Mapping[str, Any]) -> float:
     return _ANGLE_CATEGORIES.get(category, 0.0)
 
 
-def _resolve_length_mm(cfg: Mapping[str, Any], wafer_radius_mm: float) -> float:
-    if "length_mm" in cfg:
-        length_mm = float(cfg["length_mm"])
+def _resolve_length_norm(cfg: Mapping[str, Any], ctx: PatternContext) -> float:
+    if "length_norm" in cfg:
+        length_norm = float(cfg["length_norm"])
+    elif "length_mm" in cfg:
+        length_norm = mm_to_norm(float(cfg["length_mm"]), ctx.wafer_radius_mm)
     else:
         ratio = float(cfg.get("length_ratio", 1.0))
-        length_mm = ratio * wafer_radius_mm * 2.0
-    if length_mm <= 0:
-        raise ValueError("length_mm must be positive")
-    return length_mm
+        length_norm = ratio * 2.0
+    if length_norm <= 0:
+        raise ValueError("length must be positive")
+    return float(length_norm)
 
 
-def _resolve_width_mm(cfg: Mapping[str, Any], wafer_radius_mm: float) -> float:
-    if "width_mm" in cfg:
-        width_mm = float(cfg["width_mm"])
+def _resolve_width_norm(cfg: Mapping[str, Any], ctx: PatternContext) -> float:
+    if "width_norm" in cfg:
+        width_norm = float(cfg["width_norm"])
+    elif "width_mm" in cfg:
+        width_norm = mm_to_norm(float(cfg["width_mm"]), ctx.wafer_radius_mm)
     else:
         ratio = float(cfg.get("width_ratio", 0.01))
-        width_mm = ratio * wafer_radius_mm
-    if width_mm <= 0:
-        raise ValueError("width_mm must be positive")
-    return width_mm
+        width_norm = ratio
+    if width_norm <= 0:
+        raise ValueError("width must be positive")
+    return float(width_norm)
 
 
-def _resolve_offset_mm(cfg: Mapping[str, Any], wafer_radius_mm: float) -> float:
+def _resolve_offset_norm(cfg: Mapping[str, Any], ctx: PatternContext) -> float:
+    if "offset_norm" in cfg:
+        return float(cfg["offset_norm"])
     if "offset_mm" in cfg:
-        offset_mm = float(cfg["offset_mm"])
-    else:
-        ratio = float(cfg.get("offset_ratio", 0.0))
-        offset_mm = ratio * wafer_radius_mm
-    return offset_mm
+        return mm_to_norm(float(cfg["offset_mm"]), ctx.wafer_radius_mm)
+    ratio = float(cfg.get("offset_ratio", 0.0))
+    return ratio

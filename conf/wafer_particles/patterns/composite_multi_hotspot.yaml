@@ -1,0 +1,31 @@
+composite_multi_hotspot:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.composite
+  n_particles: 240
+  wafer_radius_mm: 150.0
+  components:
+    - pattern: wafer_particles.pattern.hotspot
+      weight: 0.34
+      label: hotspot_a
+      cfg:
+        mode: edge
+        sigma_ratio: 0.035
+        center_radius_ratio: 0.8
+        center_angle_deg: 20.0
+    - pattern: wafer_particles.pattern.hotspot
+      weight: 0.33
+      label: hotspot_b
+      cfg:
+        mode: edge
+        sigma_ratio: 0.035
+        center_radius_ratio: 0.8
+        center_angle_deg: 140.0
+    - pattern: wafer_particles.pattern.hotspot
+      weight: 0.33
+      label: hotspot_c
+      cfg:
+        mode: edge
+        sigma_ratio: 0.035
+        center_radius_ratio: 0.8
+        center_angle_deg: 260.0

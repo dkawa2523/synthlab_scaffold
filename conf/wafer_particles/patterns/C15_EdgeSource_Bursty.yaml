@@ -1,0 +1,31 @@
+C15_EdgeSource_Bursty:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.C15_EdgeSource_Bursty
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  angle_center: random
+  angle_width_deg: 12.0
+  radial_scale_norm: 0.06
+  bursts: 3
+  burst_angle_jitter_deg: 10.0
+  param_space:
+    angle_center_rad:
+      dist: uniform
+      min: 0.0
+      max: 6.283185307179586
+    angle_width_deg:
+      dist: uniform
+      min: 6.0
+      max: 30.0
+    radial_scale_norm:
+      dist: uniform
+      min: 0.01
+      max: 0.15
+    bursts:
+      dist: choice
+      values: [2, 3, 4]
+    burst_angle_jitter_deg:
+      dist: uniform
+      min: 4.0
+      max: 20.0

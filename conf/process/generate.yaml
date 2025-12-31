@@ -12,6 +12,7 @@ defaults:
   - wafer_particles/patterns: cluster_parent_child
   - wafer_particles/patterns: cox_lognormal
   - wafer_particles/patterns: composite
+  - wafer_particles/noise: default
   - wafer_particles/io: auto
   - _self_
 
@@ -24,6 +25,9 @@ wafer_particles:
   sample_id_prefix: sample
   include_xy: true
   source: synthetic
+  allow_optional_patterns: false
+  generate:
+    chunk_size: 1000
   label_selection:
     mode: ratio
     shuffle: true

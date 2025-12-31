@@ -5,23 +5,26 @@ from typing import Any, Mapping
 
 from synthlab.framework.registry import register_pattern
 
-from .common import build_particle, resolve_radius_mm, resolve_sample_ctx, resolve_width_mm
+from .base import PatternBase, PatternContext
+from .common import build_particle, resolve_radius_norm, resolve_width_norm
+from .geometry import sample_uniform_annulus
 
 
 @register_pattern("wafer_particles.pattern.ring_wide")
-def generate(
-    cfg: Mapping[str, Any],
-    rng: Any,
-    sample_ctx: Mapping[str, Any] | None = None,
-) -> list[dict[str, float | str]]:
-    ctx = resolve_sample_ctx(cfg, sample_ctx)
-    radius_mm = resolve_radius_mm(cfg, ctx, default_ratio=0.6)
-    width_mm = resolve_width_mm(cfg, ctx, default_ratio=0.15)
+class RingWide(PatternBase):
+    pattern_id = "wafer_particles.pattern.ring_wide"
+    tags = ("ring",)
 
-    particles: list[dict[str, float | str]] = []
-    for _ in range(ctx.n_particles):
-        r_mm = radius_mm + (rng.random() - 0.5) * width_mm
-        r_mm = min(max(r_mm, 0.0), ctx.wafer_radius_mm)
-        theta_rad = rng.random() * tau
-        particles.append(build_particle(r_mm, theta_rad))
-    return particles
+    @classmethod
+    def generate(
+        cls,
+        ctx: PatternContext,
+        params: Mapping[str, Any],
+        rng: Any,
+    ) -> list[dict[str, Any]]:
+        radius_norm = resolve_radius_norm(params, ctx, default_ratio=0.6)
+        width_norm = resolve_width_norm(params, ctx, default_ratio=0.15)
+        r_inner = max(0.0, radius_norm - width_norm * 0.5)
+        r_outer = min(1.0, radius_norm + width_norm * 0.5)
+        points = sample_uniform_annulus(rng, ctx.n_particles, r_inner=r_inner, r_outer=r_outer)
+        return [build_particle(r_norm, theta_rad) for r_norm, theta_rad in points]

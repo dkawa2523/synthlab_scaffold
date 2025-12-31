@@ -1,0 +1,6 @@
+defaults:
+  - wafer_particles/compose: default
+  - wafer_particles/io: auto
+  - _self_
+
+name: wafer_particles.process.compose

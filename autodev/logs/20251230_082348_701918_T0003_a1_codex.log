@@ -1,0 +1,2835 @@
+OpenAI Codex v0.77.0 (research preview)
+--------
+workdir: /Users/kawahito/Desktop/synthlab_scaffold
+model: gpt-5.2-codex
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: auto
+session id: 019b6c6c-ceca-7ef0-a071-cebfef467962
+--------
+user
+# AUTODEV TASK RUN
+
+Target Task: T0003 — Artifact契約（run dir / meta / config snapshot / manifest）の実装
+
+## Contracts (MUST READ)
+
+- docs/04_ARTIFACTS_AND_VERSIONING.md
+- docs/00_INVARIANTS.md
+
+## Skills to follow
+
+- agentskills/skills/S50_ARTIFACT_AND_IO.md
+- agentskills/skills/S10_ARCHITECTURE.md
+
+## Hard rules (no stalls)
+
+- Do NOT ask the user questions. Make reasonable defaults and proceed.
+- If ambiguity exists, choose the option that preserves docs/00 invariants and is minimal.
+- Always keep changes small & reviewable; list files changed at the end.
+
+## AutoDev policy
+
+- If you ask questions/confirmation, the loop will treat it as failure and retry.
+
+## Task file content
+
+(from /Users/kawahito/Desktop/synthlab_scaffold/work/tasks/T0003_artifact_contract.md)
+
+```md
+# TASK: T0003 Artifact契約（run dir / meta / config snapshot / manifest）の実装（更新 v2.2）
+
+## Contracts (MUST READ)
+- docs/00_INVARIANTS.md
+- docs/04_ARTIFACTS_AND_VERSIONING.md
+
+## Summary
+- ArtifactWriter/Reader 相当の共通ユーティリティを実装し、すべてのProcessが同じ契約で出力できるようにする。
+- 特に `config_hash` は run_name などの実行時変数に依存しないように定義する（docs/04参照）。
+
+## Scope
+- `ArtifactWriter/Reader` 的なユーティリティ（framework）を作成
+- `config/resolved.yaml` / `config/overrides.txt` / `meta/meta.json` を必ず保存
+- `config_hash` を算出して meta に入れる（docs/04 の canonicalization を必ず守る）
+- `README.md`（run要約）生成は任意
+
+## Non-goals
+- generate/qc/viz の本格実装（別タスク）
+- 外部MLOps連携
+
+## Acceptance Criteria (MUST)
+- [ ] すべての Process が同じ方法で artifact を作れる（API統一）
+- [ ] meta.json の必須フィールドが揃う（docs/04）
+- [ ] `config_hash` が同一設定の2回実行で一致する（run_name/hydraに依存しない）
+- [ ] 生成物が run dir 外へ出ない
+
+## Verification (MUST)
+以下は自動化（autodev/verifiers.py）で実行されますが、人手で確認する場合のコマンド例です。
+
+1) doctor を2回実行
+```bash
+python -m synthlab.cli.main process=doctor seed=1
+python -m synthlab.cli.main process=doctor seed=1
+```
+
+2) 最新の `runs/*/doctor/` の中に以下があること
+- `config/resolved.yaml`
+- `config/overrides.txt`
+- `meta/meta.json`
+
+3) `meta/meta.json` の `config_hash` が 2回で一致していること
+- さらに `config/resolved.yaml` から canonical hash を計算した値と一致していること（docs/04の擬似コード）
+
+## Implementation Notes
+- **重要**: Hydra を使う場合でも、`.hydra/` のみに依存しないこと。
+  - 契約は `config/resolved.yaml` と `config/overrides.txt` で固定する（docs/04）。
+- `config_hash` は docs/04 の定義に従い、`hydra` と `run_name` を除外した canonical config から計算する。
+  - run_name は `${now:...}` 等で変化しやすく、これを hash に含めると比較不能になるため。
+- overrides.txt は取得できない環境がありうるため、P0では「空でも良いがファイルは必ず生成」で良い。
+  - ただし将来、Hydraのoverride取得が可能なら埋める（TODO）
+
+## DoD
+- [ ] 最低1つのテスト（config_hashの安定性や必須ファイル存在）を追加（可能なら）
+- [ ] docs/04 の契約に適合
+
+```
+
+## Contract: docs/00_INVARIANTS.md
+```md
+# 00_INVARIANTS — 不変条件（契約）
+
+## 0. この文書の位置づけ
+この文書は「以後すべての実装/タスク/レビューが従う不変契約」です。
+例外は **blocked運用**でのみ許可します。
+
+---
+
+## 1. 用語
+- **Domain**: データ型のまとまり（例：wafer_particles、画像、時系列）
+- **Process**: 実行単位（generate/qc/viz/train/eval/export/doctor…）
+- **Artifact**: Processの出力（runディレクトリ）。再現・比較の最小単位
+- **Plugin**: 拡張点（pattern/size_model/metric/viz/process など）
+- **Resolved Config**: Hydra で解決済みの設定（YAML）。真実の情報
+
+---
+
+## 2. 不変条件（MUST）
+### 2.1 設定が真実（Config is the Source of Truth）
+- すべての実行は Hydra 設定（YAML）で宣言される
+- Artifact には必ず以下を保存する
+  - 解決済み config（resolved.yaml）
+  - override（overrides.txt）
+  - seed
+  - 実行環境メタ（OS/Python/依存）
+
+### 2.2 再現性（Determinism）
+- 乱数は **単一の seed** と **明示的な RNG 注入**で制御する
+- グローバル乱数（np.random.* の暗黙利用、random モジュール直叩き）は禁止
+- 同じ resolved config + seed から、同一データ・同一統計が再現できること
+
+### 2.3 Processの純度（Process Purity）
+- Process は「入力Artifact/入力ファイル → 出力Artifact」を明確にする
+- Process は run ディレクトリ外に副作用を書かない（例外：明示された cache/ がある場合のみ）
+- Process は構成上、他の Process の内部実装に依存しない（I/O契約に依存）
+
+### 2.4 Artifactは追記・改変しない（Immutability）
+- 生成済み artifact は原則「write-once」
+- 再生成/改良は新しい run として出力する（比較可能性のため）
+- 例外的な上書きは blocked運用でのみ許可
+
+### 2.5 比較可能性（Comparability）
+- 比較は「同一評価プロトコル（docs/09）」「同一スキーマ」「同一seed方針」でのみ行う
+- 生成器の変更で評価が変わる場合、必ず差分を meta に残す（git sha / config hash）
+
+### 2.6 Skew禁止（Train/Inference / Generate/Analyze のズレ禁止）
+- 同じ artifact を入力にする解析/QC/viz は同じスキーマ・同じ前処理を用いる
+- “見た目だけ合う” 生成（vizで見えるが粒子データとしては壊れている等）を禁止
+- 変換（r,theta→x,y 等）は単一実装に統一し、複数実装の分岐を禁止
+
+### 2.7 拡張はPluginで行う（No Big if/else）
+- パターン追加、サイズモデル追加、評価指標追加、可視化追加は Plugin Registry を通す
+- 巨大な条件分岐で増殖させない（コード肥大化・レビュー困難を防ぐ）
+
+### 2.8 観測可能性（Observability）
+- すべての run は metrics と plots を持つ（最低限）
+- ログ（console.log相当）を run に残す（クラッシュ時に再現可能にする）
+
+---
+
+## 3. Blocked運用（不変契約の変更手順）
+不変契約に抵触する変更が必要になった場合:
+
+1) まず **blocked** の解除タスクを作る（work/tasks に追加）
+   - 解除タスクは `unblocks: [対象タスクID]` を持つ  
+2) docs の更新（どの不変条件がなぜ変わるか、影響範囲、移行手順）
+3) 互換性/移行計画（artifact/schema/version の扱い）
+4) Verification を通してから実装再開
+
+---
+
+## 4. TODO（根拠が無い点）
+- 生成データを社内レイクに登録する正式手順（権限/監査）: TODO
+- 実測データの匿名化・取り扱い規定（会社ポリシー依存）: TODO
+
+```
+
+## Contract: docs/04_ARTIFACTS_AND_VERSIONING.md
+```md
+# 04_ARTIFACTS_AND_VERSIONING — Artifact契約とバージョニング（更新 v2.2）
+
+## 1. Artifact（run）ディレクトリ契約（MUST）
+各 Process の出力は **単一の run ディレクトリ**に保存される。
+最低限、以下を持つ。
+
+```
+runs/<run_name>/<process.name>/
+  config/
+    resolved.yaml
+    overrides.txt
+  meta/
+    meta.json
+  data/                     # generate/export の主出力
+  metrics/                  # qc/eval 等
+  plots/                    # viz
+  logs/
+    console.log             # 可能なら
+  README.md                 # そのrunの要約（自動生成可）
+```
+
+Hydraが自動生成する `.hydra/` は残っていても良いが、
+**契約として参照するのは上記 config/** とする（将来の移植性のため）。
+
+---
+
+## 2. meta.json（MUST）
+最低限フィールド（例）:
+- `run_name`
+- `process_name`
+- `created_at`（ISO8601）
+- `seed`
+- `git_sha`（取得できるなら。取得不能なら null + TODO）
+- `config_hash`（resolved.yaml の canonical hash 先頭12桁）
+- `domain`
+- `schema_version`
+- `notes`（任意）
+
+---
+
+## 3. config_hash の定義（重要・MUST）
+
+### 3.1 目的
+`config_hash` は **比較可能性** と **再現性** のための指紋です。
+**実行ごとに変わる値（run_name、Hydraのruntime）に依存してはいけません。**
+同一の「実質的な設定」であれば run_name が違っても `config_hash` は同一であるべきです。
+
+### 3.2 canonicalization（MUST）
+`config/resolved.yaml` から `config_hash` を計算する前に、次の処理を行います。
+
+- ルートの `hydra` キーは除外（存在する場合）
+- ルートの `run_name` は除外（存在する場合）
+- それ以外のキーは保持（※将来必要なら ignore list は拡張可能。互換性注意）
+
+### 3.3 ハッシュ計算（MUST）
+- canonicalized config を **stable dump** する（key を sort する）
+- SHA-256 を取り、先頭12桁を `config_hash` とする
+
+擬似コード例:
+```python
+import yaml, hashlib, copy
+cfg = yaml.safe_load(open("resolved.yaml"))
+x = copy.deepcopy(cfg)
+x.pop("hydra", None)
+x.pop("run_name", None)
+dumped = yaml.safe_dump(x, sort_keys=True)
+config_hash = hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
+```
+
+---
+
+## 4. データ出力（wafer_particles v1）
+### 4.1 particles（点群テーブル）
+推奨: Parquet（学習/解析で扱いやすい）
+
+必須列（v1）:
+- `sample_id` : str（run 内でユニーク）
+- `particle_id`: int（sample内でユニーク）
+- `r_mm` : float
+- `theta_rad` : float（0..2π）
+- `size_um` : float（粒径）
+- `label` : str（細粒度パターンラベル）
+
+推奨列:
+- `x_mm`, `y_mm`（派生。常に同一変換関数で生成）
+- `component`（composite 生成時の成分ラベル）
+- `source`（"synthetic" 等）
+
+### 4.2 samples（サンプルメタ）
+- `sample_id`
+- `label`
+- `n_particles`
+- `pattern_params`（JSON文字列 or 列展開。P0はJSON文字列推奨）
+- `seed_offset`（サンプル内seed派生に使った値）
+
+### 4.3 manifest
+- `manifest.json` または `manifest.yaml`
+- データファイルの相対パス、行数、schema_version、label分布など
+
+---
+
+## 5. スキーマバージョン
+- `schema_version` は `wafer_particles.v1` のように明示する
+- 互換性破壊（列名変更/意味変更）は blocked運用
+- 追加列は後方互換（基本OK）
+
+---
+
+## 6. バージョニング（比較可能性）
+- 生成器の変更は config に必ず反映される（新しいrunを作る）
+- `config_hash` と `git_sha` で追跡する
+- datasetの “配布版” を作る場合は `export` process が `dataset_id` を確定させる
+
+---
+
+## 7. TODO
+- `git_sha` が取得できない環境（zip配布等）の扱い: TODO
+
+```
+
+## Deliverables
+
+- Implement changes to satisfy Acceptance Criteria and Verification.
+- Print a concise summary: files changed + how to run verification.
+mcp: context7 starting
+mcp: context7 ready
+mcp startup: ready: context7
+
+thinking
+**Reviewing skill files**
+exec
+/bin/zsh -lc ls in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 309ms:
+README.md
+__pycache__
+agentskills
+autodev
+conf
+docs
+runs
+src
+synthlab
+tests
+work
+
+thinking
+**Reading key skill files**
+exec
+/bin/zsh -lc 'cat agentskills/skills/S50_ARTIFACT_AND_IO.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 266ms:
+# S50 — Artifact Contract & I/O
+
+## 目的
+- 出力形式を将来の学習・解析で扱いやすくし、比較可能性を担保する
+
+## 参照（MUST）
+- docs/04_ARTIFACTS_AND_VERSIONING.md
+- docs/00_INVARIANTS.md
+
+## 手順
+1) schema_version を固定し、必須列を確定
+2) Parquet を第一候補にする（大規模生成に耐える）
+3) manifest を出す（ファイル/行数/label分布/スキーマ）
+4) meta.json に config_hash/seed 等を必ず入れる
+5) 互換性破壊があるなら blocked運用
+
+## 事故りやすい点
+- 粒子列の意味変更（theta単位など）を無自覚に行う
+- 変換関数が複数箇所に散る（skew）
+
+
+thinking
+**Identifying missing documentation**
+exec
+/bin/zsh -lc 'cat agentskills/skills/S10_ARCHITECTURE.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 263ms:
+# S10 — Architecture & Invariants (Architect)
+
+## 目的
+- 構造が肥大化しないように **依存方向**と**拡張点**を守る
+- docs/00（不変契約）を破らない変更計画を作る
+- 将来ドメイン（画像/動画/時系列）にも耐える骨格を維持する
+
+## 参照（MUST）
+- docs/00_INVARIANTS.md
+- docs/01_ARCHITECTURE.md
+- docs/11_PLUGIN_REGISTRY.md
+
+## 手順（やること）
+1) 変更要求を “分類” する
+   - (A) 新機能追加（plugin/新process）なのか
+   - (B) 既存契約の変更（schema/評価/依存方向）なのか
+2) 依存方向をチェック
+   - Hydra依存が Domain/Plugin に侵入していないか
+   - 下位層が上位層を import していないか
+3) 拡張点を registry で吸収できるか検討
+
+thinking
+**Reading architecture and plugin docs**
+exec
+/bin/zsh -lc 'cat docs/01_ARCHITECTURE.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 261ms:
+# 01_ARCHITECTURE — 構成と依存方向
+
+## 1. 目的
+- **拡張しても肥大化しない**構造（pattern/metric/viz/process が増えても一定の秩序）
+- **複数ドメイン**（点群/画像/動画/時系列）へ拡張可能
+- **Hydra設定**と **artifact契約**で、再現性・比較可能性を担保
+
+## 2. 現状→理想（方針）
+現状: wafer_particles を最初の Domain として実装開始  
+理想: Domain を増やしても framework は共通、Domain固有は domains/ 配下に閉じる
+
+## 3. 依存方向（重要）
+下位層は上位層を import しない（逆依存禁止）。
+
+```
+[CLI / main]
+    |
+    v
+[Process Dispatcher] -----> [Artifact I/O]
+    |
+
+thinking
+**Checking for plugin registry documentation**
+exec
+/bin/zsh -lc 'cat docs/11_PLUGIN_REGISTRY.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 263ms:
+# 11_PLUGIN_REGISTRY — 拡張（モデル/特徴量/Process）登録規約
+
+## 1. 目的
+- 新しいパターン/サイズモデル/メトリクス/可視化/Process を追加しても
+  - if/else が肥大化しない
+  - ディレクトリが無秩序にならない
+  - レビューが容易
+を保証する。
+
+## 2. Plugin種別（v1）
+- PatternGenerator（点座標を生成）
+- SizeModel（粒径を割り当て）
+- Metric（QC指標）
+- Visualizer（プロット生成）
+- Process（generate/qc/viz/export/train…）
+
+## 3. 登録の原則（MUST）
+- plugin は **名前（key）**で登録される
+- key は namespaced にする（衝突防止）
+  - 例: `wafer_particles.pattern.ring_narrow`
+
+thinking
+**Verifying documentation files**
+exec
+/bin/zsh -lc 'cat docs/04_ARTIFACTS_AND_VERSIONING.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 252ms:
+# 04_ARTIFACTS_AND_VERSIONING — Artifact契約とバージョニング（更新 v2.2）
+
+## 1. Artifact（run）ディレクトリ契約（MUST）
+各 Process の出力は **単一の run ディレクトリ**に保存される。
+最低限、以下を持つ。
+
+```
+runs/<run_name>/<process.name>/
+  config/
+    resolved.yaml
+    overrides.txt
+  meta/
+    meta.json
+  data/                     # generate/export の主出力
+  metrics/                  # qc/eval 等
+  plots/                    # viz
+  logs/
+    console.log             # 可能なら
+  README.md                 # そのrunの要約（自動生成可）
+```
+
+thinking
+**Checking for initial documentation file**
+exec
+/bin/zsh -lc 'cat docs/00_INVARIANTS.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 272ms:
+# 00_INVARIANTS — 不変条件（契約）
+
+## 0. この文書の位置づけ
+この文書は「以後すべての実装/タスク/レビューが従う不変契約」です。
+例外は **blocked運用**でのみ許可します。
+
+---
+
+## 1. 用語
+- **Domain**: データ型のまとまり（例：wafer_particles、画像、時系列）
+- **Process**: 実行単位（generate/qc/viz/train/eval/export/doctor…）
+- **Artifact**: Processの出力（runディレクトリ）。再現・比較の最小単位
+- **Plugin**: 拡張点（pattern/size_model/metric/viz/process など）
+- **Resolved Config**: Hydra で解決済みの設定（YAML）。真実の情報
+
+---
+
+## 2. 不変条件（MUST）
+### 2.1 設定が真実（Config is the Source of Truth）
+- すべての実行は Hydra 設定（YAML）で宣言される
+
+thinking
+**Searching for artifact utilities**
+exec
+/bin/zsh -lc 'rg -n "artifact|Artifact|meta.json|config_hash|resolved.yaml|overrides.txt" -S src/synthlab' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 287ms:
+src/synthlab/cli/main.py:12:from synthlab.framework.artifacts import ensure_unique_run_name
+src/synthlab/framework/process.py:6:from .artifacts import ArtifactWriter, ensure_unique_run_name
+src/synthlab/framework/process.py:16:    def run(self, writer: ArtifactWriter) -> None:
+src/synthlab/framework/process.py:29:    writer = ArtifactWriter(repo_root=repo_root, cfg=cfg, overrides=overrides)
+src/synthlab/framework/artifacts.py:17:def compute_config_hash(cfg: dict[str, Any]) -> str:
+src/synthlab/framework/artifacts.py:67:class ArtifactWriter:
+src/synthlab/framework/artifacts.py:77:        self.config_hash = compute_config_hash(self.cfg)
+src/synthlab/framework/artifacts.py:114:        _dump_yaml(self.run_dir / "config" / "resolved.yaml", self.cfg)
+src/synthlab/framework/artifacts.py:116:        (self.run_dir / "config" / "overrides.txt").write_text(overrides_text, encoding="utf-8")
+src/synthlab/framework/artifacts.py:125:            "config_hash": self.config_hash,
+src/synthlab/framework/artifacts.py:135:        _dump_json(self.run_dir / "meta" / "meta.json", meta)
+
+thinking
+**Checking existing artifacts module**
+exec
+/bin/zsh -lc "sed -n '1,220p' src/synthlab/framework/artifacts.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 259ms:
+from __future__ import annotations
+
+import copy
+import hashlib
+import json
+import platform
+import subprocess
+import sys
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Iterable, Optional
+
+import yaml
+
+
+def compute_config_hash(cfg: dict[str, Any]) -> str:
+    canonical = copy.deepcopy(cfg)
+    if isinstance(canonical, dict):
+        canonical.pop("hydra", None)
+
+thinking
+**Verifying run name uniqueness**
+exec
+/bin/zsh -lc "sed -n '1,220p' src/synthlab/framework/process.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 272ms:
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from .artifacts import ArtifactWriter, ensure_unique_run_name
+from .registry import get_process
+
+
+class BaseProcess:
+    name = ""
+
+    def __init__(self, cfg: dict[str, Any]) -> None:
+        self.cfg = cfg
+
+    def run(self, writer: ArtifactWriter) -> None:
+        raise NotImplementedError
+
+
+def dispatch_process(cfg: dict[str, Any], overrides: list[str], repo_root: Path) -> Path:
+
+thinking
+**Reviewing config handling and overrides**
+exec
+/bin/zsh -lc "sed -n '1,220p' src/synthlab/cli/main.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 266ms:
+from __future__ import annotations
+
+import argparse
+import sys
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+from synthlab.framework.artifacts import ensure_unique_run_name
+from synthlab.framework.process import dispatch_process
+
+# Register processes
+import synthlab.processes  # noqa: F401
+
+
+def _coerce_value(raw: str) -> Any:
+    lower = raw.lower()
+
+thinking
+**Continuing process**
+exec
+/bin/zsh -lc "sed -n '220,520p' src/synthlab/cli/main.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 279ms:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="SynthLab CLI (minimal dispatcher)",
+    )
+    parser.add_argument(
+        "overrides",
+        nargs="*",
+        help="Hydra-style overrides, e.g. process=doctor seed=1",
+    )
+    args = parser.parse_args(argv)
+
+    overrides = list(args.overrides)
+    try:
+        override_cfg = _parse_overrides(overrides)
+        cfg = resolve_config(override_cfg, repo_root=Path.cwd())
+        process_name = cfg["process"]["name"]
+        runs_dir = Path.cwd() / "runs"
+        cfg["run_name"] = ensure_unique_run_name(runs_dir, str(cfg["run_name"]), process_name)
+        dispatch_process(cfg=cfg, overrides=overrides, repo_root=Path.cwd())
+    except Exception as exc:
+
+thinking
+**Checking tests related to artifact**
+exec
+/bin/zsh -lc 'rg -n "ArtifactWriter|config_hash|resolved.yaml|overrides.txt|meta.json" -S tests src/synthlab' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 288ms:
+src/synthlab/framework/artifacts.py:17:def compute_config_hash(cfg: dict[str, Any]) -> str:
+src/synthlab/framework/artifacts.py:67:class ArtifactWriter:
+src/synthlab/framework/artifacts.py:77:        self.config_hash = compute_config_hash(self.cfg)
+src/synthlab/framework/artifacts.py:114:        _dump_yaml(self.run_dir / "config" / "resolved.yaml", self.cfg)
+src/synthlab/framework/artifacts.py:116:        (self.run_dir / "config" / "overrides.txt").write_text(overrides_text, encoding="utf-8")
+src/synthlab/framework/artifacts.py:125:            "config_hash": self.config_hash,
+src/synthlab/framework/artifacts.py:135:        _dump_json(self.run_dir / "meta" / "meta.json", meta)
+src/synthlab/framework/process.py:6:from .artifacts import ArtifactWriter, ensure_unique_run_name
+src/synthlab/framework/process.py:16:    def run(self, writer: ArtifactWriter) -> None:
+src/synthlab/framework/process.py:29:    writer = ArtifactWriter(repo_root=repo_root, cfg=cfg, overrides=overrides)
+
+thinking
+**Evaluating artifact writer, reader, and manifest**
+
+I'm verifying that while there's an ArtifactWriter, the corresponding Reader might be missing. The config_hash needs to be computed from a canonicalized resolved config excluding certain fields like run_name and hydra root for stability. I'm also considering the possible need for a manifest as part of the artifact contract, since the acceptance criteria mandate saving several files but the manifest's inclusion is somewhat ambiguous, so I plan to search the codebase or tasks to clarify its presence or requirements.
+exec
+/bin/zsh -lc 'rg -n "manifest" -S src/synthlab tests conf' in /Users/kawahito/Desktop/synthlab_scaffold exited 1 in 280ms:
+
+
+thinking
+**Checking for task artifacts**
+exec
+/bin/zsh -lc 'cat work/tasks/T0003_artifact_contract.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 261ms:
+# TASK: T0003 Artifact契約（run dir / meta / config snapshot / manifest）の実装（更新 v2.2）
+
+## Contracts (MUST READ)
+- docs/00_INVARIANTS.md
+- docs/04_ARTIFACTS_AND_VERSIONING.md
+
+## Summary
+- ArtifactWriter/Reader 相当の共通ユーティリティを実装し、すべてのProcessが同じ契約で出力できるようにする。
+- 特に `config_hash` は run_name などの実行時変数に依存しないように定義する（docs/04参照）。
+
+## Scope
+- `ArtifactWriter/Reader` 的なユーティリティ（framework）を作成
+- `config/resolved.yaml` / `config/overrides.txt` / `meta/meta.json` を必ず保存
+- `config_hash` を算出して meta に入れる（docs/04 の canonicalization を必ず守る）
+- `README.md`（run要約）生成は任意
+
+## Non-goals
+- generate/qc/viz の本格実装（別タスク）
+- 外部MLOps連携
+
+
+thinking
+**Verifying ArtifactReader implementation**
+exec
+/bin/zsh -lc "rg -n \"class .*Process|def run\\(\" -S src/synthlab/processes src/synthlab" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 260ms:
+src/synthlab/processes/doctor.py:29:class DoctorProcess(BaseProcess):
+src/synthlab/processes/doctor.py:32:    def run(self, writer) -> None:
+src/synthlab/processes/doctor.py:29:class DoctorProcess(BaseProcess):
+src/synthlab/processes/doctor.py:32:    def run(self, writer) -> None:
+src/synthlab/framework/process.py:10:class BaseProcess:
+src/synthlab/framework/process.py:16:    def run(self, writer: ArtifactWriter) -> None:
+
+thinking
+**Reviewing doctor process**
+exec
+/bin/zsh -lc "sed -n '1,200p' src/synthlab/processes/doctor.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 266ms:
+from __future__ import annotations
+
+import platform
+import sys
+from datetime import datetime, timezone
+from typing import Any, Dict
+
+from synthlab.framework.process import BaseProcess
+from synthlab.framework.registry import register_process
+
+
+def _torch_info() -> Dict[str, Any]:
+    try:
+        import torch
+    except Exception as exc:  # pragma: no cover - optional dependency
+        return {
+            "available": False,
+            "cuda_available": False,
+            "error": str(exc),
+        }
+
+thinking
+**Reviewing artifact reader requirements and config hashing**
+exec
+/bin/zsh -lc 'ls tests' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 271ms:
+README.md
+
+thinking
+**Planning test additions**
+exec
+/bin/zsh -lc 'rg -n "pytest|unittest" -S .' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 284ms:
+./agentskills/skills/S98_GOVERNANCE.md:27:- [ ] `pytest` が通る
+./autodev/logs/20251230_075851_145865_T0001_a1_codex.log:451:.pytest_cache
+./work/tasks/T0011_tests_and_doctor.md:14:- [ ] CI無しでもローカルで `pytest` が通る設計
+./work/tasks/T0011_tests_and_doctor.md:18:- `pytest -q`
+
+thinking
+**Checking test infrastructure**
+exec
+/bin/zsh -lc 'ls -a' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 261ms:
+.
+..
+.DS_Store
+.git
+.gitignore
+.pytest_cache
+.venv
+README.md
+__pycache__
+agentskills
+autodev
+conf
+docs
+runs
+src
+synthlab
+tests
+work
+
+thinking
+**Checking for Python project files**
+exec
+/bin/zsh -lc 'rg -n "pytest" -S README.md work' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 269ms:
+work/tasks/T0011_tests_and_doctor.md:14:- [ ] CI無しでもローカルで `pytest` が通る設計
+work/tasks/T0011_tests_and_doctor.md:18:- `pytest -q`
+
+thinking
+**Checking project structure and test setup**
+exec
+/bin/zsh -lc 'ls src/synthlab' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 277ms:
+__init__.py
+cli
+domains
+framework
+processes
+
+thinking
+**Checking for top-level synthlab package**
+exec
+/bin/zsh -lc 'ls synthlab' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 259ms:
+__init__.py
+__pycache__
+
+thinking
+**Investigating synthlab package structure**
+exec
+/bin/zsh -lc 'cat synthlab/__init__.py' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 272ms:
+from __future__ import annotations
+
+from pathlib import Path
+
+__all__ = ["__version__"]
+__version__ = "0.0.0"
+
+_pkg_root = Path(__file__).resolve().parent
+_src_pkg = _pkg_root.parent / "src" / "synthlab"
+if _src_pkg.is_dir():
+    __path__.append(str(_src_pkg))
+
+thinking
+**Analyzing ArtifactReader implementation needs**
+exec
+/bin/zsh -lc 'rg -n "schema_version" -S src/synthlab conf' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 307ms:
+src/synthlab/cli/main.py:198:def _ensure_schema_version(cfg: dict[str, Any]) -> None:
+src/synthlab/cli/main.py:199:    if not _is_missing(cfg.get("schema_version")):
+src/synthlab/cli/main.py:202:    if isinstance(domain, dict) and domain.get("schema_version"):
+src/synthlab/cli/main.py:203:        cfg["schema_version"] = domain["schema_version"]
+src/synthlab/cli/main.py:205:    raise ValueError("schema_version is required")
+src/synthlab/cli/main.py:216:    _ensure_schema_version(cfg)
+conf/domain/wafer_particles.yaml:2:schema_version: wafer_particles.v1
+src/synthlab/framework/artifacts.py:127:            "schema_version": self.cfg.get("schema_version"),
+src/synthlab/domains/wafer_particles/schema.py:4:SCHEMA_VERSION = "wafer_particles.v1"
+src/synthlab/domains/wafer_particles/__init__.py:3:from .schema import DOMAIN_NAME, SCHEMA_VERSION
+src/synthlab/domains/wafer_particles/__init__.py:5:__all__ = ["DOMAIN_NAME", "SCHEMA_VERSION"]
+
+thinking
+**Checking task details and framework usage**
+exec
+/bin/zsh -lc "sed -n '1,200p' src/synthlab/framework/registry.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 266ms:
+from __future__ import annotations
+
+from typing import Callable, Dict, Iterable, TYPE_CHECKING, Type
+
+if TYPE_CHECKING:
+    from .process import BaseProcess
+
+
+_PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
+
+
+def register_process(name: str) -> Callable[["Type[BaseProcess]"], "Type[BaseProcess]"]:
+    def _decorator(cls: "Type[BaseProcess]") -> "Type[BaseProcess]":
+        if name in _PROCESS_REGISTRY:
+            raise ValueError(f"process already registered: {name}")
+        _PROCESS_REGISTRY[name] = cls
+        return cls
+
+    return _decorator
+
+
+thinking
+**Reviewing artifact metadata and config hash consistency**
+
+I'm checking the required fields in meta.json, especially around git_sha and config_hash correctness, and considering implementing an ArtifactReader to unify run directory access. I also want to ensure config_hash is computed consistently from resolved.yaml using matching YAML dumping settings, and explore adding safety checks in ArtifactWriter to prevent writing outside the run directory. Lastly, I'll examine the autodev verifiers to confirm config_hash behavior aligns with expectations.
+exec
+/bin/zsh -lc "sed -n '1,240p' autodev/verifiers.py" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 328ms:
+\
+"""
+autodev/verifiers.py (v2.2)
+
+- タスクごとに "機械的に判定可能" な Verification を提供する。
+- 特に T0003 (artifact contract) は、よく詰まるので専用の厳密検証を持つ。
+
+Verification は以下の方針:
+- 失敗時に Codex に渡せる「短いsummary」を返す
+- 同じタスクを何度も回す場合でも、最新の runs/ を自動で追跡する
+"""
+from __future__ import annotations
+
+import dataclasses
+import hashlib
+import json
+import os
+import subprocess
+from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
+
+thinking
+**Analyzing YAML dumping and hash consistency**
+
+I’m carefully comparing YAML dumping behaviors—especially how allow_unicode settings affect encoding—and verifying that the config hash computations stay consistent across saved and loaded configurations. I’m also considering if missing artifact components like ArtifactReader or a manifest might explain outstanding tasks, planning to explore those areas next.
+exec
+/bin/zsh -lc 'rg -n "manifest" -S work/tasks' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 338ms:
+work/tasks/T0007_process_generate.md:12:- manifest の作成（ファイル、行数、label分布）
+work/tasks/T0007_process_generate.md:16:- [ ] artifact 契約を満たす（config/meta/data/manifest）
+work/tasks/T0007_process_generate.md:22:- manifest に label 集計が入る
+work/tasks/T0003_artifact_contract.md:1:# TASK: T0003 Artifact契約（run dir / meta / config snapshot / manifest）の実装（更新 v2.2）
+work/tasks/T0004_domain_schema_wafer_particles.md:14:- [ ] schema_version が meta/manifest に入る
+work/tasks/T0102_process_export.md:14:- [ ] 下流学習で “読みやすい” パッケージになる（parquet + manifest + splits）
+
+thinking
+**Analyzing artifact I/O design and testing plan**
+
+I'm thinking through how to implement `ArtifactReader` alongside existing `ArtifactWriter`, focusing on config hash canonicalization that excludes runtime details like run_name and hydra. I plan to create helper functions to ensure stable hashes, build minimal dataclasses for reading artifacts from run directories, and add tests verifying hash stability and correct file writing, all while respecting repo style and avoiding network calls.
+exec
+/bin/zsh -lc 'cat tests/README.md' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 286ms:
+# tests/ — Tests
+
+P0では再現性/スキーマ/スモークの最低限テストから始めます。
+詳細は work/tasks/T0011_tests_and_doctor.md を参照。
+
+thinking
+**Considering test execution and artifact integration**
+exec
+/bin/zsh -lc 'ls src/synthlab/framework' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 275ms:
+__init__.py
+__pycache__
+artifacts.py
+process.py
+registry.py
+exec
+/bin/zsh -lc 'cat src/synthlab/framework/__init__.py' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 277ms:
+from __future__ import annotations
+
+from .process import dispatch_process
+
+__all__ = ["dispatch_process"]
+
+thinking
+**Considering artifact metadata and manifest updates**
+
+I’m weighing whether to extend the artifact API with readers and writers to handle metadata like git SHA, domain, and config hashes for future-proofing, though it’s not required for the current task. I’ll aim for minimal changes, double-checking docs to align on required meta fields and thinking about adding a generic manifest writer method cautiously. I plan to peek into related task specs next to verify expectations.
+exec
+/bin/zsh -lc "sed -n '1,200p' work/tasks/T0007_process_generate.md" in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 281ms:
+# TASK: T0007 process=generate（大量生成と出力）
+
+## Contracts
+- docs/10_PROCESS_CATALOG.md
+- docs/04_ARTIFACTS_AND_VERSIONING.md
+- docs/03_CONFIG_CONVENTIONS.md
+
+## Scope
+- 生成枚数（n_samples）を指定して samples/particles を生成
+- ラベル選択を指定できる（例：割合、固定リスト、ランダム）
+- 出力（parquet/csv）を IO config で切替
+- manifest の作成（ファイル、行数、label分布）
+
+## Acceptance Criteria
+- [ ] 数千〜数万サンプルをバッチ生成できる（性能はP1で最適化しても良い）
+- [ ] artifact 契約を満たす（config/meta/data/manifest）
+- [ ] label比率指定が機能する
+
+## Verification
+- `process=generate wafer_particles.n_samples=1000 ...`
+
+thinking
+**Designing ArtifactReader and path guards**
+
+I'm thinking through adding a minimal `ArtifactReader` class to handle reading config, meta, and overrides from a run directory, including a method to compute a stable config hash excluding volatile fields. Alongside that, I want to implement a simple path guard to ensure relative paths stay within the run directory, which can improve safety without breaking existing behavior. I'll keep changes minimal to fit the scope while making the artifact handling more robust and preparing for future expansions like manifest writing.
+Plan update
+Implement minimal ArtifactReader + config hash canonicalization reuse, add safety for run-dir writes, and add a small pytest to satisfy DoD, then (optionally) run tests.
+  ✓ Review current artifact writer/process usage and align with docs/04 + invariants
+  → Implement ArtifactReader + shared canonicalization helpers and tighten writer path handling if needed
+  • Add a minimal pytest for config_hash stability / required files and note verification commands
+
+thinking
+**Planning updates to artifacts.py with helpers and reader class**
+
+I'm preparing to modify artifacts.py by adding config canonicalization, safe relative path checks, and an ArtifactReader dataclass with read methods for config, overrides, and metadata. I'll create internal _read_yaml and _read_json helpers to avoid code duplication and ensure data validation. I want to carefully integrate these features while preserving existing behaviors like directory creation in write_json. Time to implement with patch.
+file update
+M /Users/kawahito/Desktop/synthlab_scaffold/src/synthlab/framework/artifacts.py
+@@ -16,3 +16,3 @@
+ 
+-def compute_config_hash(cfg: dict[str, Any]) -> str:
++def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+     canonical = copy.deepcopy(cfg)
+@@ -21,2 +21,7 @@
+         canonical.pop("run_name", None)
++    return canonical
++
++
++def compute_config_hash(cfg: dict[str, Any]) -> str:
++    canonical = canonicalize_config_for_hash(cfg)
+     dumped = yaml.safe_dump(canonical, sort_keys=True)
+@@ -65,2 +70,25 @@
+ 
++def _read_yaml(path: Path) -> dict[str, Any]:
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    if data is None:
++        return {}
++    if not isinstance(data, dict):
++        raise ValueError(f"yaml must be a mapping: {path}")
++    return data
++
++
++def _read_json(path: Path) -> dict[str, Any]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise ValueError(f"json must be a mapping: {path}")
++    return data
++
++
++def _safe_rel_path(run_dir: Path, rel_path: str) -> Path:
++    rel = Path(rel_path)
++    if rel.is_absolute() or ".." in rel.parts:
++        raise ValueError(f"rel_path must be within run dir: {rel_path}")
++    return run_dir / rel
++
++
+ @dataclass
+@@ -94,3 +122,3 @@
+     def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+-        path = self.run_dir / rel_path
++        path = _safe_rel_path(self.run_dir, rel_path)
+         path.parent.mkdir(parents=True, exist_ok=True)
+@@ -147,2 +175,22 @@
+ 
++@dataclass(frozen=True)
++class ArtifactReader:
++    run_dir: Path
++
++    def read_config(self) -> dict[str, Any]:
++        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
++
++    def read_overrides(self) -> list[str]:
++        path = self.run_dir / "config" / "overrides.txt"
++        if not path.exists():
++            return []
++        return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
++
++    def read_meta(self) -> dict[str, Any]:
++        return _read_json(self.run_dir / "meta" / "meta.json")
++
++    def compute_config_hash(self) -> str:
++        return compute_config_hash(self.read_config())
++
++
+ def _process_name(cfg: dict[str, Any]) -> str:
+apply_patch(auto_approved=true) exited 0 in 49ms:
+Success. Updated the following files:
+M src/synthlab/framework/artifacts.py
+file update:
+diff --git a/src/synthlab/framework/artifacts.py b/src/synthlab/framework/artifacts.py
+index e65221c11cd4c1fd47b7130ea1a4b70182ac81d1..0a7eb11d9a3d79e415e4f1f784c7d90b8be897cc
+--- a/src/synthlab/framework/artifacts.py
++++ b/src/synthlab/framework/artifacts.py
+@@ -14,11 +14,16 @@
+ import yaml
+ 
+ 
+-def compute_config_hash(cfg: dict[str, Any]) -> str:
++def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+     canonical = copy.deepcopy(cfg)
+     if isinstance(canonical, dict):
+         canonical.pop("hydra", None)
+         canonical.pop("run_name", None)
++    return canonical
++
++
++def compute_config_hash(cfg: dict[str, Any]) -> str:
++    canonical = canonicalize_config_for_hash(cfg)
+     dumped = yaml.safe_dump(canonical, sort_keys=True)
+     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
+ 
+@@ -63,6 +68,29 @@
+     path.write_text(text + "\n", encoding="utf-8")
+ 
+ 
++def _read_yaml(path: Path) -> dict[str, Any]:
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    if data is None:
++        return {}
++    if not isinstance(data, dict):
++        raise ValueError(f"yaml must be a mapping: {path}")
++    return data
++
++
++def _read_json(path: Path) -> dict[str, Any]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise ValueError(f"json must be a mapping: {path}")
++    return data
++
++
++def _safe_rel_path(run_dir: Path, rel_path: str) -> Path:
++    rel = Path(rel_path)
++    if rel.is_absolute() or ".." in rel.parts:
++        raise ValueError(f"rel_path must be within run dir: {rel_path}")
++    return run_dir / rel
++
++
+ @dataclass
+ class ArtifactWriter:
+     repo_root: Path
+@@ -92,7 +120,7 @@
+             f.write(line + "\n")
+ 
+     def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+-        path = self.run_dir / rel_path
++        path = _safe_rel_path(self.run_dir, rel_path)
+         path.parent.mkdir(parents=True, exist_ok=True)
+         _dump_json(path, payload)
+ 
+@@ -145,6 +173,26 @@
+         (self.run_dir / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+ 
+ 
++@dataclass(frozen=True)
++class ArtifactReader:
++    run_dir: Path
++
++    def read_config(self) -> dict[str, Any]:
++        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
++
++    def read_overrides(self) -> list[str]:
++        path = self.run_dir / "config" / "overrides.txt"
++        if not path.exists():
++            return []
++        return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
++
++    def read_meta(self) -> dict[str, Any]:
++        return _read_json(self.run_dir / "meta" / "meta.json")
++
++    def compute_config_hash(self) -> str:
++        return compute_config_hash(self.read_config())
++
++
+ def _process_name(cfg: dict[str, Any]) -> str:
+     proc = cfg.get("process")
+     if isinstance(proc, dict):
+
+file update:
+diff --git a/src/synthlab/framework/artifacts.py b/src/synthlab/framework/artifacts.py
+index e65221c11cd4c1fd47b7130ea1a4b70182ac81d1..0a7eb11d9a3d79e415e4f1f784c7d90b8be897cc
+--- a/src/synthlab/framework/artifacts.py
++++ b/src/synthlab/framework/artifacts.py
+@@ -14,11 +14,16 @@
+ import yaml
+ 
+ 
+-def compute_config_hash(cfg: dict[str, Any]) -> str:
++def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+     canonical = copy.deepcopy(cfg)
+     if isinstance(canonical, dict):
+         canonical.pop("hydra", None)
+         canonical.pop("run_name", None)
++    return canonical
++
++
++def compute_config_hash(cfg: dict[str, Any]) -> str:
++    canonical = canonicalize_config_for_hash(cfg)
+     dumped = yaml.safe_dump(canonical, sort_keys=True)
+     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
+ 
+@@ -63,6 +68,29 @@
+     path.write_text(text + "\n", encoding="utf-8")
+ 
+ 
++def _read_yaml(path: Path) -> dict[str, Any]:
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    if data is None:
++        return {}
++    if not isinstance(data, dict):
++        raise ValueError(f"yaml must be a mapping: {path}")
++    return data
++
++
++def _read_json(path: Path) -> dict[str, Any]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise ValueError(f"json must be a mapping: {path}")
++    return data
++
++
++def _safe_rel_path(run_dir: Path, rel_path: str) -> Path:
++    rel = Path(rel_path)
++    if rel.is_absolute() or ".." in rel.parts:
++        raise ValueError(f"rel_path must be within run dir: {rel_path}")
++    return run_dir / rel
++
++
+ @dataclass
+ class ArtifactWriter:
+     repo_root: Path
+@@ -92,7 +120,7 @@
+             f.write(line + "\n")
+ 
+     def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+-        path = self.run_dir / rel_path
++        path = _safe_rel_path(self.run_dir, rel_path)
+         path.parent.mkdir(parents=True, exist_ok=True)
+         _dump_json(path, payload)
+ 
+@@ -145,6 +173,26 @@
+         (self.run_dir / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+ 
+ 
++@dataclass(frozen=True)
++class ArtifactReader:
++    run_dir: Path
++
++    def read_config(self) -> dict[str, Any]:
++        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
++
++    def read_overrides(self) -> list[str]:
++        path = self.run_dir / "config" / "overrides.txt"
++        if not path.exists():
++            return []
++        return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
++
++    def read_meta(self) -> dict[str, Any]:
++        return _read_json(self.run_dir / "meta" / "meta.json")
++
++    def compute_config_hash(self) -> str:
++        return compute_config_hash(self.read_config())
++
++
+ def _process_name(cfg: dict[str, Any]) -> str:
+     proc = cfg.get("process")
+     if isinstance(proc, dict):
+
+
+thinking
+**Preparing artifact writer tests**
+
+I’m planning two tests: one to confirm compute_config_hash ignores run_name and hydra keys, and another to verify that ArtifactWriter creates the expected files with matching config_hash metadata. I’ll create a new test file with these and set up a suitable config and temporary paths to keep it clean and minimal.
+file update
+A /Users/kawahito/Desktop/synthlab_scaffold/tests/test_artifacts.py
+from __future__ import annotations
+
+import json
+
+import yaml
+
+from synthlab.framework.artifacts import ArtifactWriter, compute_config_hash
+
+
+def test_compute_config_hash_ignores_run_name_and_hydra() -> None:
+    cfg1 = {
+        "run_name": "run_a",
+        "seed": 1,
+        "hydra": {"runtime": "x"},
+        "domain": {"name": "wafer_particles"},
+        "process": {"name": "doctor"},
+    }
+    cfg2 = {
+        "run_name": "run_b",
+        "seed": 1,
+        "hydra": {"runtime": "y"},
+        "domain": {"name": "wafer_particles"},
+        "process": {"name": "doctor"},
+    }
+    assert compute_config_hash(cfg1) == compute_config_hash(cfg2)
+
+
+def test_artifact_writer_creates_contract_files(tmp_path) -> None:
+    cfg = {
+        "run_name": "test_run",
+        "seed": 1,
+        "schema_version": "wafer_particles.v1",
+        "domain": {"name": "wafer_particles"},
+        "process": {"name": "doctor"},
+    }
+    writer = ArtifactWriter(repo_root=tmp_path, cfg=cfg, overrides=["process=doctor"])
+    writer.prepare()
+
+    run_dir = tmp_path / "runs" / cfg["run_name"] / cfg["process"]["name"]
+    resolved = run_dir / "config" / "resolved.yaml"
+    overrides = run_dir / "config" / "overrides.txt"
+    meta_path = run_dir / "meta" / "meta.json"
+
+    assert resolved.exists()
+    assert overrides.exists()
+    assert meta_path.exists()
+
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    resolved_cfg = yaml.safe_load(resolved.read_text(encoding="utf-8"))
+    assert meta["config_hash"] == compute_config_hash(resolved_cfg)
+apply_patch(auto_approved=true) exited 0 in 59ms:
+Success. Updated the following files:
+A tests/test_artifacts.py
+file update:
+diff --git a/src/synthlab/framework/artifacts.py b/src/synthlab/framework/artifacts.py
+index e65221c11cd4c1fd47b7130ea1a4b70182ac81d1..0a7eb11d9a3d79e415e4f1f784c7d90b8be897cc
+--- a/src/synthlab/framework/artifacts.py
++++ b/src/synthlab/framework/artifacts.py
+@@ -14,11 +14,16 @@
+ import yaml
+ 
+ 
+-def compute_config_hash(cfg: dict[str, Any]) -> str:
++def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+     canonical = copy.deepcopy(cfg)
+     if isinstance(canonical, dict):
+         canonical.pop("hydra", None)
+         canonical.pop("run_name", None)
++    return canonical
++
++
++def compute_config_hash(cfg: dict[str, Any]) -> str:
++    canonical = canonicalize_config_for_hash(cfg)
+     dumped = yaml.safe_dump(canonical, sort_keys=True)
+     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
+ 
+@@ -63,6 +68,29 @@
+     path.write_text(text + "\n", encoding="utf-8")
+ 
+ 
++def _read_yaml(path: Path) -> dict[str, Any]:
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    if data is None:
++        return {}
++    if not isinstance(data, dict):
++        raise ValueError(f"yaml must be a mapping: {path}")
++    return data
++
++
++def _read_json(path: Path) -> dict[str, Any]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise ValueError(f"json must be a mapping: {path}")
++    return data
++
++
++def _safe_rel_path(run_dir: Path, rel_path: str) -> Path:
++    rel = Path(rel_path)
++    if rel.is_absolute() or ".." in rel.parts:
++        raise ValueError(f"rel_path must be within run dir: {rel_path}")
++    return run_dir / rel
++
++
+ @dataclass
+ class ArtifactWriter:
+     repo_root: Path
+@@ -92,7 +120,7 @@
+             f.write(line + "\n")
+ 
+     def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+-        path = self.run_dir / rel_path
++        path = _safe_rel_path(self.run_dir, rel_path)
+         path.parent.mkdir(parents=True, exist_ok=True)
+         _dump_json(path, payload)
+ 
+@@ -145,6 +173,26 @@
+         (self.run_dir / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+ 
+ 
++@dataclass(frozen=True)
++class ArtifactReader:
++    run_dir: Path
++
++    def read_config(self) -> dict[str, Any]:
++        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
++
++    def read_overrides(self) -> list[str]:
++        path = self.run_dir / "config" / "overrides.txt"
++        if not path.exists():
++            return []
++        return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
++
++    def read_meta(self) -> dict[str, Any]:
++        return _read_json(self.run_dir / "meta" / "meta.json")
++
++    def compute_config_hash(self) -> str:
++        return compute_config_hash(self.read_config())
++
++
+ def _process_name(cfg: dict[str, Any]) -> str:
+     proc = cfg.get("process")
+     if isinstance(proc, dict):
+diff --git a/tests/test_artifacts.py b/tests/test_artifacts.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..2dc2f376b24c3d378bd9ac88651e68a09697c407
+--- /dev/null
++++ b/tests/test_artifacts.py
+@@ -0,0 +1,50 @@
++from __future__ import annotations
++
++import json
++
++import yaml
++
++from synthlab.framework.artifacts import ArtifactWriter, compute_config_hash
++
++
++def test_compute_config_hash_ignores_run_name_and_hydra() -> None:
++    cfg1 = {
++        "run_name": "run_a",
++        "seed": 1,
++        "hydra": {"runtime": "x"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    cfg2 = {
++        "run_name": "run_b",
++        "seed": 1,
++        "hydra": {"runtime": "y"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    assert compute_config_hash(cfg1) == compute_config_hash(cfg2)
++
++
++def test_artifact_writer_creates_contract_files(tmp_path) -> None:
++    cfg = {
++        "run_name": "test_run",
++        "seed": 1,
++        "schema_version": "wafer_particles.v1",
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    writer = ArtifactWriter(repo_root=tmp_path, cfg=cfg, overrides=["process=doctor"])
++    writer.prepare()
++
++    run_dir = tmp_path / "runs" / cfg["run_name"] / cfg["process"]["name"]
++    resolved = run_dir / "config" / "resolved.yaml"
++    overrides = run_dir / "config" / "overrides.txt"
++    meta_path = run_dir / "meta" / "meta.json"
++
++    assert resolved.exists()
++    assert overrides.exists()
++    assert meta_path.exists()
++
++    meta = json.loads(meta_path.read_text(encoding="utf-8"))
++    resolved_cfg = yaml.safe_load(resolved.read_text(encoding="utf-8"))
++    assert meta["config_hash"] == compute_config_hash(resolved_cfg)
+
+file update:
+diff --git a/src/synthlab/framework/artifacts.py b/src/synthlab/framework/artifacts.py
+index e65221c11cd4c1fd47b7130ea1a4b70182ac81d1..0a7eb11d9a3d79e415e4f1f784c7d90b8be897cc
+--- a/src/synthlab/framework/artifacts.py
++++ b/src/synthlab/framework/artifacts.py
+@@ -14,11 +14,16 @@
+ import yaml
+ 
+ 
+-def compute_config_hash(cfg: dict[str, Any]) -> str:
++def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+     canonical = copy.deepcopy(cfg)
+     if isinstance(canonical, dict):
+         canonical.pop("hydra", None)
+         canonical.pop("run_name", None)
++    return canonical
++
++
++def compute_config_hash(cfg: dict[str, Any]) -> str:
++    canonical = canonicalize_config_for_hash(cfg)
+     dumped = yaml.safe_dump(canonical, sort_keys=True)
+     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
+ 
+@@ -63,6 +68,29 @@
+     path.write_text(text + "\n", encoding="utf-8")
+ 
+ 
++def _read_yaml(path: Path) -> dict[str, Any]:
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    if data is None:
++        return {}
++    if not isinstance(data, dict):
++        raise ValueError(f"yaml must be a mapping: {path}")
++    return data
++
++
++def _read_json(path: Path) -> dict[str, Any]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise ValueError(f"json must be a mapping: {path}")
++    return data
++
++
++def _safe_rel_path(run_dir: Path, rel_path: str) -> Path:
++    rel = Path(rel_path)
++    if rel.is_absolute() or ".." in rel.parts:
++        raise ValueError(f"rel_path must be within run dir: {rel_path}")
++    return run_dir / rel
++
++
+ @dataclass
+ class ArtifactWriter:
+     repo_root: Path
+@@ -92,7 +120,7 @@
+             f.write(line + "\n")
+ 
+     def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+-        path = self.run_dir / rel_path
++        path = _safe_rel_path(self.run_dir, rel_path)
+         path.parent.mkdir(parents=True, exist_ok=True)
+         _dump_json(path, payload)
+ 
+@@ -145,6 +173,26 @@
+         (self.run_dir / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+ 
+ 
++@dataclass(frozen=True)
++class ArtifactReader:
++    run_dir: Path
++
++    def read_config(self) -> dict[str, Any]:
++        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
++
++    def read_overrides(self) -> list[str]:
++        path = self.run_dir / "config" / "overrides.txt"
++        if not path.exists():
++            return []
++        return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
++
++    def read_meta(self) -> dict[str, Any]:
++        return _read_json(self.run_dir / "meta" / "meta.json")
++
++    def compute_config_hash(self) -> str:
++        return compute_config_hash(self.read_config())
++
++
+ def _process_name(cfg: dict[str, Any]) -> str:
+     proc = cfg.get("process")
+     if isinstance(proc, dict):
+diff --git a/tests/test_artifacts.py b/tests/test_artifacts.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..2dc2f376b24c3d378bd9ac88651e68a09697c407
+--- /dev/null
++++ b/tests/test_artifacts.py
+@@ -0,0 +1,50 @@
++from __future__ import annotations
++
++import json
++
++import yaml
++
++from synthlab.framework.artifacts import ArtifactWriter, compute_config_hash
++
++
++def test_compute_config_hash_ignores_run_name_and_hydra() -> None:
++    cfg1 = {
++        "run_name": "run_a",
++        "seed": 1,
++        "hydra": {"runtime": "x"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    cfg2 = {
++        "run_name": "run_b",
++        "seed": 1,
++        "hydra": {"runtime": "y"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    assert compute_config_hash(cfg1) == compute_config_hash(cfg2)
++
++
++def test_artifact_writer_creates_contract_files(tmp_path) -> None:
++    cfg = {
++        "run_name": "test_run",
++        "seed": 1,
++        "schema_version": "wafer_particles.v1",
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    writer = ArtifactWriter(repo_root=tmp_path, cfg=cfg, overrides=["process=doctor"])
++    writer.prepare()
++
++    run_dir = tmp_path / "runs" / cfg["run_name"] / cfg["process"]["name"]
++    resolved = run_dir / "config" / "resolved.yaml"
++    overrides = run_dir / "config" / "overrides.txt"
++    meta_path = run_dir / "meta" / "meta.json"
++
++    assert resolved.exists()
++    assert overrides.exists()
++    assert meta_path.exists()
++
++    meta = json.loads(meta_path.read_text(encoding="utf-8"))
++    resolved_cfg = yaml.safe_load(resolved.read_text(encoding="utf-8"))
++    assert meta["config_hash"] == compute_config_hash(resolved_cfg)
+
+
+thinking
+**Updating test considerations and plan statuses**
+Plan update
+  ✓ Review current artifact writer/process usage and align with docs/04 + invariants
+  ✓ Implement ArtifactReader + shared canonicalization helpers and tighten writer path handling if needed
+  → Add a minimal pytest for config_hash stability / required files and note verification commands
+file update:
+diff --git a/src/synthlab/framework/artifacts.py b/src/synthlab/framework/artifacts.py
+index e65221c11cd4c1fd47b7130ea1a4b70182ac81d1..0a7eb11d9a3d79e415e4f1f784c7d90b8be897cc
+--- a/src/synthlab/framework/artifacts.py
++++ b/src/synthlab/framework/artifacts.py
+@@ -14,11 +14,16 @@
+ import yaml
+ 
+ 
+-def compute_config_hash(cfg: dict[str, Any]) -> str:
++def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+     canonical = copy.deepcopy(cfg)
+     if isinstance(canonical, dict):
+         canonical.pop("hydra", None)
+         canonical.pop("run_name", None)
++    return canonical
++
++
++def compute_config_hash(cfg: dict[str, Any]) -> str:
++    canonical = canonicalize_config_for_hash(cfg)
+     dumped = yaml.safe_dump(canonical, sort_keys=True)
+     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
+ 
+@@ -63,6 +68,29 @@
+     path.write_text(text + "\n", encoding="utf-8")
+ 
+ 
++def _read_yaml(path: Path) -> dict[str, Any]:
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    if data is None:
++        return {}
++    if not isinstance(data, dict):
++        raise ValueError(f"yaml must be a mapping: {path}")
++    return data
++
++
++def _read_json(path: Path) -> dict[str, Any]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise ValueError(f"json must be a mapping: {path}")
++    return data
++
++
++def _safe_rel_path(run_dir: Path, rel_path: str) -> Path:
++    rel = Path(rel_path)
++    if rel.is_absolute() or ".." in rel.parts:
++        raise ValueError(f"rel_path must be within run dir: {rel_path}")
++    return run_dir / rel
++
++
+ @dataclass
+ class ArtifactWriter:
+     repo_root: Path
+@@ -92,7 +120,7 @@
+             f.write(line + "\n")
+ 
+     def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+-        path = self.run_dir / rel_path
++        path = _safe_rel_path(self.run_dir, rel_path)
+         path.parent.mkdir(parents=True, exist_ok=True)
+         _dump_json(path, payload)
+ 
+@@ -145,6 +173,26 @@
+         (self.run_dir / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+ 
+ 
++@dataclass(frozen=True)
++class ArtifactReader:
++    run_dir: Path
++
++    def read_config(self) -> dict[str, Any]:
++        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
++
++    def read_overrides(self) -> list[str]:
++        path = self.run_dir / "config" / "overrides.txt"
++        if not path.exists():
++            return []
++        return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
++
++    def read_meta(self) -> dict[str, Any]:
++        return _read_json(self.run_dir / "meta" / "meta.json")
++
++    def compute_config_hash(self) -> str:
++        return compute_config_hash(self.read_config())
++
++
+ def _process_name(cfg: dict[str, Any]) -> str:
+     proc = cfg.get("process")
+     if isinstance(proc, dict):
+diff --git a/tests/test_artifacts.py b/tests/test_artifacts.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..2dc2f376b24c3d378bd9ac88651e68a09697c407
+--- /dev/null
++++ b/tests/test_artifacts.py
+@@ -0,0 +1,50 @@
++from __future__ import annotations
++
++import json
++
++import yaml
++
++from synthlab.framework.artifacts import ArtifactWriter, compute_config_hash
++
++
++def test_compute_config_hash_ignores_run_name_and_hydra() -> None:
++    cfg1 = {
++        "run_name": "run_a",
++        "seed": 1,
++        "hydra": {"runtime": "x"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    cfg2 = {
++        "run_name": "run_b",
++        "seed": 1,
++        "hydra": {"runtime": "y"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    assert compute_config_hash(cfg1) == compute_config_hash(cfg2)
++
++
++def test_artifact_writer_creates_contract_files(tmp_path) -> None:
++    cfg = {
++        "run_name": "test_run",
++        "seed": 1,
++        "schema_version": "wafer_particles.v1",
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    writer = ArtifactWriter(repo_root=tmp_path, cfg=cfg, overrides=["process=doctor"])
++    writer.prepare()
++
++    run_dir = tmp_path / "runs" / cfg["run_name"] / cfg["process"]["name"]
++    resolved = run_dir / "config" / "resolved.yaml"
++    overrides = run_dir / "config" / "overrides.txt"
++    meta_path = run_dir / "meta" / "meta.json"
++
++    assert resolved.exists()
++    assert overrides.exists()
++    assert meta_path.exists()
++
++    meta = json.loads(meta_path.read_text(encoding="utf-8"))
++    resolved_cfg = yaml.safe_load(resolved.read_text(encoding="utf-8"))
++    assert meta["config_hash"] == compute_config_hash(resolved_cfg)
+
+
+thinking
+**Preparing to validate changes with tests**
+exec
+/bin/zsh -lc 'pytest -q' in /Users/kawahito/Desktop/synthlab_scaffold exited 2 in 2.21s:
+
+==================================== ERRORS ====================================
+___________________ ERROR collecting tests/test_artifacts.py ___________________
+ImportError while importing test module '/Users/kawahito/Desktop/synthlab_scaffold/tests/test_artifacts.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_artifacts.py:7: in <module>
+    from synthlab.framework.artifacts import ArtifactWriter, compute_config_hash
+E   ModuleNotFoundError: No module named 'synthlab'
+=========================== short test summary info ============================
+ERROR tests/test_artifacts.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.16s
+file update:
+diff --git a/src/synthlab/framework/artifacts.py b/src/synthlab/framework/artifacts.py
+index e65221c11cd4c1fd47b7130ea1a4b70182ac81d1..0a7eb11d9a3d79e415e4f1f784c7d90b8be897cc
+--- a/src/synthlab/framework/artifacts.py
++++ b/src/synthlab/framework/artifacts.py
+@@ -14,11 +14,16 @@
+ import yaml
+ 
+ 
+-def compute_config_hash(cfg: dict[str, Any]) -> str:
++def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+     canonical = copy.deepcopy(cfg)
+     if isinstance(canonical, dict):
+         canonical.pop("hydra", None)
+         canonical.pop("run_name", None)
++    return canonical
++
++
++def compute_config_hash(cfg: dict[str, Any]) -> str:
++    canonical = canonicalize_config_for_hash(cfg)
+     dumped = yaml.safe_dump(canonical, sort_keys=True)
+     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
+ 
+@@ -63,6 +68,29 @@
+     path.write_text(text + "\n", encoding="utf-8")
+ 
+ 
++def _read_yaml(path: Path) -> dict[str, Any]:
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    if data is None:
++        return {}
++    if not isinstance(data, dict):
++        raise ValueError(f"yaml must be a mapping: {path}")
++    return data
++
++
++def _read_json(path: Path) -> dict[str, Any]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise ValueError(f"json must be a mapping: {path}")
++    return data
++
++
++def _safe_rel_path(run_dir: Path, rel_path: str) -> Path:
++    rel = Path(rel_path)
++    if rel.is_absolute() or ".." in rel.parts:
++        raise ValueError(f"rel_path must be within run dir: {rel_path}")
++    return run_dir / rel
++
++
+ @dataclass
+ class ArtifactWriter:
+     repo_root: Path
+@@ -92,7 +120,7 @@
+             f.write(line + "\n")
+ 
+     def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+-        path = self.run_dir / rel_path
++        path = _safe_rel_path(self.run_dir, rel_path)
+         path.parent.mkdir(parents=True, exist_ok=True)
+         _dump_json(path, payload)
+ 
+@@ -145,6 +173,26 @@
+         (self.run_dir / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+ 
+ 
++@dataclass(frozen=True)
++class ArtifactReader:
++    run_dir: Path
++
++    def read_config(self) -> dict[str, Any]:
++        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
++
++    def read_overrides(self) -> list[str]:
++        path = self.run_dir / "config" / "overrides.txt"
++        if not path.exists():
++            return []
++        return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
++
++    def read_meta(self) -> dict[str, Any]:
++        return _read_json(self.run_dir / "meta" / "meta.json")
++
++    def compute_config_hash(self) -> str:
++        return compute_config_hash(self.read_config())
++
++
+ def _process_name(cfg: dict[str, Any]) -> str:
+     proc = cfg.get("process")
+     if isinstance(proc, dict):
+diff --git a/tests/test_artifacts.py b/tests/test_artifacts.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..2dc2f376b24c3d378bd9ac88651e68a09697c407
+--- /dev/null
++++ b/tests/test_artifacts.py
+@@ -0,0 +1,50 @@
++from __future__ import annotations
++
++import json
++
++import yaml
++
++from synthlab.framework.artifacts import ArtifactWriter, compute_config_hash
++
++
++def test_compute_config_hash_ignores_run_name_and_hydra() -> None:
++    cfg1 = {
++        "run_name": "run_a",
++        "seed": 1,
++        "hydra": {"runtime": "x"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    cfg2 = {
++        "run_name": "run_b",
++        "seed": 1,
++        "hydra": {"runtime": "y"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    assert compute_config_hash(cfg1) == compute_config_hash(cfg2)
++
++
++def test_artifact_writer_creates_contract_files(tmp_path) -> None:
++    cfg = {
++        "run_name": "test_run",
++        "seed": 1,
++        "schema_version": "wafer_particles.v1",
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    writer = ArtifactWriter(repo_root=tmp_path, cfg=cfg, overrides=["process=doctor"])
++    writer.prepare()
++
++    run_dir = tmp_path / "runs" / cfg["run_name"] / cfg["process"]["name"]
++    resolved = run_dir / "config" / "resolved.yaml"
++    overrides = run_dir / "config" / "overrides.txt"
++    meta_path = run_dir / "meta" / "meta.json"
++
++    assert resolved.exists()
++    assert overrides.exists()
++    assert meta_path.exists()
++
++    meta = json.loads(meta_path.read_text(encoding="utf-8"))
++    resolved_cfg = yaml.safe_load(resolved.read_text(encoding="utf-8"))
++    assert meta["config_hash"] == compute_config_hash(resolved_cfg)
+
+
+thinking
+**Fixing import path issues in tests**
+
+I'm figuring out why pytest can't find the top-level `synthlab` package when run from the repo root, even though the directory and `__init__.py` exist. It looks like pytest's Python path might not include the repo root, so I'll update the test files to explicitly insert the repo root into `sys.path` to make the imports work reliably. Adding a small snippet at the top of `test_artifacts.py` to insert the root directory should fix this without much overhead.
+file update
+M /Users/kawahito/Desktop/synthlab_scaffold/tests/test_artifacts.py
+@@ -3,2 +3,4 @@
+ import json
++import sys
++from pathlib import Path
+ 
+@@ -6,2 +8,6 @@
+ 
++ROOT = Path(__file__).resolve().parents[1]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
+ from synthlab.framework.artifacts import ArtifactWriter, compute_config_hash
+apply_patch(auto_approved=true) exited 0 in 56ms:
+Success. Updated the following files:
+M tests/test_artifacts.py
+file update:
+diff --git a/src/synthlab/framework/artifacts.py b/src/synthlab/framework/artifacts.py
+index e65221c11cd4c1fd47b7130ea1a4b70182ac81d1..0a7eb11d9a3d79e415e4f1f784c7d90b8be897cc
+--- a/src/synthlab/framework/artifacts.py
++++ b/src/synthlab/framework/artifacts.py
+@@ -14,11 +14,16 @@
+ import yaml
+ 
+ 
+-def compute_config_hash(cfg: dict[str, Any]) -> str:
++def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+     canonical = copy.deepcopy(cfg)
+     if isinstance(canonical, dict):
+         canonical.pop("hydra", None)
+         canonical.pop("run_name", None)
++    return canonical
++
++
++def compute_config_hash(cfg: dict[str, Any]) -> str:
++    canonical = canonicalize_config_for_hash(cfg)
+     dumped = yaml.safe_dump(canonical, sort_keys=True)
+     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
+ 
+@@ -63,6 +68,29 @@
+     path.write_text(text + "\n", encoding="utf-8")
+ 
+ 
++def _read_yaml(path: Path) -> dict[str, Any]:
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    if data is None:
++        return {}
++    if not isinstance(data, dict):
++        raise ValueError(f"yaml must be a mapping: {path}")
++    return data
++
++
++def _read_json(path: Path) -> dict[str, Any]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise ValueError(f"json must be a mapping: {path}")
++    return data
++
++
++def _safe_rel_path(run_dir: Path, rel_path: str) -> Path:
++    rel = Path(rel_path)
++    if rel.is_absolute() or ".." in rel.parts:
++        raise ValueError(f"rel_path must be within run dir: {rel_path}")
++    return run_dir / rel
++
++
+ @dataclass
+ class ArtifactWriter:
+     repo_root: Path
+@@ -92,7 +120,7 @@
+             f.write(line + "\n")
+ 
+     def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+-        path = self.run_dir / rel_path
++        path = _safe_rel_path(self.run_dir, rel_path)
+         path.parent.mkdir(parents=True, exist_ok=True)
+         _dump_json(path, payload)
+ 
+@@ -145,6 +173,26 @@
+         (self.run_dir / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+ 
+ 
++@dataclass(frozen=True)
++class ArtifactReader:
++    run_dir: Path
++
++    def read_config(self) -> dict[str, Any]:
++        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
++
++    def read_overrides(self) -> list[str]:
++        path = self.run_dir / "config" / "overrides.txt"
++        if not path.exists():
++            return []
++        return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
++
++    def read_meta(self) -> dict[str, Any]:
++        return _read_json(self.run_dir / "meta" / "meta.json")
++
++    def compute_config_hash(self) -> str:
++        return compute_config_hash(self.read_config())
++
++
+ def _process_name(cfg: dict[str, Any]) -> str:
+     proc = cfg.get("process")
+     if isinstance(proc, dict):
+diff --git a/tests/test_artifacts.py b/tests/test_artifacts.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..fcd9ac397925a50dab2e84feb5ef9eec9a0ace05
+--- /dev/null
++++ b/tests/test_artifacts.py
+@@ -0,0 +1,56 @@
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++import yaml
++
++ROOT = Path(__file__).resolve().parents[1]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
++from synthlab.framework.artifacts import ArtifactWriter, compute_config_hash
++
++
++def test_compute_config_hash_ignores_run_name_and_hydra() -> None:
++    cfg1 = {
++        "run_name": "run_a",
++        "seed": 1,
++        "hydra": {"runtime": "x"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    cfg2 = {
++        "run_name": "run_b",
++        "seed": 1,
++        "hydra": {"runtime": "y"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    assert compute_config_hash(cfg1) == compute_config_hash(cfg2)
++
++
++def test_artifact_writer_creates_contract_files(tmp_path) -> None:
++    cfg = {
++        "run_name": "test_run",
++        "seed": 1,
++        "schema_version": "wafer_particles.v1",
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    writer = ArtifactWriter(repo_root=tmp_path, cfg=cfg, overrides=["process=doctor"])
++    writer.prepare()
++
++    run_dir = tmp_path / "runs" / cfg["run_name"] / cfg["process"]["name"]
++    resolved = run_dir / "config" / "resolved.yaml"
++    overrides = run_dir / "config" / "overrides.txt"
++    meta_path = run_dir / "meta" / "meta.json"
++
++    assert resolved.exists()
++    assert overrides.exists()
++    assert meta_path.exists()
++
++    meta = json.loads(meta_path.read_text(encoding="utf-8"))
++    resolved_cfg = yaml.safe_load(resolved.read_text(encoding="utf-8"))
++    assert meta["config_hash"] == compute_config_hash(resolved_cfg)
+
+file update:
+diff --git a/src/synthlab/framework/artifacts.py b/src/synthlab/framework/artifacts.py
+index e65221c11cd4c1fd47b7130ea1a4b70182ac81d1..0a7eb11d9a3d79e415e4f1f784c7d90b8be897cc
+--- a/src/synthlab/framework/artifacts.py
++++ b/src/synthlab/framework/artifacts.py
+@@ -14,11 +14,16 @@
+ import yaml
+ 
+ 
+-def compute_config_hash(cfg: dict[str, Any]) -> str:
++def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+     canonical = copy.deepcopy(cfg)
+     if isinstance(canonical, dict):
+         canonical.pop("hydra", None)
+         canonical.pop("run_name", None)
++    return canonical
++
++
++def compute_config_hash(cfg: dict[str, Any]) -> str:
++    canonical = canonicalize_config_for_hash(cfg)
+     dumped = yaml.safe_dump(canonical, sort_keys=True)
+     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
+ 
+@@ -63,6 +68,29 @@
+     path.write_text(text + "\n", encoding="utf-8")
+ 
+ 
++def _read_yaml(path: Path) -> dict[str, Any]:
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    if data is None:
++        return {}
++    if not isinstance(data, dict):
++        raise ValueError(f"yaml must be a mapping: {path}")
++    return data
++
++
++def _read_json(path: Path) -> dict[str, Any]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise ValueError(f"json must be a mapping: {path}")
++    return data
++
++
++def _safe_rel_path(run_dir: Path, rel_path: str) -> Path:
++    rel = Path(rel_path)
++    if rel.is_absolute() or ".." in rel.parts:
++        raise ValueError(f"rel_path must be within run dir: {rel_path}")
++    return run_dir / rel
++
++
+ @dataclass
+ class ArtifactWriter:
+     repo_root: Path
+@@ -92,7 +120,7 @@
+             f.write(line + "\n")
+ 
+     def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+-        path = self.run_dir / rel_path
++        path = _safe_rel_path(self.run_dir, rel_path)
+         path.parent.mkdir(parents=True, exist_ok=True)
+         _dump_json(path, payload)
+ 
+@@ -145,6 +173,26 @@
+         (self.run_dir / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+ 
+ 
++@dataclass(frozen=True)
++class ArtifactReader:
++    run_dir: Path
++
++    def read_config(self) -> dict[str, Any]:
++        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
++
++    def read_overrides(self) -> list[str]:
++        path = self.run_dir / "config" / "overrides.txt"
++        if not path.exists():
++            return []
++        return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
++
++    def read_meta(self) -> dict[str, Any]:
++        return _read_json(self.run_dir / "meta" / "meta.json")
++
++    def compute_config_hash(self) -> str:
++        return compute_config_hash(self.read_config())
++
++
+ def _process_name(cfg: dict[str, Any]) -> str:
+     proc = cfg.get("process")
+     if isinstance(proc, dict):
+diff --git a/tests/test_artifacts.py b/tests/test_artifacts.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..fcd9ac397925a50dab2e84feb5ef9eec9a0ace05
+--- /dev/null
++++ b/tests/test_artifacts.py
+@@ -0,0 +1,56 @@
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++import yaml
++
++ROOT = Path(__file__).resolve().parents[1]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
++from synthlab.framework.artifacts import ArtifactWriter, compute_config_hash
++
++
++def test_compute_config_hash_ignores_run_name_and_hydra() -> None:
++    cfg1 = {
++        "run_name": "run_a",
++        "seed": 1,
++        "hydra": {"runtime": "x"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    cfg2 = {
++        "run_name": "run_b",
++        "seed": 1,
++        "hydra": {"runtime": "y"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    assert compute_config_hash(cfg1) == compute_config_hash(cfg2)
++
++
++def test_artifact_writer_creates_contract_files(tmp_path) -> None:
++    cfg = {
++        "run_name": "test_run",
++        "seed": 1,
++        "schema_version": "wafer_particles.v1",
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    writer = ArtifactWriter(repo_root=tmp_path, cfg=cfg, overrides=["process=doctor"])
++    writer.prepare()
++
++    run_dir = tmp_path / "runs" / cfg["run_name"] / cfg["process"]["name"]
++    resolved = run_dir / "config" / "resolved.yaml"
++    overrides = run_dir / "config" / "overrides.txt"
++    meta_path = run_dir / "meta" / "meta.json"
++
++    assert resolved.exists()
++    assert overrides.exists()
++    assert meta_path.exists()
++
++    meta = json.loads(meta_path.read_text(encoding="utf-8"))
++    resolved_cfg = yaml.safe_load(resolved.read_text(encoding="utf-8"))
++    assert meta["config_hash"] == compute_config_hash(resolved_cfg)
+
+
+thinking
+**Rerunning tests**
+exec
+/bin/zsh -lc 'pytest -q' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 904ms:
+..                                                                       [100%]
+2 passed in 0.46s
+file update:
+diff --git a/src/synthlab/framework/artifacts.py b/src/synthlab/framework/artifacts.py
+index e65221c11cd4c1fd47b7130ea1a4b70182ac81d1..0a7eb11d9a3d79e415e4f1f784c7d90b8be897cc
+--- a/src/synthlab/framework/artifacts.py
++++ b/src/synthlab/framework/artifacts.py
+@@ -14,11 +14,16 @@
+ import yaml
+ 
+ 
+-def compute_config_hash(cfg: dict[str, Any]) -> str:
++def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+     canonical = copy.deepcopy(cfg)
+     if isinstance(canonical, dict):
+         canonical.pop("hydra", None)
+         canonical.pop("run_name", None)
++    return canonical
++
++
++def compute_config_hash(cfg: dict[str, Any]) -> str:
++    canonical = canonicalize_config_for_hash(cfg)
+     dumped = yaml.safe_dump(canonical, sort_keys=True)
+     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
+ 
+@@ -63,6 +68,29 @@
+     path.write_text(text + "\n", encoding="utf-8")
+ 
+ 
++def _read_yaml(path: Path) -> dict[str, Any]:
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    if data is None:
++        return {}
++    if not isinstance(data, dict):
++        raise ValueError(f"yaml must be a mapping: {path}")
++    return data
++
++
++def _read_json(path: Path) -> dict[str, Any]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise ValueError(f"json must be a mapping: {path}")
++    return data
++
++
++def _safe_rel_path(run_dir: Path, rel_path: str) -> Path:
++    rel = Path(rel_path)
++    if rel.is_absolute() or ".." in rel.parts:
++        raise ValueError(f"rel_path must be within run dir: {rel_path}")
++    return run_dir / rel
++
++
+ @dataclass
+ class ArtifactWriter:
+     repo_root: Path
+@@ -92,7 +120,7 @@
+             f.write(line + "\n")
+ 
+     def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+-        path = self.run_dir / rel_path
++        path = _safe_rel_path(self.run_dir, rel_path)
+         path.parent.mkdir(parents=True, exist_ok=True)
+         _dump_json(path, payload)
+ 
+@@ -145,6 +173,26 @@
+         (self.run_dir / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+ 
+ 
++@dataclass(frozen=True)
++class ArtifactReader:
++    run_dir: Path
++
++    def read_config(self) -> dict[str, Any]:
++        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
++
++    def read_overrides(self) -> list[str]:
++        path = self.run_dir / "config" / "overrides.txt"
++        if not path.exists():
++            return []
++        return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
++
++    def read_meta(self) -> dict[str, Any]:
++        return _read_json(self.run_dir / "meta" / "meta.json")
++
++    def compute_config_hash(self) -> str:
++        return compute_config_hash(self.read_config())
++
++
+ def _process_name(cfg: dict[str, Any]) -> str:
+     proc = cfg.get("process")
+     if isinstance(proc, dict):
+diff --git a/tests/test_artifacts.py b/tests/test_artifacts.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..fcd9ac397925a50dab2e84feb5ef9eec9a0ace05
+--- /dev/null
++++ b/tests/test_artifacts.py
+@@ -0,0 +1,56 @@
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++import yaml
++
++ROOT = Path(__file__).resolve().parents[1]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
++from synthlab.framework.artifacts import ArtifactWriter, compute_config_hash
++
++
++def test_compute_config_hash_ignores_run_name_and_hydra() -> None:
++    cfg1 = {
++        "run_name": "run_a",
++        "seed": 1,
++        "hydra": {"runtime": "x"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    cfg2 = {
++        "run_name": "run_b",
++        "seed": 1,
++        "hydra": {"runtime": "y"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    assert compute_config_hash(cfg1) == compute_config_hash(cfg2)
++
++
++def test_artifact_writer_creates_contract_files(tmp_path) -> None:
++    cfg = {
++        "run_name": "test_run",
++        "seed": 1,
++        "schema_version": "wafer_particles.v1",
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    writer = ArtifactWriter(repo_root=tmp_path, cfg=cfg, overrides=["process=doctor"])
++    writer.prepare()
++
++    run_dir = tmp_path / "runs" / cfg["run_name"] / cfg["process"]["name"]
++    resolved = run_dir / "config" / "resolved.yaml"
++    overrides = run_dir / "config" / "overrides.txt"
++    meta_path = run_dir / "meta" / "meta.json"
++
++    assert resolved.exists()
++    assert overrides.exists()
++    assert meta_path.exists()
++
++    meta = json.loads(meta_path.read_text(encoding="utf-8"))
++    resolved_cfg = yaml.safe_load(resolved.read_text(encoding="utf-8"))
++    assert meta["config_hash"] == compute_config_hash(resolved_cfg)
+
+
+thinking
+**Updating plan progress**
+Plan update
+  ✓ Review current artifact writer/process usage and align with docs/04 + invariants
+  ✓ Implement ArtifactReader + shared canonicalization helpers and tighten writer path handling if needed
+  ✓ Add a minimal pytest for config_hash stability / required files and note verification commands
+file update:
+diff --git a/src/synthlab/framework/artifacts.py b/src/synthlab/framework/artifacts.py
+index e65221c11cd4c1fd47b7130ea1a4b70182ac81d1..0a7eb11d9a3d79e415e4f1f784c7d90b8be897cc
+--- a/src/synthlab/framework/artifacts.py
++++ b/src/synthlab/framework/artifacts.py
+@@ -14,11 +14,16 @@
+ import yaml
+ 
+ 
+-def compute_config_hash(cfg: dict[str, Any]) -> str:
++def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+     canonical = copy.deepcopy(cfg)
+     if isinstance(canonical, dict):
+         canonical.pop("hydra", None)
+         canonical.pop("run_name", None)
++    return canonical
++
++
++def compute_config_hash(cfg: dict[str, Any]) -> str:
++    canonical = canonicalize_config_for_hash(cfg)
+     dumped = yaml.safe_dump(canonical, sort_keys=True)
+     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
+ 
+@@ -63,6 +68,29 @@
+     path.write_text(text + "\n", encoding="utf-8")
+ 
+ 
++def _read_yaml(path: Path) -> dict[str, Any]:
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    if data is None:
++        return {}
++    if not isinstance(data, dict):
++        raise ValueError(f"yaml must be a mapping: {path}")
++    return data
++
++
++def _read_json(path: Path) -> dict[str, Any]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise ValueError(f"json must be a mapping: {path}")
++    return data
++
++
++def _safe_rel_path(run_dir: Path, rel_path: str) -> Path:
++    rel = Path(rel_path)
++    if rel.is_absolute() or ".." in rel.parts:
++        raise ValueError(f"rel_path must be within run dir: {rel_path}")
++    return run_dir / rel
++
++
+ @dataclass
+ class ArtifactWriter:
+     repo_root: Path
+@@ -92,7 +120,7 @@
+             f.write(line + "\n")
+ 
+     def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+-        path = self.run_dir / rel_path
++        path = _safe_rel_path(self.run_dir, rel_path)
+         path.parent.mkdir(parents=True, exist_ok=True)
+         _dump_json(path, payload)
+ 
+@@ -145,6 +173,26 @@
+         (self.run_dir / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+ 
+ 
++@dataclass(frozen=True)
++class ArtifactReader:
++    run_dir: Path
++
++    def read_config(self) -> dict[str, Any]:
++        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
++
++    def read_overrides(self) -> list[str]:
++        path = self.run_dir / "config" / "overrides.txt"
++        if not path.exists():
++            return []
++        return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
++
++    def read_meta(self) -> dict[str, Any]:
++        return _read_json(self.run_dir / "meta" / "meta.json")
++
++    def compute_config_hash(self) -> str:
++        return compute_config_hash(self.read_config())
++
++
+ def _process_name(cfg: dict[str, Any]) -> str:
+     proc = cfg.get("process")
+     if isinstance(proc, dict):
+diff --git a/tests/test_artifacts.py b/tests/test_artifacts.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..fcd9ac397925a50dab2e84feb5ef9eec9a0ace05
+--- /dev/null
++++ b/tests/test_artifacts.py
+@@ -0,0 +1,56 @@
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++import yaml
++
++ROOT = Path(__file__).resolve().parents[1]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
++from synthlab.framework.artifacts import ArtifactWriter, compute_config_hash
++
++
++def test_compute_config_hash_ignores_run_name_and_hydra() -> None:
++    cfg1 = {
++        "run_name": "run_a",
++        "seed": 1,
++        "hydra": {"runtime": "x"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    cfg2 = {
++        "run_name": "run_b",
++        "seed": 1,
++        "hydra": {"runtime": "y"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    assert compute_config_hash(cfg1) == compute_config_hash(cfg2)
++
++
++def test_artifact_writer_creates_contract_files(tmp_path) -> None:
++    cfg = {
++        "run_name": "test_run",
++        "seed": 1,
++        "schema_version": "wafer_particles.v1",
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    writer = ArtifactWriter(repo_root=tmp_path, cfg=cfg, overrides=["process=doctor"])
++    writer.prepare()
++
++    run_dir = tmp_path / "runs" / cfg["run_name"] / cfg["process"]["name"]
++    resolved = run_dir / "config" / "resolved.yaml"
++    overrides = run_dir / "config" / "overrides.txt"
++    meta_path = run_dir / "meta" / "meta.json"
++
++    assert resolved.exists()
++    assert overrides.exists()
++    assert meta_path.exists()
++
++    meta = json.loads(meta_path.read_text(encoding="utf-8"))
++    resolved_cfg = yaml.safe_load(resolved.read_text(encoding="utf-8"))
++    assert meta["config_hash"] == compute_config_hash(resolved_cfg)
+
+
+thinking
+**Preparing final review**
+exec
+/bin/zsh -lc 'git status --short' in /Users/kawahito/Desktop/synthlab_scaffold succeeded in 304ms:
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/INSTALLER
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/LICENSE.txt
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/METADATA
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/RECORD
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/REQUESTED
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/WHEEL
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/entry_points.txt
+ D .venv/lib/python3.10/site-packages/pip-22.2.2.dist-info/top_level.txt
+ M .venv/lib/python3.10/site-packages/pip/__init__.py
+ M .venv/lib/python3.10/site-packages/pip/__main__.py
+ M .venv/lib/python3.10/site-packages/pip/__pip-runner__.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/__init__.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/build_env.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cache.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cli/__init__.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cli/autocompletion.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cli/base_command.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cli/cmdoptions.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cli/command_context.py
+ M .venv/lib/python3.10/site-packages/pip/_internal/cli/main.py
+file update:
+diff --git a/src/synthlab/framework/artifacts.py b/src/synthlab/framework/artifacts.py
+index e65221c11cd4c1fd47b7130ea1a4b70182ac81d1..0a7eb11d9a3d79e415e4f1f784c7d90b8be897cc
+--- a/src/synthlab/framework/artifacts.py
++++ b/src/synthlab/framework/artifacts.py
+@@ -14,11 +14,16 @@
+ import yaml
+ 
+ 
+-def compute_config_hash(cfg: dict[str, Any]) -> str:
++def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+     canonical = copy.deepcopy(cfg)
+     if isinstance(canonical, dict):
+         canonical.pop("hydra", None)
+         canonical.pop("run_name", None)
++    return canonical
++
++
++def compute_config_hash(cfg: dict[str, Any]) -> str:
++    canonical = canonicalize_config_for_hash(cfg)
+     dumped = yaml.safe_dump(canonical, sort_keys=True)
+     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
+ 
+@@ -63,6 +68,29 @@
+     path.write_text(text + "\n", encoding="utf-8")
+ 
+ 
++def _read_yaml(path: Path) -> dict[str, Any]:
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    if data is None:
++        return {}
++    if not isinstance(data, dict):
++        raise ValueError(f"yaml must be a mapping: {path}")
++    return data
++
++
++def _read_json(path: Path) -> dict[str, Any]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise ValueError(f"json must be a mapping: {path}")
++    return data
++
++
++def _safe_rel_path(run_dir: Path, rel_path: str) -> Path:
++    rel = Path(rel_path)
++    if rel.is_absolute() or ".." in rel.parts:
++        raise ValueError(f"rel_path must be within run dir: {rel_path}")
++    return run_dir / rel
++
++
+ @dataclass
+ class ArtifactWriter:
+     repo_root: Path
+@@ -92,7 +120,7 @@
+             f.write(line + "\n")
+ 
+     def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+-        path = self.run_dir / rel_path
++        path = _safe_rel_path(self.run_dir, rel_path)
+         path.parent.mkdir(parents=True, exist_ok=True)
+         _dump_json(path, payload)
+ 
+@@ -145,6 +173,26 @@
+         (self.run_dir / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+ 
+ 
++@dataclass(frozen=True)
++class ArtifactReader:
++    run_dir: Path
++
++    def read_config(self) -> dict[str, Any]:
++        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
++
++    def read_overrides(self) -> list[str]:
++        path = self.run_dir / "config" / "overrides.txt"
++        if not path.exists():
++            return []
++        return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
++
++    def read_meta(self) -> dict[str, Any]:
++        return _read_json(self.run_dir / "meta" / "meta.json")
++
++    def compute_config_hash(self) -> str:
++        return compute_config_hash(self.read_config())
++
++
+ def _process_name(cfg: dict[str, Any]) -> str:
+     proc = cfg.get("process")
+     if isinstance(proc, dict):
+diff --git a/tests/test_artifacts.py b/tests/test_artifacts.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..fcd9ac397925a50dab2e84feb5ef9eec9a0ace05
+--- /dev/null
++++ b/tests/test_artifacts.py
+@@ -0,0 +1,56 @@
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++import yaml
++
++ROOT = Path(__file__).resolve().parents[1]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
++from synthlab.framework.artifacts import ArtifactWriter, compute_config_hash
++
++
++def test_compute_config_hash_ignores_run_name_and_hydra() -> None:
++    cfg1 = {
++        "run_name": "run_a",
++        "seed": 1,
++        "hydra": {"runtime": "x"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    cfg2 = {
++        "run_name": "run_b",
++        "seed": 1,
++        "hydra": {"runtime": "y"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    assert compute_config_hash(cfg1) == compute_config_hash(cfg2)
++
++
++def test_artifact_writer_creates_contract_files(tmp_path) -> None:
++    cfg = {
++        "run_name": "test_run",
++        "seed": 1,
++        "schema_version": "wafer_particles.v1",
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    writer = ArtifactWriter(repo_root=tmp_path, cfg=cfg, overrides=["process=doctor"])
++    writer.prepare()
++
++    run_dir = tmp_path / "runs" / cfg["run_name"] / cfg["process"]["name"]
++    resolved = run_dir / "config" / "resolved.yaml"
++    overrides = run_dir / "config" / "overrides.txt"
++    meta_path = run_dir / "meta" / "meta.json"
++
++    assert resolved.exists()
++    assert overrides.exists()
++    assert meta_path.exists()
++
++    meta = json.loads(meta_path.read_text(encoding="utf-8"))
++    resolved_cfg = yaml.safe_load(resolved.read_text(encoding="utf-8"))
++    assert meta["config_hash"] == compute_config_hash(resolved_cfg)
+
+
+thinking
+**Resolving unexpected git changes policy conflict**
+
+I'm weighing conflicting instructions about unexpected changes seen in `.venv` and other unrelated files during `git status`. Since these changes pre-exist and are outside my modifications, and given the priority to avoid unnecessary stalls or questions, I’ll treat them as unrelated noise and ignore them, focusing only on the files I actually changed. I’ll summarize the key code additions, tests run, verification commands, and list just the changed files as requested.
+codex
+Added shared config-hash canonicalization with a simple ArtifactReader, tightened writer path safety to keep outputs inside the run dir, and added pytest coverage for hash stability and required artifact files.
+
+**Details**
+- `src/synthlab/framework/artifacts.py`: introduced `canonicalize_config_for_hash`, `_safe_rel_path`, and `ArtifactReader` to align artifact I/O with the docs/04 contract while keeping writes inside the run directory.
+- `tests/test_artifacts.py`: added tests for config_hash stability and for required contract files + hash match against `config/resolved.yaml`.
+
+**Tests**
+- `pytest -q`
+
+**Verification**
+- `python -m synthlab.cli.main process=doctor seed=1` (run twice to compare `meta/meta.json` config_hash)
+
+**Files changed**
+- `src/synthlab/framework/artifacts.py`
+- `tests/test_artifacts.py`
+file update:
+diff --git a/src/synthlab/framework/artifacts.py b/src/synthlab/framework/artifacts.py
+index e65221c11cd4c1fd47b7130ea1a4b70182ac81d1..0a7eb11d9a3d79e415e4f1f784c7d90b8be897cc
+--- a/src/synthlab/framework/artifacts.py
++++ b/src/synthlab/framework/artifacts.py
+@@ -14,11 +14,16 @@
+ import yaml
+ 
+ 
+-def compute_config_hash(cfg: dict[str, Any]) -> str:
++def canonicalize_config_for_hash(cfg: dict[str, Any]) -> dict[str, Any]:
+     canonical = copy.deepcopy(cfg)
+     if isinstance(canonical, dict):
+         canonical.pop("hydra", None)
+         canonical.pop("run_name", None)
++    return canonical
++
++
++def compute_config_hash(cfg: dict[str, Any]) -> str:
++    canonical = canonicalize_config_for_hash(cfg)
+     dumped = yaml.safe_dump(canonical, sort_keys=True)
+     return hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
+ 
+@@ -63,6 +68,29 @@
+     path.write_text(text + "\n", encoding="utf-8")
+ 
+ 
++def _read_yaml(path: Path) -> dict[str, Any]:
++    data = yaml.safe_load(path.read_text(encoding="utf-8"))
++    if data is None:
++        return {}
++    if not isinstance(data, dict):
++        raise ValueError(f"yaml must be a mapping: {path}")
++    return data
++
++
++def _read_json(path: Path) -> dict[str, Any]:
++    data = json.loads(path.read_text(encoding="utf-8"))
++    if not isinstance(data, dict):
++        raise ValueError(f"json must be a mapping: {path}")
++    return data
++
++
++def _safe_rel_path(run_dir: Path, rel_path: str) -> Path:
++    rel = Path(rel_path)
++    if rel.is_absolute() or ".." in rel.parts:
++        raise ValueError(f"rel_path must be within run dir: {rel_path}")
++    return run_dir / rel
++
++
+ @dataclass
+ class ArtifactWriter:
+     repo_root: Path
+@@ -92,7 +120,7 @@
+             f.write(line + "\n")
+ 
+     def write_json(self, rel_path: str, payload: dict[str, Any]) -> None:
+-        path = self.run_dir / rel_path
++        path = _safe_rel_path(self.run_dir, rel_path)
+         path.parent.mkdir(parents=True, exist_ok=True)
+         _dump_json(path, payload)
+ 
+@@ -145,6 +173,26 @@
+         (self.run_dir / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+ 
+ 
++@dataclass(frozen=True)
++class ArtifactReader:
++    run_dir: Path
++
++    def read_config(self) -> dict[str, Any]:
++        return _read_yaml(self.run_dir / "config" / "resolved.yaml")
++
++    def read_overrides(self) -> list[str]:
++        path = self.run_dir / "config" / "overrides.txt"
++        if not path.exists():
++            return []
++        return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
++
++    def read_meta(self) -> dict[str, Any]:
++        return _read_json(self.run_dir / "meta" / "meta.json")
++
++    def compute_config_hash(self) -> str:
++        return compute_config_hash(self.read_config())
++
++
+ def _process_name(cfg: dict[str, Any]) -> str:
+     proc = cfg.get("process")
+     if isinstance(proc, dict):
+diff --git a/tests/test_artifacts.py b/tests/test_artifacts.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..fcd9ac397925a50dab2e84feb5ef9eec9a0ace05
+--- /dev/null
++++ b/tests/test_artifacts.py
+@@ -0,0 +1,56 @@
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++import yaml
++
++ROOT = Path(__file__).resolve().parents[1]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
++from synthlab.framework.artifacts import ArtifactWriter, compute_config_hash
++
++
++def test_compute_config_hash_ignores_run_name_and_hydra() -> None:
++    cfg1 = {
++        "run_name": "run_a",
++        "seed": 1,
++        "hydra": {"runtime": "x"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    cfg2 = {
++        "run_name": "run_b",
++        "seed": 1,
++        "hydra": {"runtime": "y"},
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    assert compute_config_hash(cfg1) == compute_config_hash(cfg2)
++
++
++def test_artifact_writer_creates_contract_files(tmp_path) -> None:
++    cfg = {
++        "run_name": "test_run",
++        "seed": 1,
++        "schema_version": "wafer_particles.v1",
++        "domain": {"name": "wafer_particles"},
++        "process": {"name": "doctor"},
++    }
++    writer = ArtifactWriter(repo_root=tmp_path, cfg=cfg, overrides=["process=doctor"])
++    writer.prepare()
++
++    run_dir = tmp_path / "runs" / cfg["run_name"] / cfg["process"]["name"]
++    resolved = run_dir / "config" / "resolved.yaml"
++    overrides = run_dir / "config" / "overrides.txt"
++    meta_path = run_dir / "meta" / "meta.json"
++
++    assert resolved.exists()
++    assert overrides.exists()
++    assert meta_path.exists()
++
++    meta = json.loads(meta_path.read_text(encoding="utf-8"))
++    resolved_cfg = yaml.safe_load(resolved.read_text(encoding="utf-8"))
++    assert meta["config_hash"] == compute_config_hash(resolved_cfg)
+
+tokens used
+59,302
+Added shared config-hash canonicalization with a simple ArtifactReader, tightened writer path safety to keep outputs inside the run dir, and added pytest coverage for hash stability and required artifact files.
+
+**Details**
+- `src/synthlab/framework/artifacts.py`: introduced `canonicalize_config_for_hash`, `_safe_rel_path`, and `ArtifactReader` to align artifact I/O with the docs/04 contract while keeping writes inside the run directory.
+- `tests/test_artifacts.py`: added tests for config_hash stability and for required contract files + hash match against `config/resolved.yaml`.
+
+**Tests**
+- `pytest -q`
+
+**Verification**
+- `python -m synthlab.cli.main process=doctor seed=1` (run twice to compare `meta/meta.json` config_hash)
+
+**Files changed**
+- `src/synthlab/framework/artifacts.py`
+- `tests/test_artifacts.py`

@@ -1,0 +1,17 @@
+C03_Ring:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.C03_Ring
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  radius_ratio: 0.7
+  width_ratio: 0.08
+  param_space:
+    radius_ratio:
+      dist: uniform
+      min: 0.4
+      max: 0.9
+    width_ratio:
+      dist: uniform
+      min: 0.02
+      max: 0.2

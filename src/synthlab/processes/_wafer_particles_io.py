@@ -167,9 +167,9 @@ def coerce_row(row: Mapping[str, Any]) -> dict[str, Any]:
         if value is None or value == "":
             typed[key] = None
             continue
-        if key in {"particle_id", "n_particles", "seed_offset"}:
+        if key in {"particle_id", "n_particles", "seed_offset", "component_id"}:
             typed[key] = int(value)
-        elif key in {"r_mm", "theta_rad", "size_um", "x_mm", "y_mm"}:
+        elif key in {"r_norm", "r_mm", "theta_rad", "size_um", "x_mm", "y_mm"}:
             typed[key] = float(value)
         else:
             typed[key] = str(value)

@@ -1,1 +1,2 @@
 format: csv
+write_mode: eager

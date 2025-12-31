@@ -1,0 +1,10 @@
+K02_SemiRing_Segment:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.K02_SemiRing_Segment
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  arc_radius_ratio: 0.7
+  width_ratio: 0.12
+  span_deg: 180.0
+  angle_center: random

@@ -1,31 +1,58 @@
 from __future__ import annotations
 
-from math import radians, tau
+from math import cos, radians, sin, tau
 from typing import Any, Iterable, Mapping
 
 from synthlab.framework.registry import register_pattern
 
-from .common import build_particle, resolve_sample_ctx
+from .base import PatternBase, PatternContext
+from .common import build_particle, mm_to_norm
+from .geometry import sample_line_segment
 
 
 @register_pattern("wafer_particles.pattern.radial_lines")
-def generate(
-    cfg: Mapping[str, Any],
-    rng: Any,
-    sample_ctx: Mapping[str, Any] | None = None,
-) -> list[dict[str, float | str]]:
-    ctx = resolve_sample_ctx(cfg, sample_ctx)
-    angles_rad = _resolve_angles_rad(cfg)
-    angular_jitter_rad = _resolve_jitter_rad(cfg)
-    r_min, r_max = _resolve_radius_range(cfg, ctx.wafer_radius_mm)
+class RadialLines(PatternBase):
+    pattern_id = "wafer_particles.pattern.radial_lines"
+    touch_edge = True
+    tags = ("line", "radial")
 
-    particles: list[dict[str, float | str]] = []
-    for _ in range(ctx.n_particles):
-        angle = angles_rad[int(rng.random() * len(angles_rad))]
-        theta_rad = angle + (rng.random() - 0.5) * 2.0 * angular_jitter_rad
-        r_mm = rng.uniform(r_min, r_max)
-        particles.append(build_particle(r_mm, theta_rad))
-    return particles
+    @classmethod
+    def generate(
+        cls,
+        ctx: PatternContext,
+        params: Mapping[str, Any],
+        rng: Any,
+    ) -> list[dict[str, Any]]:
+        angles_rad = _resolve_angles_rad(params)
+        angular_jitter_rad = _resolve_jitter_rad(params)
+        r_min_norm, r_max_norm = _resolve_radius_range(params, ctx)
+        width_norm = _resolve_width_norm(params, ctx)
+
+        n_lines = len(angles_rad)
+        counts = _allocate_counts(ctx.n_particles, n_lines)
+        particles: list[dict[str, Any]] = []
+        for angle, count in zip(angles_rad, counts):
+            if count <= 0:
+                continue
+            angle = angle + (rng.random() - 0.5) * 2.0 * angular_jitter_rad
+            center_r = (r_min_norm + r_max_norm) * 0.5
+            center_x = cos(angle) * center_r
+            center_y = sin(angle) * center_r
+            length_norm = max(0.0, r_max_norm - r_min_norm)
+            points = sample_line_segment(
+                rng,
+                count,
+                center_x=center_x,
+                center_y=center_y,
+                angle_rad=angle,
+                length_norm=length_norm,
+                width_norm=width_norm,
+            )
+            for r_norm, theta_rad in points:
+                if r_norm < r_min_norm or r_norm > r_max_norm:
+                    r_norm = min(max(r_norm, r_min_norm), r_max_norm)
+                particles.append(build_particle(r_norm, theta_rad))
+        return particles
 
 
 def _resolve_angles_rad(cfg: Mapping[str, Any]) -> list[float]:
@@ -48,17 +75,35 @@ def _resolve_jitter_rad(cfg: Mapping[str, Any]) -> float:
     return radians(2.0)
 
 
-def _resolve_radius_range(cfg: Mapping[str, Any], wafer_radius_mm: float) -> tuple[float, float]:
-    if "r_min_mm" in cfg:
-        r_min = float(cfg["r_min_mm"])
+def _resolve_width_norm(cfg: Mapping[str, Any], ctx: PatternContext) -> float:
+    for key in ("width_norm", "line_width_norm"):
+        if key in cfg:
+            return max(0.0, float(cfg[key]))
+    for key in ("width_mm", "line_width_mm"):
+        if key in cfg:
+            return max(0.0, mm_to_norm(float(cfg[key]), ctx.wafer_radius_mm))
+    ratio = cfg.get("width_ratio", cfg.get("line_width_ratio"))
+    if ratio is None:
+        return 0.0
+    return max(0.0, float(ratio))
+
+
+def _resolve_radius_range(cfg: Mapping[str, Any], ctx: PatternContext) -> tuple[float, float]:
+    if "r_min_norm" in cfg:
+        r_min = float(cfg["r_min_norm"])
+    elif "r_min_mm" in cfg:
+        r_min = mm_to_norm(float(cfg["r_min_mm"]), ctx.wafer_radius_mm)
     else:
-        r_min = float(cfg.get("r_min_ratio", 0.0)) * wafer_radius_mm
-    if "r_max_mm" in cfg:
-        r_max = float(cfg["r_max_mm"])
+        r_min = float(cfg.get("r_min_ratio", 0.0))
+    if "r_max_norm" in cfg:
+        r_max = float(cfg["r_max_norm"])
+    elif "r_max_mm" in cfg:
+        r_max = mm_to_norm(float(cfg["r_max_mm"]), ctx.wafer_radius_mm)
     else:
-        r_max = float(cfg.get("r_max_ratio", 1.0)) * wafer_radius_mm
-    r_max = min(r_max, wafer_radius_mm)
-    if r_min < 0.0 or r_max <= 0.0 or r_min >= r_max:
+        r_max = float(cfg.get("r_max_ratio", 1.0))
+    r_min = max(0.0, min(r_min, 1.0))
+    r_max = max(0.0, min(r_max, 1.0))
+    if r_min >= r_max:
         raise ValueError("invalid radius range")
     return r_min, r_max
 
@@ -67,3 +112,14 @@ def _ensure_iterable(value: Any) -> Iterable[Any]:
     if isinstance(value, (list, tuple)):
         return value
     return [value]
+
+
+def _allocate_counts(total: int, n_lines: int) -> list[int]:
+    if n_lines <= 0:
+        return []
+    base = total // n_lines
+    counts = [base for _ in range(n_lines)]
+    remainder = total - base * n_lines
+    for idx in range(remainder):
+        counts[idx] += 1
+    return counts

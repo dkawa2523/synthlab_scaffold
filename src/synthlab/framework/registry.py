@@ -8,11 +8,12 @@ if TYPE_CHECKING:
 
 
 _PROCESS_REGISTRY: Dict[str, "Type[BaseProcess]"] = {}
-_PATTERN_REGISTRY: Dict[str, Callable[..., Any]] = {}
+_PATTERN_REGISTRY: Dict[str, Any] = {}
 _SIZE_MODEL_REGISTRY: Dict[str, Callable[..., Any]] = {}
 _METRIC_REGISTRY: Dict[str, Callable[..., Any]] = {}
 _VISUALIZER_REGISTRY: Dict[str, Callable[..., Any]] = {}
 _MODEL_REGISTRY: Dict[str, Callable[..., Any]] = {}
+_PARAM_ESTIMATOR_REGISTRY: Dict[str, Callable[..., Any]] = {}
 
 
 def _validate_namespaced_key(name: str, kind: str) -> None:
@@ -58,14 +59,14 @@ def list_processes() -> Iterable[str]:
     return sorted(_PROCESS_REGISTRY.keys())
 
 
-def register_pattern(name: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-    def _decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-        return _register(_PATTERN_REGISTRY, name, func, "pattern")
+def register_pattern(name: str) -> Callable[[Any], Any]:
+    def _decorator(obj: Any) -> Any:
+        return _register(_PATTERN_REGISTRY, name, obj, "pattern")
 
     return _decorator
 
 
-def get_pattern(name: str) -> Callable[..., Any]:
+def get_pattern(name: str) -> Any:
     return _get(_PATTERN_REGISTRY, name, "pattern")
 
 
@@ -131,3 +132,18 @@ def get_model(name: str) -> Callable[..., Any]:
 
 def list_models() -> Iterable[str]:
     return sorted(_MODEL_REGISTRY.keys())
+
+
+def register_param_estimator(name: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    def _decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        return _register(_PARAM_ESTIMATOR_REGISTRY, name, func, "param_estimator")
+
+    return _decorator
+
+
+def get_param_estimator(name: str) -> Callable[..., Any]:
+    return _get(_PARAM_ESTIMATOR_REGISTRY, name, "param_estimator")
+
+
+def list_param_estimators() -> Iterable[str]:
+    return sorted(_PARAM_ESTIMATOR_REGISTRY.keys())

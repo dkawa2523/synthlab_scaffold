@@ -6,3 +6,6 @@ __pycache__/
 .DS_Store
 .mplconfig/
 .venv/
+data_real/
+real_data/
+inputs/real/

@@ -1,0 +1,6 @@
+defaults:
+  - wafer_particles/compare_real: default
+  - wafer_particles/qc: default
+  - _self_
+
+name: wafer_particles.process.compare_real

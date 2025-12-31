@@ -14,6 +14,7 @@ from .schema import (
 )
 from . import generators  # noqa: F401
 from . import models  # noqa: F401
+from . import param_estimators  # noqa: F401
 
 __all__ = [
     "DOMAIN_NAME",

@@ -358,5 +358,636 @@
       "timestamp": "20251230_110316_232881",
       "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_110316_232881_T0103_a1_verification.log"
     }
+  },
+  {
+    "id": "T0104",
+    "priority": "P0",
+    "status": "done",
+    "title": "下流学習モデル実装（ベースライン分類器）",
+    "path": "work/tasks/T0104_baseline_model_train_eval.md",
+    "skills": [
+      "S40",
+      "S60",
+      "S50",
+      "S30"
+    ],
+    "contracts": [
+      "docs/10_PROCESS_CATALOG.md",
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/11_PLUGIN_REGISTRY.md"
+    ],
+    "depends_on": [
+      "T0102",
+      "T0103"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_165101_228584",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_165101_228584_T0104_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0105",
+    "priority": "P1",
+    "status": "done",
+    "title": "パターン生成バリエーション拡張（任意角度セクタ/リング＋ホットスポット合成）",
+    "path": "work/tasks/T0105_sector_custom_and_composite.md",
+    "skills": [
+      "S30",
+      "S20",
+      "S70",
+      "S98"
+    ],
+    "contracts": [
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/00_INVARIANTS.md",
+      "docs/09_EVALUATION_PROTOCOL.md"
+    ],
+    "depends_on": [
+      "T0005",
+      "T0007",
+      "T0010"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_170538_873318",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_170538_873318_T0105_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0106",
+    "priority": "P1",
+    "status": "done",
+    "title": "複雑な物理ノイズ導入（位置ジッタ・バックグラウンドノイズ）",
+    "path": "work/tasks/T0106_noise_jitter_background.md",
+    "skills": [
+      "S30",
+      "S20",
+      "S60",
+      "S98"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/09_EVALUATION_PROTOCOL.md"
+    ],
+    "depends_on": [
+      "T0007",
+      "T0004"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_171031_313431",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_171031_313431_T0106_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0107",
+    "priority": "P1",
+    "status": "done",
+    "title": "タクソノミー拡張と期待特徴ルール整備",
+    "path": "work/tasks/T0107_taxonomy_expected_rules.md",
+    "skills": [
+      "S20",
+      "S60",
+      "S98"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/00_INVARIANTS.md"
+    ],
+    "depends_on": [
+      "T0008",
+      "T0002"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_172028_725113",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_172028_725113_T0107_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0108",
+    "priority": "P1",
+    "status": "done",
+    "title": "実測データ比較パイプライン実装",
+    "path": "work/tasks/T0108_compare_real_pipeline.md",
+    "skills": [
+      "S40",
+      "S60",
+      "S95",
+      "S50"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/05_SECURITY_SECRETS.md",
+      "docs/10_PROCESS_CATALOG.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0008",
+      "T0003"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_172829_625671",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_172829_625671_T0108_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0201",
+    "priority": "P0",
+    "status": "done",
+    "title": "Taxonomy階層化 v2（fine/coarse）と後方互換",
+    "path": "work/tasks/T0201_taxonomy_hierarchy_v2.md",
+    "skills": [
+      "S20",
+      "S50",
+      "S10"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/09_EVALUATION_PROTOCOL.md"
+    ],
+    "depends_on": [
+      "T0102"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_175509_288657",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_175509_288657_T0201_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0202",
+    "priority": "P0",
+    "status": "done",
+    "title": "複合パターン体系化：Composite DSL + プリセットライブラリ",
+    "path": "work/tasks/T0202_composite_pattern_dsl_and_library.md",
+    "skills": [
+      "S30",
+      "S20",
+      "S70"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/11_PLUGIN_REGISTRY.md"
+    ],
+    "depends_on": [
+      "T0201"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_181220_983632",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_181220_983632_T0202_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0203",
+    "priority": "P1",
+    "status": "done",
+    "title": "点過程ジェネレータ追加（Inhom Poisson / Cluster / Repulsive）",
+    "path": "work/tasks/T0203_point_process_generators_pack.md",
+    "skills": [
+      "S30",
+      "S60"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/03_CONFIG_CONVENTIONS.md"
+    ],
+    "depends_on": [
+      "T0201"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_183217_868462",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_183217_868462_T0203_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0204",
+    "priority": "P0",
+    "status": "done",
+    "title": "実測比較の距離指標拡張（Distribution/Spatial distance report）",
+    "path": "work/tasks/T0204_real_vs_synth_distance_metrics_extend.md",
+    "skills": [
+      "S40",
+      "S60",
+      "S50"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/05_SECURITY_SECRETS.md",
+      "docs/00_INVARIANTS.md"
+    ],
+    "depends_on": [
+      "T0102"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_184154_753366",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_184154_753366_T0204_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0205",
+    "priority": "P0",
+    "status": "done",
+    "title": "データセット配布用 export 強化（dataset bundle / checksums / card）",
+    "path": "work/tasks/T0205_export_distribution_packaging.md",
+    "skills": [
+      "S50",
+      "S20",
+      "S60"
+    ],
+    "contracts": [
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/00_INVARIANTS.md",
+      "docs/05_SECURITY_SECRETS.md"
+    ],
+    "depends_on": [
+      "T0201",
+      "T0102"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_190024_079093",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_190024_079093_T0205_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0301",
+    "priority": "P0",
+    "status": "done",
+    "title": "生成スケール最適化（ストリーミング書き出し/チャンク生成）",
+    "path": "work/tasks/T0301_scale_generation_streaming.md",
+    "skills": [
+      "S40",
+      "S50",
+      "S20"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/10_PROCESS_CATALOG.md",
+      "docs/03_CONFIG_CONVENTIONS.md"
+    ],
+    "depends_on": [
+      "T0007",
+      "T0003"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_194421_059626",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_194421_059626_T0301_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0302",
+    "priority": "P0",
+    "status": "done",
+    "title": "生成設定の高度化（ラベル比率/粒子数分布/パラメータ範囲をYAMLで制御）",
+    "path": "work/tasks/T0302_label_distribution_control.md",
+    "skills": [
+      "S20",
+      "S40",
+      "S60",
+      "S50"
+    ],
+    "contracts": [
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0301"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_195900_294731",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_195900_294731_T0302_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0303",
+    "priority": "P0",
+    "status": "done",
+    "title": "データ監査（Data Audit）Process導入（重複/欠損/範囲外/リーク検知）",
+    "path": "work/tasks/T0303_data_audit_process.md",
+    "skills": [
+      "S60",
+      "S40",
+      "S50"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md",
+      "docs/10_PROCESS_CATALOG.md"
+    ],
+    "depends_on": [
+      "T0302",
+      "T0102"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_202035_117050",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_202035_117050_T0303_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0401",
+    "priority": "P1",
+    "status": "done",
+    "title": "実測少数データからのパターンパラメータ推定（キャリブレーション入口）",
+    "path": "work/tasks/T0401_real_to_param_estimation.md",
+    "skills": [
+      "S60",
+      "S40",
+      "S50"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/10_PROCESS_CATALOG.md",
+      "docs/05_SECURITY_SECRETS.md"
+    ],
+    "depends_on": [
+      "T0403",
+      "T0102"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_204343_684347",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_204343_684347_T0401_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0402",
+    "priority": "P1",
+    "status": "done",
+    "title": "距離最小化による自動キャリブレーション（パラメータ探索ループ）",
+    "path": "work/tasks/T0402_distance_minimization_calibration_loop.md",
+    "skills": [
+      "S60",
+      "S40",
+      "S50"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/10_PROCESS_CATALOG.md"
+    ],
+    "depends_on": [
+      "T0401"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_210352_461080",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_210352_461080_T0402_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0403",
+    "priority": "P0",
+    "status": "done",
+    "title": "実測データ取扱いガードレール（誤コミット防止/パス規約/ログ最小化）",
+    "path": "work/tasks/T0403_real_data_guardrails.md",
+    "skills": [
+      "S95",
+      "S10",
+      "S20"
+    ],
+    "contracts": [
+      "docs/05_SECURITY_SECRETS.md",
+      "docs/00_INVARIANTS.md"
+    ],
+    "depends_on": [
+      "T0303"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251230_203144_271961",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251230_203144_271961_T0403_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0501",
+    "priority": "P0",
+    "status": "done",
+    "title": "Labeling layers & cause hypotheses external file + process=labeling_apply",
+    "path": "work/tasks/T0501_labeling_layers_and_relabel_process.md",
+    "skills": [
+      "S20",
+      "S40",
+      "S70",
+      "S98"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251231_084750_232340",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251231_084750_232340_T0501_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0502",
+    "priority": "P0",
+    "status": "done",
+    "title": "Param-space sampling + strict config validation + doctor gate",
+    "path": "work/tasks/T0502_param_space_and_doctor_validation.md",
+    "skills": [
+      "S20",
+      "S40",
+      "S70",
+      "S98"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/03_CONFIG_CONVENTIONS.md"
+    ],
+    "depends_on": [
+      "T0501"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251231_090754_090160",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251231_090754_090160_T0502_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0503",
+    "priority": "P0",
+    "status": "done",
+    "title": "Pattern engine refactor (base interface, registry, geometry/masks primitives)",
+    "path": "work/tasks/T0503_pattern_engine_refactor.md",
+    "skills": [
+      "S40",
+      "S70",
+      "S98"
+    ],
+    "contracts": [
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/00_INVARIANTS.md"
+    ],
+    "depends_on": [
+      "T0502"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251231_093807_223229",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251231_093807_223229_T0503_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0504",
+    "priority": "P0",
+    "status": "done",
+    "title": "Implement core patterns C01–C15",
+    "path": "work/tasks/T0504_core_patterns_C01_C15.md",
+    "skills": [
+      "S40",
+      "S70"
+    ],
+    "contracts": [
+      "docs/11_PLUGIN_REGISTRY.md"
+    ],
+    "depends_on": [
+      "T0503"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251231_101934_362104",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251231_101934_362104_T0504_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0505",
+    "priority": "P0",
+    "status": "done",
+    "title": "Implement keep patterns K01–K04 + optional patterns O01–O02",
+    "path": "work/tasks/T0505_keep_optional_patterns_K_O.md",
+    "skills": [
+      "S40",
+      "S70"
+    ],
+    "contracts": [
+      "docs/11_PLUGIN_REGISTRY.md"
+    ],
+    "depends_on": [
+      "T0504"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251231_104720_495152",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251231_104720_495152_T0505_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0506",
+    "priority": "P0",
+    "status": "done",
+    "title": "Process=compose (random overlay) with multi-label + component tracing",
+    "path": "work/tasks/T0506_process_compose_multilabel.md",
+    "skills": [
+      "S40",
+      "S70"
+    ],
+    "contracts": [
+      "docs/10_PROCESS_CATALOG.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0505"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251231_110017_085062",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251231_110017_085062_T0506_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0507",
+    "priority": "P0",
+    "status": "done",
+    "title": "Export & dataset versioning upgrades (multi-label + labeling spec hash + dataset card)",
+    "path": "work/tasks/T0507_export_dataset_versioning.md",
+    "skills": [
+      "S20",
+      "S40",
+      "S70"
+    ],
+    "contracts": [
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0506",
+      "T0501"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251231_111747_325054",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251231_111747_325054_T0507_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0508",
+    "priority": "P0",
+    "status": "done",
+    "title": "Process=pattern_coverage (new pattern needed?) + composite search report",
+    "path": "work/tasks/T0508_pattern_coverage_process.md",
+    "skills": [
+      "S40",
+      "S70",
+      "S98"
+    ],
+    "contracts": [
+      "docs/09_EVALUATION_PROTOCOL.md",
+      "docs/10_PROCESS_CATALOG.md"
+    ],
+    "depends_on": [
+      "T0507",
+      "T0505"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251231_113614_506120",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251231_113614_506120_T0508_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0509",
+    "priority": "P1",
+    "status": "done",
+    "title": "Profiles for parameter ranges + operational docs update",
+    "path": "work/tasks/T0509_profiles_and_docs.md",
+    "skills": [
+      "S20",
+      "S95",
+      "S70"
+    ],
+    "contracts": [
+      "docs/03_CONFIG_CONVENTIONS.md"
+    ],
+    "depends_on": [
+      "T0507"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20251231_120330_631284",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251231_120330_631284_T0509_a1_verification.log"
+    }
   }
 ]

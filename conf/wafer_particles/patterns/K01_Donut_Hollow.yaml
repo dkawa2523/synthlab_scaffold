@@ -1,0 +1,8 @@
+K01_Donut_Hollow:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.K01_Donut_Hollow
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  r_inner_ratio: 0.4
+  r_outer_ratio: 0.9

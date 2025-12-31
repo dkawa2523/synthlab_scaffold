@@ -5,7 +5,7 @@ import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 import yaml
 
@@ -126,16 +126,20 @@ def _compose_from_file(path: Path, conf_root: Path) -> dict[str, Any]:
     return composed
 
 
-def _parse_overrides(overrides: list[str]) -> dict[str, Any]:
+def _parse_overrides(overrides: list[str]) -> tuple[dict[str, Any], list[tuple[str, str]]]:
     parsed: dict[str, Any] = {}
+    group_overrides: list[tuple[str, str]] = []
     for item in overrides:
         if "=" not in item:
             raise ValueError(f"override must be key=value: {item}")
         key, raw = item.split("=", 1)
         if not key:
             raise ValueError(f"override key is empty: {item}")
+        if "/" in key:
+            group_overrides.append((key, raw))
+            continue
         _set_nested(parsed, key.split("."), _coerce_value(raw))
-    return parsed
+    return parsed, group_overrides
 
 
 def _default_run_name() -> str:
@@ -221,15 +225,108 @@ def _ensure_schema_version(cfg: dict[str, Any]) -> None:
     raise ValueError("schema_version is required")
 
 
-def resolve_config(overrides: dict[str, Any], repo_root: Path) -> dict[str, Any]:
+def _apply_group_overrides(
+    cfg: dict[str, Any],
+    group_overrides: list[tuple[str, str]],
+    conf_root: Path,
+) -> None:
+    for group, option in group_overrides:
+        if not option:
+            raise ValueError(f"group override missing option: {group}")
+        _deep_update(cfg, _compose_group(conf_root, group, option))
+
+
+def _resolve_profile_cfg(cfg: Mapping[str, Any]) -> dict[str, Any] | None:
+    wp_cfg = cfg.get("wafer_particles")
+    if not isinstance(wp_cfg, Mapping):
+        return None
+    profile_cfg = wp_cfg.get("profiles")
+    if not isinstance(profile_cfg, Mapping):
+        return None
+    return dict(profile_cfg)
+
+
+def _apply_profile_overrides(cfg: dict[str, Any]) -> None:
+    profile_cfg = _resolve_profile_cfg(cfg)
+    if not profile_cfg:
+        return
+    overrides = profile_cfg.get("overrides")
+    if overrides is None:
+        return
+    if not isinstance(overrides, Mapping):
+        raise ValueError("wafer_particles.profiles.overrides must be a mapping")
+    _deep_update(cfg, dict(overrides))
+
+
+def _apply_size_model_defaults(cfg: dict[str, Any]) -> None:
+    wp_cfg = cfg.get("wafer_particles")
+    if not isinstance(wp_cfg, Mapping):
+        return
+    defaults_cfg = wp_cfg.get("size_model_defaults")
+    if not isinstance(defaults_cfg, Mapping):
+        return
+    clamp_cfg = defaults_cfg.get("clamp_um")
+    if clamp_cfg is None:
+        return
+    if not isinstance(clamp_cfg, Mapping):
+        raise ValueError("wafer_particles.size_model_defaults.clamp_um must be a mapping")
+    clamp_min = _coerce_optional_float(clamp_cfg.get("min", clamp_cfg.get("min_um")), "clamp_um.min")
+    clamp_max = _coerce_optional_float(clamp_cfg.get("max", clamp_cfg.get("max_um")), "clamp_um.max")
+    if clamp_min is None and clamp_max is None:
+        return
+    size_cfg = wp_cfg.get("size_models") or wp_cfg.get("size_model")
+    if not isinstance(size_cfg, Mapping):
+        return
+    _apply_size_model_clamp(size_cfg, clamp_min, clamp_max)
+
+
+def _apply_size_model_clamp(cfg: Mapping[str, Any], clamp_min: float | None, clamp_max: float | None) -> None:
+    if clamp_min is not None:
+        cfg["min_um"] = clamp_min
+    if clamp_max is not None:
+        cfg["max_um"] = clamp_max
+    by_label = cfg.get("by_label")
+    if isinstance(by_label, Mapping):
+        for label_cfg in by_label.values():
+            if isinstance(label_cfg, Mapping):
+                _apply_size_model_clamp(label_cfg, clamp_min, clamp_max)
+    components = cfg.get("components")
+    if isinstance(components, list):
+        for component in components:
+            if not isinstance(component, Mapping):
+                continue
+            component_cfg = component.get("cfg")
+            if isinstance(component_cfg, Mapping):
+                _apply_size_model_clamp(component_cfg, clamp_min, clamp_max)
+
+
+def _coerce_optional_float(value: Any, name: str) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be numeric") from exc
+
+
+def resolve_config(
+    overrides: dict[str, Any],
+    repo_root: Path,
+    *,
+    group_overrides: list[tuple[str, str]] | None = None,
+) -> dict[str, Any]:
     conf_root = repo_root / "conf"
     cfg = _compose_from_file(conf_root / "config.yaml", conf_root)
+    if group_overrides:
+        _apply_group_overrides(cfg, group_overrides, conf_root)
+    _apply_profile_overrides(cfg)
     _deep_update(cfg, overrides)
     _normalize_domain(cfg, conf_root)
     _normalize_process(cfg, conf_root)
     _normalize_run_name(cfg)
     _ensure_seed(cfg)
     _ensure_schema_version(cfg)
+    _apply_size_model_defaults(cfg)
     return cfg
 
 
@@ -246,8 +343,8 @@ def main(argv: list[str] | None = None) -> int:
 
     overrides = list(args.overrides)
     try:
-        override_cfg = _parse_overrides(overrides)
-        cfg = resolve_config(override_cfg, repo_root=Path.cwd())
+        override_cfg, group_overrides = _parse_overrides(overrides)
+        cfg = resolve_config(override_cfg, repo_root=Path.cwd(), group_overrides=group_overrides)
         process_name = cfg["process"]["name"]
         runs_dir = Path.cwd() / "runs"
         cfg["run_name"] = ensure_unique_run_name(runs_dir, str(cfg["run_name"]), process_name)

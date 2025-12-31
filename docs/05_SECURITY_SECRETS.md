@@ -8,6 +8,12 @@
 
 ## 2. 実測データ（もし扱う場合）
 - 実測データは原則リポジトリ外（社内規定ストレージ）
+- 実測データのルートは env 経由で指定する（例: `DATA_ROOT`, `REAL_PARTICLES_PATH`）
+  - Hydra 例: `particles_path: ${oc.env:DATA_ROOT}/wafer/particles.parquet`
+- repo 配下の実測入力はデフォルトで拒否（`policy.real_data.allow_repo_paths=false`）
+  - テスト等で必要な場合のみ `true` を明示し、運用では戻す
+- 実測データを repo 内の `data_real/` `real_data/` `inputs/real/` に置かない（gitignore でも持ち込まない）
+- 実測入力のパスはログ/metrics に絶対パスを残さず、最小限の情報にする
 - artifact に含める場合は匿名化・最小化・アクセス制御を TODO
 - 実測データのスキーマ/取り扱い規程は会社ポリシーに依存（TODO）
 

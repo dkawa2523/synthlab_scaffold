@@ -1,0 +1,5 @@
+defaults:
+  - wafer_particles/calibrate_search: default
+  - _self_
+
+name: wafer_particles.process.calibrate_search

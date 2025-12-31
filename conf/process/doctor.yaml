@@ -1,1 +1,21 @@
+defaults:
+  - wafer_particles/size_models: lognormal
+  - wafer_particles/patterns: ring_narrow
+  - wafer_particles/patterns: ring_wide
+  - wafer_particles/patterns: edge_sector
+  - wafer_particles/patterns: scratch
+  - wafer_particles/patterns: radial_lines
+  - wafer_particles/patterns: hotspot
+  - wafer_particles/patterns: random_uniform
+  - wafer_particles/patterns: random_edge_biased
+  - wafer_particles/patterns: inhom_poisson
+  - wafer_particles/patterns: cluster_parent_child
+  - wafer_particles/patterns: cox_lognormal
+  - wafer_particles/patterns: composite
+  - wafer_particles/labeling: default
+  - _self_
+
 name: wafer_particles.process.doctor
+
+wafer_particles:
+  allow_optional_patterns: false

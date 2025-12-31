@@ -1,4 +1,6 @@
 inhom_poisson:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
   name: wafer_particles.pattern.inhomogeneous_poisson
   mean_particles: 200
   wafer_radius_mm: 150.0

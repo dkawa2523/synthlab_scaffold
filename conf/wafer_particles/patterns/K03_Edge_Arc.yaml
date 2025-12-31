@@ -1,0 +1,10 @@
+K03_Edge_Arc:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.K03_Edge_Arc
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  arc_radius_ratio: 0.95
+  width_ratio: 0.06
+  span_deg: 70.0
+  angle_center: random

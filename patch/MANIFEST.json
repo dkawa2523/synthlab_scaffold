@@ -1,0 +1,16 @@
+{
+  "name": "next_tasks_T0201-T0205",
+  "created_at": "2025-12-30T07:27:10.711271Z",
+  "contains": {
+    "tasks": [
+      "work/tasks/T0201_taxonomy_hierarchy_v2.md",
+      "work/tasks/T0202_composite_pattern_dsl_and_library.md",
+      "work/tasks/T0203_point_process_generators_pack.md",
+      "work/tasks/T0204_real_vs_synth_distance_metrics_extend.md",
+      "work/tasks/T0205_export_distribution_packaging.md"
+    ],
+    "queue_patch": "patch/queue_patch_T0201_T0205.json",
+    "apply_script": "patch/apply_queue_patch.py",
+    "future_backlog": "work/backlog_future.md"
+  }
+}

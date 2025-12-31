@@ -1,0 +1,7 @@
+input:
+  run_name: null
+  process_name: wafer_particles.process.export
+  run_dir: null
+  manifest_path: null
+  particles_path: null
+  samples_path: null

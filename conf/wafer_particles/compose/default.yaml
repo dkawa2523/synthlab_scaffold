@@ -1,0 +1,20 @@
+input_run_dir: null
+input:
+  run_name: null
+  process_name: wafer_particles.process.generate
+  run_dir: null
+  manifest_path: null
+  particles_path: null
+  samples_path: null
+n_samples_out: 100
+n_components:
+  value: 2
+component_sampling:
+  allow_duplicates: false
+  weights: null
+particle_budget:
+  mode: all
+  total: null
+  per_component: null
+  strategy: proportional
+sample_id_prefix: compose

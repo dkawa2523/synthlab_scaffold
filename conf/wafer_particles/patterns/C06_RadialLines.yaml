@@ -1,0 +1,31 @@
+C06_RadialLines:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.C06_RadialLines
+  n_particles: 200
+  wafer_radius_mm: 150.0
+  n_lines: 6
+  angular_jitter_deg: 2.0
+  r_min_ratio: 0.1
+  r_max_ratio: 1.0
+  sigma_perp_ratio: 0.01
+  param_space:
+    n_lines:
+      dist: choice
+      values: [4, 6, 8]
+    angular_jitter_deg:
+      dist: uniform
+      min: 0.0
+      max: 5.0
+    r_min_ratio:
+      dist: uniform
+      min: 0.0
+      max: 0.3
+    r_max_ratio:
+      dist: uniform
+      min: 0.6
+      max: 1.0
+    sigma_perp_ratio:
+      dist: uniform
+      min: 0.003
+      max: 0.03

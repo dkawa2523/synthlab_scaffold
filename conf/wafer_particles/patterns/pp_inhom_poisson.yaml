@@ -1,0 +1,10 @@
+pp_inhom_poisson:
+  schema_version: wafer_particles.pattern_config.v1
+  enabled: true
+  name: wafer_particles.pattern.pp_inhom_poisson
+  mean_particles: 200
+  wafer_radius_mm: 150.0
+  radial_power: 1.4
+  angular_amplitude: 0.35
+  angular_harmonic: 2
+  angular_phase_deg: 30.0
