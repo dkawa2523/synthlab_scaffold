@@ -15,6 +15,7 @@ from .labeling_apply import LabelingApplyProcess
 from .pattern_coverage import PatternCoverageProcess
 from .predict import PredictProcess
 from .qc import QcProcess
+from .size_qc import SizeQcProcess
 from .train import TrainProcess
 from .viz import VizProcess
 
@@ -34,6 +35,7 @@ __all__ = [
     "PatternCoverageProcess",
     "PredictProcess",
     "QcProcess",
+    "SizeQcProcess",
     "TrainProcess",
     "VizProcess",
 ]

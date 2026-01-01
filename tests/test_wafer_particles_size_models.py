@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
 import synthlab.domains.wafer_particles.generators.size_models  # noqa: E402,F401
 from synthlab.domains.wafer_particles.generators.size_models.common import (  # noqa: E402
     apply_size_model,
+    resolve_size_model_name,
 )
 from synthlab.domains.wafer_particles.metrics.size_stats import (  # noqa: E402
     compute_size_stats_by_label,
@@ -24,13 +25,16 @@ SIZE_MODEL_KEYS = [
     "wafer_particles.size_model.gaussian",
     "wafer_particles.size_model.lognormal",
     "wafer_particles.size_model.mixture",
+    "wafer_particles.size_model.pareto",
+    "wafer_particles.size_model.weibull",
 ]
 
 
 def _apply_model(cfg: dict[str, object], seed: int = 123) -> list[float]:
     rng = random.Random(seed)
     particles = [{"label": "default"} for _ in range(8)]
-    model = get_size_model(str(cfg["name"]))
+    model_name = resolve_size_model_name(cfg)
+    model = get_size_model(model_name)
     model(cfg, rng, particles)
     return [float(particle["size_um"]) for particle in particles]
 
@@ -46,18 +50,26 @@ def test_size_model_registry_contains_expected_keys() -> None:
     [
         {"name": "wafer_particles.size_model.gaussian", "mean_um": 1.0, "std_um": 0.3},
         {"name": "wafer_particles.size_model.lognormal", "mu_log": -0.2, "sigma_log": 0.4},
+        {"name": "wafer_particles.size_model.weibull", "k": 1.8, "lambda_um": 0.6},
+        {"name": "wafer_particles.size_model.pareto", "alpha": 2.5, "xm_um": 0.2},
         {
-            "name": "wafer_particles.size_model.mixture",
+            "type": "mixture",
             "components": [
                 {
-                    "model": "wafer_particles.size_model.gaussian",
                     "weight": 0.6,
-                    "cfg": {"mean_um": 1.0, "std_um": 0.2},
+                    "model": {
+                        "type": "gaussian",
+                        "mean_um": 1.0,
+                        "std_um": 0.2,
+                    },
                 },
                 {
-                    "model": "wafer_particles.size_model.lognormal",
                     "weight": 0.4,
-                    "cfg": {"mu_log": 0.1, "sigma_log": 0.3},
+                    "model": {
+                        "type": "lognormal",
+                        "mu_log": 0.1,
+                        "sigma_log": 0.3,
+                    },
                 },
             ],
         },
@@ -92,19 +104,33 @@ def test_apply_size_model_by_label() -> None:
     assert sizes_big == [10.0]
 
 
+def test_apply_size_model_accepts_type_alias() -> None:
+    cfg = {"type": "gaussian", "mean_um": 1.5, "std_um": 0.0}
+    rng = random.Random(9)
+    particles = [{"label": "default"}]
+    apply_size_model(cfg, rng, particles)
+    assert particles[0]["size_um"] == 1.5
+
+
 def test_mixture_assigns_component_values() -> None:
     cfg = {
-        "name": "wafer_particles.size_model.mixture",
+        "type": "mixture",
         "components": [
             {
-                "model": "wafer_particles.size_model.gaussian",
                 "weight": 0.5,
-                "cfg": {"mean_um": 1.0, "std_um": 0.0},
+                "model": {
+                    "type": "gaussian",
+                    "mean_um": 1.0,
+                    "std_um": 0.0,
+                },
             },
             {
-                "model": "wafer_particles.size_model.gaussian",
                 "weight": 0.5,
-                "cfg": {"mean_um": 10.0, "std_um": 0.0},
+                "model": {
+                    "type": "gaussian",
+                    "mean_um": 10.0,
+                    "std_um": 0.0,
+                },
             },
         ],
     }

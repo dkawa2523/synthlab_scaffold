@@ -1,0 +1,33 @@
+# ベンチマーク export（CSV + train/val/test split 8:1:1）
+#
+# 使い方（例）:
+#   python -m synthlab.cli.main --config-path conf/benchmarks/wafer_particles --config-name benchmark_macro10_export_csv_param_sweep_v1 \
+#       seed=0 wafer_particles.export.input_run_dir="runs/<...>/labeling_apply"
+#
+# NOTE:
+# - input_run_dir は labeling_apply の出力（macro列が付いたデータ）を推奨。
+# - split は sample_id 単位で実施し、リークを防ぎます。
+
+defaults:
+  - override /domain: wafer_particles
+  - override /process: export
+  - _self_
+
+seed: 0
+
+wafer_particles:
+  export:
+    input_run_dir: null  # CLIで指定してください（labeling_apply の run dir）
+
+    format: csv
+
+    split:
+      mode: ratio
+      shuffle: true
+      ratios:
+        train: 8
+        val: 1
+        test: 1
+      stratify_by: label_macro
+
+    label_column: label_macro

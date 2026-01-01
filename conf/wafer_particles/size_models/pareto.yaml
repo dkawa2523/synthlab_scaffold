@@ -1,0 +1,5 @@
+name: wafer_particles.size_model.pareto
+alpha: 2.5
+xm_um: 0.1
+min_um: 0.05
+max_um: 5.0

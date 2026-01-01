@@ -1,0 +1,56 @@
+# ベンチマーク生成（macro10/1000枚）+ param_sweep(v1) + 粒径分布=pareto(重尾)
+#
+# 実行例:
+#   python -m synthlab.cli.main --config-path conf/benchmarks/wafer_particles \
+#     --config-name benchmark_macro10_300mm_1k_generate_size_models_pareto_param_sweep_v1 seed=42
+
+defaults:
+  - override /domain: wafer_particles
+  - override /process: generate
+  - override /wafer_particles/profiles: benchmark_param_sweep_v1
+  - _self_
+
+wafer_particles:
+  wafer_radius_mm: 150.0
+  n_samples: 1000
+  labels: taxonomy_v2
+
+  label_selection:
+    mode: ratio
+    shuffle: true
+    ratios:
+      C01_Uniform: 1.0
+      C02_EdgeBiased: 1.0
+      C03_Ring: 1.0
+      C04_Sector_Edge: 1.0
+      C05_Sector_Internal: 1.0
+      C06_RadialLines: 1.0
+      C07_StraightLine: 1.0
+      C08_CurvedScratch: 1.0
+      C09_Spiral: 1.0
+      C11_Hotspot_Elliptic: 1.0
+
+  n_particles:
+    dist: truncnorm
+    mean: 105
+    std: 50
+    min: 10
+    max: 200
+
+  size_models:
+    min_um: 0.01
+    max_um: 1.0
+
+    selection:
+      mode: ratio
+      shuffle: true
+      ratios:
+        pareto: 1.0
+
+    models:
+      pareto:
+        type: pareto
+        per_sample: true
+        alpha: {dist: uniform, low: 1.5, high: 4.0}
+        xm_um: {dist: uniform, low: 0.05, high: 0.3}
+

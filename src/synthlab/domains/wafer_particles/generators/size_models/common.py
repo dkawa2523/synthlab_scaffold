@@ -5,6 +5,22 @@ from typing import Any, Mapping
 from synthlab.framework.registry import get_size_model
 
 
+def normalize_size_model_name(name: Any) -> str:
+    if name is None or name == "":
+        raise ValueError("size model name is required")
+    name_str = str(name)
+    if "." in name_str:
+        return name_str
+    return f"wafer_particles.size_model.{name_str}"
+
+
+def resolve_size_model_name(cfg: Mapping[str, Any]) -> str:
+    name = cfg.get("type")
+    if name is None or name == "":
+        name = cfg.get("name")
+    return normalize_size_model_name(name)
+
+
 def apply_size_model(
     cfg: Mapping[str, Any],
     rng: Any,
@@ -33,10 +49,8 @@ def apply_size_model(
 
 
 def _apply_model(cfg: Mapping[str, Any], rng: Any, particles: list[dict[str, Any]]) -> None:
-    name = cfg.get("name")
-    if not name:
-        raise ValueError("size model name is required")
-    model = get_size_model(str(name))
+    name = resolve_size_model_name(cfg)
+    model = get_size_model(name)
     model(cfg, rng, particles)
 
 

@@ -1,0 +1,81 @@
+version: 1
+name: benchmark_param_sweep_v1
+description: >
+  Benchmark向けのパターンパラメータ広域スイープ（v1）。
+  - 目的: 空間パターンの幾何パラメータ（長さ/幅など）を広く振って多様性を確保する。
+  - 注意: ここでは T0504 で仕様確定している「線状/スクラッチ系パラメータ」を中心に上書きする。
+    Ring/Sector/Hotspot などの他パターンは各 pattern YAML 側の param_space を優先して使用する。
+overrides:
+  wafer_particles:
+    patterns:
+      # --- 線状/筋状パターン群 ---
+      C06_RadialLines:
+        params:
+          # 線の本数（離散）。choice を使う（param_spaceが対応）
+          n_lines: {dist: choice, values: [2,3,4,5,6,7,8], weights: [1,1,1,1,1,1,1]}
+          # 半径方向の長さ（r_norm in [0,1]）。範囲を分離して r_min < r_max を保証。
+          r_min_norm: {dist: uniform, low: 0.0, high: 0.30}
+          r_max_norm: {dist: uniform, low: 0.70, high: 1.00}
+          # 線幅（垂直方向のσ）。0.01〜0.07 → 約1.5〜10.5mm 程度
+          sigma_perp_norm: {dist: uniform, low: 0.01, high: 0.07}
+
+      C07_StraightLine:
+        params:
+          # length_mm ≒ 2 * segment_half_length_norm * wafer_radius_mm
+          # 10〜100mm → segment_half_length_norm: 0.033333〜0.333333
+          segment_half_length_norm: {dist: uniform, low: 0.033333, high: 0.333333}
+          # width_mm ≒ width_norm * wafer_radius_mm
+          # 5〜10mm → width_norm: 0.033333〜0.066667
+          width_norm: {dist: uniform, low: 0.033333, high: 0.066667}
+
+      C08_CurvedScratch:
+        params:
+          # 円弧半径（規格化）。0.4〜0.9
+          arc_radius_norm: {dist: uniform, low: 0.40, high: 0.90}
+          # span_rad: 0.2〜0.8 → arc_length_mm ≒ arc_radius_norm * span_rad * wafer_radius_mm
+          # おおよそ 12〜108mm 程度をカバー
+          span_rad: {dist: uniform, low: 0.20, high: 0.80}
+          # 幅（スクラッチ幅に合わせる）
+          width_norm: {dist: uniform, low: 0.033333, high: 0.066667}
+
+      C09_Spiral:
+        params:
+          # theta_max: 回転量（大きいほどターン数が増える）。4π〜10π（約2〜5回転）
+          theta_max: {dist: uniform, low: 12.566371, high: 31.415927}
+          # 幅（スパイラルは細め〜中程度まで）
+          width_norm: {dist: uniform, low: 0.005, high: 0.050}
+
+      # --- オプション（キー名は実装により異なる可能性があります） ---
+      # もし doctor が未知キーを許容する/もしくは下記キーが存在する場合は、
+      # Ring/Sector/Hotspot のパラメータも profile から広く振れます。
+      #
+      # C03_Ring:
+      #   params:
+      #     r0_norm: {dist: uniform, low: 0.25, high: 0.95}      # リング中心半径
+      #     sigma_r_norm: {dist: uniform, low: 0.01, high: 0.08} # リング幅（σ）
+      #
+      # C04_Sector_Edge:
+      #   params:
+      #     theta_mu: {dist: uniform, low: 0.0, high: 6.283185}
+      #     theta_kappa: {dist: uniform, low: 2.0, high: 40.0}
+      #     r_min_norm: {dist: uniform, low: 0.65, high: 0.90}
+      #     r_max_norm: 1.0
+      #     r_beta_alpha: {dist: uniform, low: 2.0, high: 10.0}
+      #     r_beta_beta:  {dist: uniform, low: 0.8, high: 5.0}
+      #
+      # C05_Sector_Internal:
+      #   params:
+      #     theta_mu: {dist: uniform, low: 0.0, high: 6.283185}
+      #     theta_kappa: {dist: uniform, low: 1.0, high: 25.0}
+      #     r_min_norm: {dist: uniform, low: 0.00, high: 0.20}
+      #     r_max_norm: {dist: uniform, low: 0.35, high: 0.80}
+      #     r_beta_alpha: {dist: uniform, low: 1.5, high: 8.0}
+      #     r_beta_beta:  {dist: uniform, low: 1.5, high: 8.0}
+      #
+      # C11_Hotspot_Elliptic:
+      #   params:
+      #     center_r_norm:    {dist: uniform, low: 0.00, high: 0.85}
+      #     center_theta_rad: {dist: uniform, low: 0.00, high: 6.283185}
+      #     sigma_major_norm: {dist: uniform, low: 0.03, high: 0.20}
+      #     sigma_minor_norm: {dist: uniform, low: 0.01, high: 0.08}
+      #     phi_rad:          {dist: uniform, low: 0.00, high: 3.141593}

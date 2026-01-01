@@ -1,0 +1,17 @@
+# Export smoke (optional)
+# 実行例:
+#   python -m synthlab.cli.main --config-path conf/benchmarks/wafer_particles \
+#     --config-name benchmark_macro10_300mm_20_export_size_models_mix_smoke \
+#     input_dir=/path/to/runs/<run_id>/generate
+
+defaults:
+  - override /domain: wafer_particles
+  - override /process: export
+  - _self_
+
+# 必須（CLIで上書きしてください）
+input_dir: ???
+
+export:
+  format: csv
+  include_tables: ["particles", "samples"]

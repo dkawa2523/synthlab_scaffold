@@ -1,0 +1,39 @@
+# ベンチマーク export（CSV + train/val/test split 8:1:1）
+#
+# 使い方（例）:
+#   python -m synthlab.cli.main --config-path conf/benchmarks/wafer_particles --config-name benchmark_macro5_300mm_1k_export_csv \
+#       seed=0 wafer_particles.export.input_run_dir="runs/<...>/labeling_apply"
+#
+# NOTE:
+# - input_run_dir は labeling_apply の出力（macro列が付いたデータ）を推奨。
+# - split は sample_id 単位で実施し、リークを防ぎます。
+# - stratify_by が実装されていない場合、ラベル分布は厳密には揃いません（ただしほぼ揃います）。
+
+defaults:
+  - override /domain: wafer_particles
+  - override /process: export
+  - _self_
+
+seed: 0
+
+wafer_particles:
+  export:
+    # labeling_apply の出力 run を指定（例: runs/2025xxxx_labeling_apply）
+    input_run_dir: null  # CLIで指定してください
+
+    # 最終出力形式
+    format: csv
+
+    # train/val/test split
+    split:
+      mode: ratio
+      shuffle: true
+      ratios:
+        train: 8
+        val: 1
+        test: 1
+      # 可能ならmacroラベルで層化
+      stratify_by: label_macro
+
+    # 出力に含めるラベル列（必要なら）
+    label_column: label_macro

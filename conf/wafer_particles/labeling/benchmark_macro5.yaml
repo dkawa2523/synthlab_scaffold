@@ -1,0 +1,48 @@
+# ベンチマーク用: fineラベル → macroラベル（5クラス）へのマッピング
+#
+# 使い方（例）:
+#   python -m synthlab.cli.main process=labeling_apply \
+#       input_run_dir="runs/<...>/generate" \
+#       wafer_particles.labeling.spec_path="conf/wafer_particles/labeling/benchmark_macro5.yaml" seed=42
+#
+# NOTE:
+# - fineラベル名（キー）は、generateが出力する label_fine と一致させてください。
+# - ここでは Cxx_*** 形式を想定しています。必要ならあなたの実装名に合わせて変更してください。
+
+version: 1
+name: benchmark_macro5
+description: "ベンチマーク用（5クラス）マクロカテゴリ付与"
+
+layers:
+  - name: label_macro
+    column: label_macro
+    unknown_value: OTHER
+    mapping:
+      C01_Uniform: UNIFORM
+      C03_Ring: RING
+      C04_Sector_Edge: EDGE_SECTOR
+      C07_StraightLine: SCRATCH
+      C11_Hotspot_Elliptic: HOTSPOT
+
+# 参考: 類似グループ（解析・説明用。学習ラベルとは別）
+similarity_groups:
+  EDGE_FAMILY:
+    - C02_EdgeBiased
+    - C04_Sector_Edge
+    - C12_Crescent_Edge
+    - C14_EdgeSource_Spray
+    - C15_EdgeSource_Bursty
+    - K03_Edge_Arc
+    - K02_SemiRing_Segment
+  RING_FAMILY:
+    - C03_Ring
+    - K02_SemiRing_Segment
+    - K01_Donut_Hollow
+  LINE_FAMILY:
+    - C07_StraightLine
+    - C08_CurvedScratch
+    - C06_RadialLines
+    - C09_Spiral
+  HOTSPOT_FAMILY:
+    - C10_Hotspot_Iso
+    - C11_Hotspot_Elliptic

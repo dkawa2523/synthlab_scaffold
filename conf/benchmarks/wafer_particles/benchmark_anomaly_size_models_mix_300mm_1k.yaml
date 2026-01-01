@@ -1,0 +1,79 @@
+# 異常検出ベンチマーク生成（300mm / 1000枚）
+# - 粒径分布のタイプに基づく異常ラベル（is_size_anomaly）を付与する
+# - 例: pareto を異常として混入
+#
+# 実行例:
+#   python -m synthlab.cli.main --config-path conf/benchmarks/wafer_particles \
+#     --config-name benchmark_anomaly_size_models_mix_300mm_1k seed=42
+
+defaults:
+  - override /domain: wafer_particles
+  - override /process: generate
+  - _self_
+
+wafer_particles:
+  wafer_radius_mm: 150.0
+  n_samples: 1000
+  labels: taxonomy_v2
+
+  label_selection:
+    mode: ratio
+    shuffle: true
+    ratios:
+      C01_Uniform: 1.0
+      C02_EdgeBiased: 1.0
+      C03_Ring: 1.0
+      C04_Sector_Edge: 1.0
+      C05_Sector_Internal: 1.0
+      C06_RadialLines: 1.0
+      C07_StraightLine: 1.0
+      C08_CurvedScratch: 1.0
+      C09_Spiral: 1.0
+      C11_Hotspot_Elliptic: 1.0
+
+  n_particles:
+    dist: truncnorm
+    mean: 105
+    std: 50
+    min: 10
+    max: 200
+
+  size_models:
+    min_um: 0.01
+    max_um: 1.0
+
+    selection:
+      mode: ratio
+      shuffle: true
+      ratios:
+        gaussian: 4.0
+        lognormal: 4.0
+        weibull: 1.5
+        pareto: 0.5   # 異常として混入（約5%想定）
+      anomaly_types: ["pareto"]
+      anomaly_label_name: "is_size_anomaly"
+
+    models:
+      gaussian:
+        type: gaussian
+        per_sample: true
+        mean_um: {dist: uniform, low: 0.02, high: 0.8}
+        std_um:  {dist: uniform, low: 0.02, high: 0.1}
+
+      lognormal:
+        type: lognormal
+        per_sample: true
+        mu_log:    {dist: uniform, low: -3.9, high: -0.2}
+        sigma_log: {dist: uniform, low: 0.2,  high: 0.9}
+
+      weibull:
+        type: weibull
+        per_sample: true
+        k:         {dist: uniform, low: 0.7,  high: 3.0}
+        lambda_um: {dist: uniform, low: 0.02, high: 0.5}
+
+      pareto:
+        type: pareto
+        per_sample: true
+        alpha: {dist: uniform, low: 1.5, high: 4.0}
+        xm_um: {dist: uniform, low: 0.1, high: 0.5}

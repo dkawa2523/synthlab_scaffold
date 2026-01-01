@@ -96,6 +96,10 @@ config_hash = hashlib.sha256(dumped.encode("utf-8")).hexdigest()[:12]
 - `seed_offset` : int（サンプル内seed派生に使った値）
 
 追加列（後方互換・任意）:
+- `size_model` : str（そのサンプルで採用したサイズ分布タイプ）
+- `size_params_json` : str（サイズ分布の採用パラメータJSON）
+- `is_size_anomaly` : int（0/1。size_models.selection.anomaly_label_name で変更可）
+- `size_anomaly_type` : str（例: "pareto"）
 - `label_coarse` : str（taxonomy_v2 の coarse）
 - `label_family` : str（taxonomy_v2 の family）
 - `labels_fine` : str（JSON string array）

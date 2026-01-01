@@ -28,7 +28,10 @@ from synthlab.domains.wafer_particles.generators.patterns.common import (
     resolve_sample_ctx,
     sample_poisson,
 )
-from synthlab.domains.wafer_particles.generators.size_models.common import apply_size_model
+from synthlab.domains.wafer_particles.generators.size_models.common import (
+    apply_size_model,
+    resolve_size_model_name,
+)
 from synthlab.domains.wafer_particles.metrics.size_stats import (
     DEFAULT_QUANTILES,
     compute_size_stats_by_label,
@@ -43,6 +46,22 @@ from synthlab.framework.process import BaseProcess
 from synthlab.framework.registry import get_pattern, register_process
 
 import synthlab.domains.wafer_particles.generators  # noqa: F401
+
+_SAMPLE_ANOMALY_RESERVED_COLUMNS = {
+    "sample_id",
+    "label",
+    "size_model",
+    "size_params_json",
+    "label_coarse",
+    "label_family",
+    "labels_fine",
+    "label_fine_primary",
+    "components_json",
+    "n_particles",
+    "pattern_params",
+    "seed_offset",
+    "size_anomaly_type",
+}
 
 
 @register_process("wafer_particles.process.generate")
@@ -71,6 +90,19 @@ class GenerateProcess(BaseProcess):
         sample_ctx = _build_sample_ctx(wp_cfg)
         global_n_particles_dist = wp_cfg.get("n_particles_distribution")
         size_model_cfg = _resolve_size_model_cfg(wp_cfg)
+        size_model_selection = _prepare_size_model_selection(size_model_cfg, n_samples, seed)
+        size_anomaly_label_name = None
+        if size_model_selection is not None:
+            anomaly_cfg = size_model_selection.get("anomaly")
+            if anomaly_cfg:
+                label_name = anomaly_cfg.get("label_name")
+                if label_name:
+                    size_anomaly_label_name = str(label_name)
+        size_model_per_sample = bool(size_model_cfg.get("per_sample", False))
+        record_size_model = _should_record_size_model(size_model_cfg, size_model_selection)
+        if size_model_selection is None and not size_model_per_sample:
+            size_param_rng = np.random.default_rng(_derive_seed(seed, 0, "size_model_params"))
+            _apply_param_space(size_model_cfg, size_param_rng, path="wafer_particles.size_models")
         noise_cfg = _read_mapping(wp_cfg.get("noise"), "wafer_particles.noise", required=False)
         jitter_cfg = _read_mapping(noise_cfg.get("jitter"), "wafer_particles.noise.jitter", required=False)
         background_cfg = _read_mapping(
@@ -120,6 +152,8 @@ class GenerateProcess(BaseProcess):
                 include_label_coarse=include_label_coarse,
                 include_label_family=include_label_family,
                 include_components_json=include_components_json,
+                include_size_model_info=record_size_model,
+                size_anomaly_label_name=size_anomaly_label_name,
             )
             particles_writer = _StreamingTableWriter(
                 writer.run_dir / particles_path,
@@ -153,6 +187,9 @@ class GenerateProcess(BaseProcess):
                             sample_ctx=sample_ctx,
                             global_n_particles_dist=global_n_particles_dist,
                             size_model_cfg=size_model_cfg,
+                            size_model_per_sample=size_model_per_sample,
+                            size_model_selection=size_model_selection,
+                            record_size_model=record_size_model,
                             include_xy=include_xy,
                             source=source,
                             jitter_enabled=jitter_enabled,
@@ -200,6 +237,9 @@ class GenerateProcess(BaseProcess):
                     sample_ctx=sample_ctx,
                     global_n_particles_dist=global_n_particles_dist,
                     size_model_cfg=size_model_cfg,
+                    size_model_per_sample=size_model_per_sample,
+                    size_model_selection=size_model_selection,
+                    record_size_model=record_size_model,
                     include_xy=include_xy,
                     source=source,
                     jitter_enabled=jitter_enabled,
@@ -230,7 +270,7 @@ class GenerateProcess(BaseProcess):
                 fmt=fmt,
                 csv_cfg=csv_cfg,
                 parquet_cfg=parquet_cfg,
-                columns=_sample_columns(samples),
+                columns=_sample_columns(samples, size_anomaly_label_name=size_anomaly_label_name),
             )
             particles_rows = len(particles)
             samples_rows = len(samples)
@@ -436,6 +476,171 @@ def _select_labels(
     return _validate(chosen)
 
 
+def _prepare_size_model_selection(
+    size_model_cfg: Mapping[str, Any],
+    n_samples: int,
+    seed: int,
+) -> dict[str, Any] | None:
+    selection_cfg = size_model_cfg.get("selection")
+    if selection_cfg is None:
+        return None
+    if not isinstance(selection_cfg, Mapping):
+        raise ValueError("wafer_particles.size_models.selection must be a mapping")
+    models_cfg = size_model_cfg.get("models")
+    if not isinstance(models_cfg, Mapping) or not models_cfg:
+        raise ValueError("wafer_particles.size_models.models must be a non-empty mapping")
+    base_cfg = _strip_size_model_selection(size_model_cfg)
+    resolved_models: dict[str, dict[str, Any]] = {}
+    for model_name, model_cfg in models_cfg.items():
+        if not isinstance(model_cfg, Mapping):
+            raise ValueError(f"wafer_particles.size_models.models.{model_name} must be a mapping")
+        merged = _merge_size_model_cfg(base_cfg, model_cfg)
+        if not merged.get("type") and not merged.get("name"):
+            merged["type"] = str(model_name)
+        if not bool(merged.get("per_sample", False)):
+            size_param_rng = np.random.default_rng(
+                _derive_seed(seed, 0, f"size_model_params:{model_name}")
+            )
+            _apply_param_space(
+                merged,
+                size_param_rng,
+                path=f"wafer_particles.size_models.models.{model_name}",
+            )
+        resolved_models[str(model_name)] = merged
+    size_model_rng = random.Random(_derive_seed(seed, 0, "size_model_selection"))
+    selected = _select_size_models(
+        n_samples,
+        selection_cfg,
+        list(resolved_models.keys()),
+        size_model_rng,
+    )
+    anomaly_cfg = _resolve_size_anomaly_cfg(selection_cfg, list(resolved_models.keys()))
+    return {"names": selected, "models": resolved_models, "anomaly": anomaly_cfg}
+
+
+def _resolve_size_anomaly_cfg(
+    selection_cfg: Mapping[str, Any],
+    model_names: Sequence[str],
+) -> dict[str, Any] | None:
+    anomaly_types = selection_cfg.get("anomaly_types")
+    if anomaly_types is None:
+        return None
+    if not isinstance(anomaly_types, list):
+        raise ValueError("size_models.selection.anomaly_types must be a list")
+    if not anomaly_types:
+        return None
+    resolved: list[str] = []
+    for name in anomaly_types:
+        resolved.append(_resolve_model_key(str(name), model_names))
+    label_name = selection_cfg.get("anomaly_label_name", "is_size_anomaly")
+    if label_name is None:
+        label_name = "is_size_anomaly"
+    label_name = str(label_name).strip()
+    if not label_name:
+        raise ValueError("size_models.selection.anomaly_label_name must be a non-empty string")
+    _validate_anomaly_label_name(label_name)
+    return {
+        "label_name": label_name,
+        "types": list(dict.fromkeys(resolved)),
+    }
+
+
+def _validate_anomaly_label_name(label_name: str) -> None:
+    if label_name in _SAMPLE_ANOMALY_RESERVED_COLUMNS:
+        raise ValueError(
+            "size_models.selection.anomaly_label_name conflicts with existing samples columns"
+        )
+
+
+def _select_size_models(
+    n_samples: int,
+    selection_cfg: Mapping[str, Any],
+    model_names: Sequence[str],
+    rng: random.Random,
+) -> list[str]:
+    if n_samples <= 0:
+        raise ValueError("n_samples must be positive")
+    if not model_names:
+        raise ValueError("size_models.models must have at least one entry")
+    mode = str(selection_cfg.get("mode", "ratio")).lower()
+    resolved = [_resolve_model_key(name, model_names) for name in model_names]
+    model_names = list(dict.fromkeys(resolved))
+
+    def _shuffle_if(chosen: list[str], *, default: bool) -> list[str]:
+        if selection_cfg.get("shuffle", default):
+            rng.shuffle(chosen)
+        return chosen
+
+    if mode == "single":
+        model = selection_cfg.get("model", selection_cfg.get("type", selection_cfg.get("name")))
+        if model is None:
+            raise ValueError("size_models.selection.model is required for single mode")
+        resolved_name = _resolve_model_key(str(model), model_names)
+        return _shuffle_if([resolved_name] * n_samples, default=False)
+
+    if mode == "list":
+        models = selection_cfg.get("models", selection_cfg.get("list"))
+        if not isinstance(models, list) or not models:
+            raise ValueError("size_models.selection.models must be a non-empty list for list mode")
+        resolved_list = [_resolve_model_key(str(model), model_names) for model in models]
+        if len(resolved_list) >= n_samples:
+            return _shuffle_if(resolved_list[:n_samples], default=False)
+        out: list[str] = []
+        idx = 0
+        while len(out) < n_samples:
+            out.append(resolved_list[idx % len(resolved_list)])
+            idx += 1
+        return _shuffle_if(out, default=False)
+
+    if mode != "ratio":
+        raise ValueError(f"unsupported size_models.selection.mode: {mode}")
+
+    ratios = selection_cfg.get("ratios") or {}
+    if not isinstance(ratios, Mapping):
+        raise ValueError("size_models.selection.ratios must be a mapping")
+    weights: dict[str, float] = {}
+    for name, weight in ratios.items():
+        resolved_name = _resolve_model_key(str(name), model_names)
+        weights[resolved_name] = weights.get(resolved_name, 0.0) + float(weight)
+    if not weights:
+        weights = {name: 1.0 for name in model_names}
+
+    labels = list(weights.keys())
+    counts = _allocate_counts(n_samples, [weights[label] for label in labels])
+    chosen: list[str] = []
+    for label, count in zip(labels, counts):
+        chosen.extend([label] * count)
+    return _shuffle_if(chosen, default=True)
+
+
+def _resolve_model_key(name: str, model_names: Sequence[str]) -> str:
+    if name in model_names:
+        return name
+    short = _format_size_model_name(name)
+    for model_name in model_names:
+        if _format_size_model_name(model_name) == short:
+            return model_name
+    raise ValueError(f"unknown size model in selection: {name}")
+
+
+def _strip_size_model_selection(cfg: Mapping[str, Any]) -> dict[str, Any]:
+    cleaned = dict(cfg)
+    cleaned.pop("selection", None)
+    cleaned.pop("models", None)
+    return cleaned
+
+
+def _merge_size_model_cfg(base_cfg: Mapping[str, Any], model_cfg: Mapping[str, Any]) -> dict[str, Any]:
+    merged = deepcopy(base_cfg)
+    merged.update(deepcopy(model_cfg))
+    return merged
+
+
+def _format_size_model_name(name: str) -> str:
+    prefix = "wafer_particles.size_model."
+    return name[len(prefix):] if name.startswith(prefix) else name
+
+
 def _allocate_counts(total: int, weights: Sequence[float]) -> list[int]:
     if total <= 0:
         return [0 for _ in weights]
@@ -536,6 +741,118 @@ def _resolve_size_model_cfg(wp_cfg: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(size_cfg, Mapping):
         raise ValueError("wafer_particles.size_models config is required")
     return deepcopy(dict(size_cfg))
+
+
+def _should_record_size_model(
+    size_model_cfg: Mapping[str, Any],
+    size_model_selection: Mapping[str, Any] | None,
+) -> bool:
+    return True
+
+
+def _resolve_size_model_cfg_for_label(
+    cfg: Mapping[str, Any],
+    label: str | None,
+) -> dict[str, Any]:
+    merged = deepcopy(dict(cfg))
+    by_label = merged.pop("by_label", None)
+    if label is None or by_label is None:
+        return merged
+    if not isinstance(by_label, Mapping):
+        raise ValueError("size model by_label must be a mapping")
+    label_cfg = by_label.get(label)
+    if label_cfg is None:
+        return merged
+    if not isinstance(label_cfg, Mapping):
+        raise ValueError("label size model config must be a mapping")
+    merged.update(deepcopy(dict(label_cfg)))
+    merged.pop("by_label", None)
+    return merged
+
+
+def _optional_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    return float(value)
+
+
+def _build_size_model_params(resolved_cfg: Mapping[str, Any], model_name: str) -> dict[str, Any]:
+    params: dict[str, Any] = {
+        "min_um": _optional_float(resolved_cfg.get("min_um")),
+        "max_um": _optional_float(resolved_cfg.get("max_um")),
+        "per_sample": bool(resolved_cfg.get("per_sample", False)),
+    }
+    if model_name == "gaussian":
+        params["mean_um"] = _optional_float(resolved_cfg.get("mean_um"))
+        params["std_um"] = _optional_float(resolved_cfg.get("std_um"))
+    elif model_name == "lognormal":
+        params["mu_log"] = _optional_float(resolved_cfg.get("mu_log"))
+        params["sigma_log"] = _optional_float(resolved_cfg.get("sigma_log"))
+    elif model_name == "weibull":
+        params["k"] = _optional_float(resolved_cfg.get("k"))
+        params["lambda_um"] = _optional_float(resolved_cfg.get("lambda_um"))
+    elif model_name == "pareto":
+        params["alpha"] = _optional_float(resolved_cfg.get("alpha"))
+        params["xm_um"] = _optional_float(resolved_cfg.get("xm_um"))
+    elif model_name == "mixture":
+        params["components"] = _build_mixture_component_params(resolved_cfg)
+    return params
+
+
+def _build_mixture_component_params(cfg: Mapping[str, Any]) -> list[dict[str, Any]]:
+    components = cfg.get("components")
+    if not isinstance(components, list) or not components:
+        return []
+    resolved: list[dict[str, Any]] = []
+    for idx, component in enumerate(components):
+        if not isinstance(component, Mapping):
+            raise ValueError(f"component {idx} must be a mapping")
+        name = component.get("name")
+        if not name:
+            name = f"component_{idx}"
+        weight = component.get("weight", 1.0)
+        try:
+            weight_value = float(weight)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"component {idx} weight must be numeric") from exc
+        model_cfg = _resolve_component_model_cfg(component, idx)
+        model_name = _format_size_model_name(resolve_size_model_name(model_cfg))
+        resolved.append(
+            {
+                "name": str(name),
+                "weight": weight_value,
+                "model_type": model_name,
+                "params": _build_size_model_params(model_cfg, model_name),
+            }
+        )
+    return resolved
+
+
+def _resolve_component_model_cfg(component: Mapping[str, Any], idx: int) -> dict[str, Any]:
+    model_entry = component.get("model")
+    if isinstance(model_entry, Mapping):
+        model_cfg = deepcopy(dict(model_entry))
+    else:
+        cfg_entry = component.get("cfg") or {}
+        if not isinstance(cfg_entry, Mapping):
+            raise ValueError(f"component {idx} cfg must be a mapping")
+        model_cfg = deepcopy(dict(cfg_entry))
+        if model_entry is not None:
+            if not isinstance(model_entry, str):
+                raise ValueError(f"component {idx} model must be a mapping or string")
+            if not model_cfg.get("type") and not model_cfg.get("name"):
+                model_cfg["type"] = model_entry
+
+    model_name = model_cfg.get("type") or model_cfg.get("name")
+    if not model_name:
+        component_type = component.get("type")
+        if component_type:
+            model_name = component_type
+    if not model_name:
+        raise ValueError(f"component {idx} requires model")
+    model_cfg.setdefault("type", model_name)
+    model_cfg.pop("by_label", None)
+    return model_cfg
 
 
 def _read_mapping(value: Any, name: str, *, required: bool = True) -> dict[str, Any]:
@@ -740,6 +1057,9 @@ def _generate_sample(
     sample_ctx: Mapping[str, Any] | None,
     global_n_particles_dist: Any,
     size_model_cfg: Mapping[str, Any],
+    size_model_per_sample: bool,
+    size_model_selection: Mapping[str, Any] | None,
+    record_size_model: bool,
     include_xy: bool,
     source: Any,
     jitter_enabled: bool,
@@ -805,7 +1125,33 @@ def _generate_sample(
         particle["label"] = label
         if source is not None:
             particle["source"] = str(source)
-    apply_size_model(size_model_cfg, size_rng, sample_particles)
+    size_model_key = None
+    if size_model_selection is not None:
+        size_model_key = str(size_model_selection["names"][seed_offset])
+        model_cfg = size_model_selection["models"].get(size_model_key)
+        if model_cfg is None:
+            raise ValueError(f"unknown size model selection: {size_model_key}")
+        resolved_size_model_cfg = model_cfg
+        if bool(resolved_size_model_cfg.get("per_sample", False)):
+            size_param_rng = np.random.default_rng(
+                _derive_seed(seed, seed_offset, f"size_model_params:{size_model_key}")
+            )
+            resolved_size_model_cfg = deepcopy(resolved_size_model_cfg)
+            _apply_param_space(
+                resolved_size_model_cfg,
+                size_param_rng,
+                path=f"wafer_particles.size_models.models.{size_model_key}",
+            )
+    else:
+        if size_model_per_sample:
+            size_param_rng = np.random.default_rng(_derive_seed(seed, seed_offset, "size_model_params"))
+            resolved_size_model_cfg = deepcopy(size_model_cfg)
+            _apply_param_space(resolved_size_model_cfg, size_param_rng, path="wafer_particles.size_models")
+        else:
+            resolved_size_model_cfg = size_model_cfg
+    label_size_model_cfg = _resolve_size_model_cfg_for_label(resolved_size_model_cfg, label)
+    size_model_name = _format_size_model_name(resolve_size_model_name(label_size_model_cfg))
+    apply_size_model(resolved_size_model_cfg, size_rng, sample_particles)
     if include_xy:
         _append_cartesian(sample_particles)
 
@@ -817,6 +1163,18 @@ def _generate_sample(
         "pattern_params": json.dumps(pattern_cfg, sort_keys=True, ensure_ascii=True),
         "seed_offset": seed_offset,
     }
+    anomaly_label_name = None
+    anomaly_types: set[str] = set()
+    if size_model_selection is not None:
+        anomaly_cfg = size_model_selection.get("anomaly")
+        if anomaly_cfg:
+            anomaly_label_name = str(anomaly_cfg.get("label_name", "")).strip() or None
+            anomaly_types = {str(name) for name in anomaly_cfg.get("types", [])}
+    if anomaly_label_name is not None and size_model_key is not None:
+        is_anomaly = int(size_model_key in anomaly_types)
+        sample_row[anomaly_label_name] = is_anomaly
+        anomaly_type = _format_size_model_name(size_model_key)
+        sample_row["size_anomaly_type"] = anomaly_type if is_anomaly else "none"
     components_json = _components_json(pattern_cfg)
     if components_json is not None:
         sample_row["components_json"] = components_json
@@ -827,6 +1185,14 @@ def _generate_sample(
     label_family = meta.get("family")
     if label_family is not None:
         sample_row["label_family"] = label_family
+    if record_size_model:
+        sample_row["size_model"] = size_model_name
+        size_params = _build_size_model_params(label_size_model_cfg, size_model_name)
+        sample_row["size_params_json"] = json.dumps(
+            size_params,
+            sort_keys=True,
+            ensure_ascii=False,
+        )
     return sample_particles, sample_row, n_particles
 
 
@@ -942,8 +1308,15 @@ def _sample_columns_for_streaming(
     include_label_coarse: bool,
     include_label_family: bool,
     include_components_json: bool,
+    include_size_model_info: bool,
+    size_anomaly_label_name: str | None,
 ) -> list[str]:
     columns = ["sample_id", "label"]
+    if include_size_model_info:
+        columns.extend(["size_model", "size_params_json"])
+    if size_anomaly_label_name:
+        columns.append(size_anomaly_label_name)
+        columns.append("size_anomaly_type")
     if include_label_coarse:
         columns.append("label_coarse")
     if include_label_family:
@@ -1043,8 +1416,19 @@ def _particle_columns(
     return columns
 
 
-def _sample_columns(samples: Sequence[Mapping[str, Any]]) -> list[str]:
+def _sample_columns(
+    samples: Sequence[Mapping[str, Any]],
+    *,
+    size_anomaly_label_name: str | None,
+) -> list[str]:
     columns = ["sample_id", "label"]
+    if any("size_model" in sample for sample in samples):
+        columns.append("size_model")
+    if any("size_params_json" in sample for sample in samples):
+        columns.append("size_params_json")
+    if size_anomaly_label_name:
+        columns.append(size_anomaly_label_name)
+        columns.append("size_anomaly_type")
     if any("label_coarse" in sample for sample in samples):
         columns.append("label_coarse")
     if any("label_family" in sample for sample in samples):

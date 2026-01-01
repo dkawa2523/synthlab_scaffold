@@ -77,10 +77,22 @@ def _wrap_group(group: str, content: dict[str, Any]) -> dict[str, Any]:
     return wrapped
 
 
+def _normalize_group_name(group: str) -> str:
+    normalized = group.strip()
+    if normalized.startswith("/"):
+        normalized = normalized[1:]
+    return normalized
+
+
+def _is_hydra_group(group: str) -> bool:
+    return group == "hydra" or group.startswith("hydra/")
+
+
 def _parse_default_string(item: str) -> tuple[str, str]:
     if "/" not in item:
         raise ValueError(f"unsupported defaults entry: {item}")
     group, option = item.rsplit("/", 1)
+    group = _normalize_group_name(group)
     if not group or not option:
         raise ValueError(f"invalid defaults entry: {item}")
     return group, option
@@ -107,17 +119,26 @@ def _compose_from_file(path: Path, conf_root: Path) -> dict[str, Any]:
             merged_self = True
             continue
         if isinstance(item, str):
-            if item.startswith("override "):
+            entry = item
+            if entry.startswith("override "):
+                entry = entry[len("override ") :].strip()
+            group, option = _parse_default_string(entry)
+            if _is_hydra_group(group):
                 continue
-            group, option = _parse_default_string(item)
             _deep_update(composed, _compose_group(conf_root, group, option))
             continue
         if isinstance(item, dict):
             for group, option in item.items():
+                group = str(group)
                 if group.startswith("override "):
-                    continue
+                    group = group[len("override ") :].strip()
                 if option is None:
                     raise ValueError(f"defaults entry missing option: {group}")
+                group = _normalize_group_name(group)
+                if not group:
+                    raise ValueError(f"invalid defaults entry: {group}")
+                if _is_hydra_group(group):
+                    continue
                 _deep_update(composed, _compose_group(conf_root, group, str(option)))
             continue
         raise ValueError(f"defaults entries must be mappings or strings: {path}")
@@ -169,6 +190,11 @@ def _normalize_process(cfg: dict[str, Any], conf_root: Path) -> None:
     elif isinstance(proc, dict):
         if "name" not in proc or not proc["name"]:
             raise ValueError("process.name is required")
+        proc_cfg = dict(proc)
+        proc_name = proc_cfg.pop("name")
+        if proc_cfg:
+            _deep_fill(cfg, proc_cfg)
+        cfg["process"] = {"name": proc_name}
     else:
         raise ValueError("process is required")
 
@@ -285,6 +311,11 @@ def _apply_size_model_clamp(cfg: Mapping[str, Any], clamp_min: float | None, cla
         cfg["min_um"] = clamp_min
     if clamp_max is not None:
         cfg["max_um"] = clamp_max
+    models = cfg.get("models")
+    if isinstance(models, Mapping):
+        for model_cfg in models.values():
+            if isinstance(model_cfg, Mapping):
+                _apply_size_model_clamp(model_cfg, clamp_min, clamp_max)
     by_label = cfg.get("by_label")
     if isinstance(by_label, Mapping):
         for label_cfg in by_label.values():
@@ -298,6 +329,9 @@ def _apply_size_model_clamp(cfg: Mapping[str, Any], clamp_min: float | None, cla
             component_cfg = component.get("cfg")
             if isinstance(component_cfg, Mapping):
                 _apply_size_model_clamp(component_cfg, clamp_min, clamp_max)
+            component_model = component.get("model")
+            if isinstance(component_model, Mapping):
+                _apply_size_model_clamp(component_model, clamp_min, clamp_max)
 
 
 def _coerce_optional_float(value: Any, name: str) -> float | None:
@@ -309,14 +343,38 @@ def _coerce_optional_float(value: Any, name: str) -> float | None:
         raise ValueError(f"{name} must be numeric") from exc
 
 
+def _resolve_config_path(
+    repo_root: Path,
+    conf_root: Path,
+    config_path: str | None,
+    config_name: str | None,
+) -> Path | None:
+    if config_path is None and config_name is None:
+        return None
+    if not config_name:
+        raise ValueError("config-name is required when config-path is set")
+    base_dir = Path(config_path) if config_path else conf_root
+    if not base_dir.is_absolute():
+        base_dir = repo_root / base_dir
+    name = str(config_name)
+    if not name.endswith((".yaml", ".yml")):
+        name = f"{name}.yaml"
+    return base_dir / name
+
+
 def resolve_config(
     overrides: dict[str, Any],
     repo_root: Path,
     *,
     group_overrides: list[tuple[str, str]] | None = None,
+    config_path: str | None = None,
+    config_name: str | None = None,
 ) -> dict[str, Any]:
     conf_root = repo_root / "conf"
     cfg = _compose_from_file(conf_root / "config.yaml", conf_root)
+    overlay_path = _resolve_config_path(repo_root, conf_root, config_path, config_name)
+    if overlay_path is not None:
+        _deep_update(cfg, _compose_from_file(overlay_path, conf_root))
     if group_overrides:
         _apply_group_overrides(cfg, group_overrides, conf_root)
     _apply_profile_overrides(cfg)
@@ -335,6 +393,14 @@ def main(argv: list[str] | None = None) -> int:
         description="SynthLab CLI (minimal dispatcher)",
     )
     parser.add_argument(
+        "--config-path",
+        help="Config directory (default: conf/).",
+    )
+    parser.add_argument(
+        "--config-name",
+        help="Config file name without extension (default: config).",
+    )
+    parser.add_argument(
         "overrides",
         nargs="*",
         help="Hydra-style overrides, e.g. process=doctor seed=1",
@@ -344,7 +410,13 @@ def main(argv: list[str] | None = None) -> int:
     overrides = list(args.overrides)
     try:
         override_cfg, group_overrides = _parse_overrides(overrides)
-        cfg = resolve_config(override_cfg, repo_root=Path.cwd(), group_overrides=group_overrides)
+        cfg = resolve_config(
+            override_cfg,
+            repo_root=Path.cwd(),
+            group_overrides=group_overrides,
+            config_path=args.config_path,
+            config_name=args.config_name,
+        )
         process_name = cfg["process"]["name"]
         runs_dir = Path.cwd() / "runs"
         cfg["run_name"] = ensure_unique_run_name(runs_dir, str(cfg["run_name"]), process_name)

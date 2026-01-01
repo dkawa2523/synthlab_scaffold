@@ -14,8 +14,8 @@ def assign(
 ) -> list[dict[str, Any]]:
     mu_log = float(cfg.get("mu_log", 0.0))
     sigma_log = float(cfg.get("sigma_log", 0.25))
-    if sigma_log < 0:
-        raise ValueError("sigma_log must be non-negative")
+    if sigma_log <= 0:
+        raise ValueError("sigma_log must be positive")
     min_um, max_um = _resolve_bounds(cfg)
 
     for particle in particles:

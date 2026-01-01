@@ -131,4 +131,14 @@
 入力: runs/ の複数artifact  
 出力: leaderboard.csv / html
 
+### 15) process=size_qc
+目的: 粒径分布のQC/特徴量抽出（異常検出・学習用の統計量）  
+入力:
+- generate の artifact（または data/ パス）
+出力:
+- reports/size_stats.csv
+- reports/size_model_mix.json
+- metrics/size_qc_summary.json
+- plots/（任意、最小でもOK）
+
 ※ 具体仕様は work/tasks で作る（TODO）

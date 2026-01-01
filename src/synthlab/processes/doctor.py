@@ -9,6 +9,10 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Mapping, Sequence
 
 from synthlab.domains.wafer_particles import param_space
+from synthlab.domains.wafer_particles.generators.size_models.common import (
+    normalize_size_model_name,
+    resolve_size_model_name,
+)
 from synthlab.domains.wafer_particles.generators.patterns.catalog import load_pattern_catalog
 from synthlab.domains.wafer_particles.generators.patterns.common import resolve_sample_ctx
 from synthlab.domains.wafer_particles.labeling import LabelingSpec
@@ -90,6 +94,23 @@ KNOWN_SIZE_MODELS = {
     "wafer_particles.size_model.gaussian",
     "wafer_particles.size_model.lognormal",
     "wafer_particles.size_model.mixture",
+    "wafer_particles.size_model.pareto",
+    "wafer_particles.size_model.weibull",
+}
+_SAMPLE_ANOMALY_RESERVED_COLUMNS = {
+    "sample_id",
+    "label",
+    "size_model",
+    "size_params_json",
+    "label_coarse",
+    "label_family",
+    "labels_fine",
+    "label_fine_primary",
+    "components_json",
+    "n_particles",
+    "pattern_params",
+    "seed_offset",
+    "size_anomaly_type",
 }
 
 
@@ -137,6 +158,125 @@ def _has_range_keys(cfg: Mapping[str, Any]) -> bool:
 
 def _has_keys(cfg: Mapping[str, Any], keys: Sequence[str]) -> bool:
     return any(key in cfg and cfg.get(key) is not None for key in keys)
+
+
+def _is_param_spec(value: Any) -> bool:
+    if isinstance(value, Mapping):
+        return "dist" in value or _has_range_keys(value)
+    if isinstance(value, (list, tuple)):
+        return len(value) == 2
+    return False
+
+
+def _validate_numeric_or_spec(value: Any, name: str) -> None:
+    if value is None:
+        return
+    if _is_param_spec(value):
+        param_space.validate_param_spec(value, name, allow_legacy_range=True)
+        return
+    try:
+        float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be numeric") from exc
+
+
+def _validate_positive_or_spec(value: Any, name: str, *, allow_zero: bool) -> None:
+    if value is None:
+        return
+    if _is_param_spec(value):
+        _validate_param_spec_positive(value, name, allow_zero=allow_zero)
+        return
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be numeric") from exc
+    if allow_zero:
+        if parsed < 0:
+            raise ValueError(f"{name} must be non-negative")
+    else:
+        if parsed <= 0:
+            raise ValueError(f"{name} must be positive")
+
+
+def _validate_param_spec_positive(value: Any, name: str, *, allow_zero: bool) -> None:
+    param_space.validate_param_spec(value, name, allow_legacy_range=True)
+    if isinstance(value, Mapping):
+        if "dist" in value:
+            dist = str(value.get("dist") or "").lower()
+            if dist in {"uniform", "loguniform"}:
+                min_value, max_value = _range_bounds(value, name)
+                _validate_positive_bounds(min_value, max_value, name, allow_zero)
+                return
+            if dist == "normal":
+                min_raw = value.get("min")
+                if min_raw is None:
+                    raise ValueError(f"{name} requires min to enforce positivity")
+                min_value = float(min_raw)
+                max_raw = value.get("max")
+                max_value = float(max_raw) if max_raw is not None else None
+                _validate_positive_bounds(min_value, max_value, name, allow_zero)
+                return
+            if dist == "truncnorm":
+                min_value = float(value.get("min"))
+                max_value = float(value.get("max"))
+                _validate_positive_bounds(min_value, max_value, name, allow_zero)
+                return
+            if dist == "beta":
+                min_value = float(value.get("min", 0.0))
+                max_value = float(value.get("max", 1.0))
+                _validate_positive_bounds(min_value, max_value, name, allow_zero)
+                return
+            if dist == "gamma":
+                return
+            if dist == "vonmises":
+                raise ValueError(f"{name} dist vonmises is not valid for positive values")
+            if dist == "choice":
+                values = value.get("values")
+                if not isinstance(values, Sequence) or isinstance(values, (str, bytes)):
+                    raise ValueError(f"{name}.values must be a list")
+                for idx, item in enumerate(values):
+                    try:
+                        numeric = float(item)
+                    except (TypeError, ValueError) as exc:
+                        raise ValueError(f"{name}.values[{idx}] must be numeric") from exc
+                    if allow_zero:
+                        if numeric < 0:
+                            raise ValueError(f"{name}.values[{idx}] must be non-negative")
+                    else:
+                        if numeric <= 0:
+                            raise ValueError(f"{name}.values[{idx}] must be positive")
+                return
+            return
+        if _has_range_keys(value):
+            min_value, max_value = _range_bounds(value, name)
+            _validate_positive_bounds(min_value, max_value, name, allow_zero)
+            return
+    if isinstance(value, (list, tuple)):
+        if len(value) != 2:
+            raise ValueError(f"{name} range must have 2 values")
+        min_value = float(value[0])
+        max_value = float(value[1])
+        if min_value > max_value:
+            raise ValueError(f"{name} range must satisfy min<=max")
+        _validate_positive_bounds(min_value, max_value, name, allow_zero)
+
+
+def _validate_positive_bounds(
+    min_value: float,
+    max_value: float | None,
+    name: str,
+    allow_zero: bool,
+) -> None:
+    if allow_zero:
+        if min_value < 0:
+            raise ValueError(f"{name} must be non-negative")
+        if max_value is not None and max_value < 0:
+            raise ValueError(f"{name} must be non-negative")
+    else:
+        if min_value <= 0:
+            raise ValueError(f"{name} must be positive")
+        if max_value is not None and max_value <= 0:
+            raise ValueError(f"{name} must be positive")
 
 
 def _range_bounds(cfg: Mapping[str, Any], name: str) -> tuple[float, float]:
@@ -230,32 +370,64 @@ def _validate_min_max(cfg: Mapping[str, Any], name: str) -> None:
         return
     min_value = float(min_um)
     max_value = float(max_um)
-    if max_value < min_value:
-        raise ValueError(f"{name}.max_um must be >= min_um")
+    if max_value <= min_value:
+        raise ValueError(f"{name}.max_um must be > min_um")
+
+
+def _resolve_mixture_component_cfg(component: Mapping[str, Any], name: str) -> dict[str, Any]:
+    model_entry = component.get("model")
+    if isinstance(model_entry, Mapping):
+        model_cfg: dict[str, Any] = dict(model_entry)
+    else:
+        cfg_entry = component.get("cfg") or {}
+        if not isinstance(cfg_entry, Mapping):
+            raise ValueError(f"{name}.cfg must be a mapping")
+        model_cfg = dict(cfg_entry)
+        if model_entry is not None:
+            if not isinstance(model_entry, str):
+                raise ValueError(f"{name}.model must be a mapping or string")
+            if not model_cfg.get("type") and not model_cfg.get("name"):
+                model_cfg["type"] = model_entry
+
+    model_name = model_cfg.get("type") or model_cfg.get("name")
+    if not model_name:
+        component_type = component.get("type")
+        if component_type:
+            model_name = component_type
+    if not model_name:
+        raise ValueError(f"{name} requires model")
+    model_cfg.setdefault("type", model_name)
+    model_cfg["name"] = normalize_size_model_name(model_name)
+    model_cfg.pop("by_label", None)
+    return model_cfg
 
 
 def _validate_size_model_cfg(cfg: Mapping[str, Any], name: str) -> None:
-    model_name = cfg.get("name")
-    if not model_name:
-        raise ValueError(f"{name}.name is required")
-    model_name = str(model_name)
+    model_name = resolve_size_model_name(cfg)
     if model_name not in KNOWN_SIZE_MODELS:
         raise ValueError(f"{name}.name is not a known size model for doctor validation")
     if model_name == "wafer_particles.size_model.gaussian":
         _validate_min_max(cfg, name)
-        std = float(cfg.get("std_um", 0.2))
-        if std < 0:
-            raise ValueError(f"{name}.std_um must be non-negative")
-        float(cfg.get("mean_um", 1.0))
+        _validate_positive_or_spec(cfg.get("std_um"), f"{name}.std_um", allow_zero=False)
+        _validate_numeric_or_spec(cfg.get("mean_um"), f"{name}.mean_um")
         return
     if model_name == "wafer_particles.size_model.lognormal":
         _validate_min_max(cfg, name)
-        sigma = float(cfg.get("sigma_log", 0.25))
-        if sigma < 0:
-            raise ValueError(f"{name}.sigma_log must be non-negative")
-        float(cfg.get("mu_log", 0.0))
+        _validate_positive_or_spec(cfg.get("sigma_log"), f"{name}.sigma_log", allow_zero=False)
+        _validate_numeric_or_spec(cfg.get("mu_log"), f"{name}.mu_log")
+        return
+    if model_name == "wafer_particles.size_model.weibull":
+        _validate_min_max(cfg, name)
+        _validate_positive_or_spec(cfg.get("k"), f"{name}.k", allow_zero=False)
+        _validate_positive_or_spec(cfg.get("lambda_um"), f"{name}.lambda_um", allow_zero=False)
+        return
+    if model_name == "wafer_particles.size_model.pareto":
+        _validate_min_max(cfg, name)
+        _validate_positive_or_spec(cfg.get("alpha"), f"{name}.alpha", allow_zero=False)
+        _validate_positive_or_spec(cfg.get("xm_um"), f"{name}.xm_um", allow_zero=False)
         return
     if model_name == "wafer_particles.size_model.mixture":
+        _validate_min_max(cfg, name)
         components = cfg.get("components")
         if not isinstance(components, list) or not components:
             raise ValueError(f"{name}.components must be a non-empty list")
@@ -264,22 +436,85 @@ def _validate_size_model_cfg(cfg: Mapping[str, Any], name: str) -> None:
             if not isinstance(component, Mapping):
                 raise ValueError(f"{name}.components[{idx}] must be a mapping")
             weight = float(component.get("weight", 1.0))
-            if weight < 0:
-                raise ValueError(f"{name}.components[{idx}].weight must be non-negative")
+            if weight <= 0:
+                raise ValueError(f"{name}.components[{idx}].weight must be positive")
             weights.append(weight)
-            component_cfg = component.get("cfg") or {}
-            if not isinstance(component_cfg, Mapping):
-                raise ValueError(f"{name}.components[{idx}].cfg must be a mapping")
-            component_cfg = dict(component_cfg)
-            model_override = component_cfg.get("name") or component.get("model") or component.get("name")
-            if not model_override:
-                raise ValueError(f"{name}.components[{idx}] requires model/name")
-            component_cfg["name"] = str(model_override)
-            _validate_size_model_cfg(component_cfg, f"{name}.components[{idx}]")
+            component_cfg = _resolve_mixture_component_cfg(component, f"{name}.components[{idx}]")
+            _validate_size_model_cfg(component_cfg, f"{name}.components[{idx}].model")
         total = sum(weights)
         if total <= 0:
             raise ValueError(f"{name}.components weights must sum to > 0")
+        if not math.isclose(total, 1.0, rel_tol=1e-6, abs_tol=1e-6):
+            raise ValueError(f"{name}.components weights must sum to 1")
         return
+
+
+def _validate_size_model_selection_cfg(selection_cfg: Mapping[str, Any], model_names: Sequence[str]) -> None:
+    mode = str(selection_cfg.get("mode", "ratio")).lower()
+    if mode not in {"ratio", "list", "single"}:
+        raise ValueError(f"size_models.selection.mode is not supported: {mode}")
+    if "shuffle" in selection_cfg and not isinstance(selection_cfg.get("shuffle"), bool):
+        raise ValueError("size_models.selection.shuffle must be a boolean")
+    if mode == "ratio":
+        ratios = selection_cfg.get("ratios")
+        if ratios is None:
+            raise ValueError("size_models.selection.ratios must be a non-empty mapping")
+        if not isinstance(ratios, Mapping):
+            raise ValueError("size_models.selection.ratios must be a mapping")
+        if not ratios:
+            raise ValueError("size_models.selection.ratios must be a non-empty mapping")
+        total = 0.0
+        for name, weight in ratios.items():
+            _resolve_size_model_selection_key(str(name), model_names)
+            try:
+                value = float(weight)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("size_models.selection.ratios values must be numeric") from exc
+            if value < 0:
+                raise ValueError("size_models.selection.ratios must be non-negative")
+            total += value
+        if total <= 0:
+            raise ValueError("size_models.selection.ratios must sum to > 0")
+    elif mode == "list":
+        models = selection_cfg.get("models", selection_cfg.get("list"))
+        if not isinstance(models, list) or not models:
+            raise ValueError("size_models.selection.models must be a non-empty list for list mode")
+        for name in models:
+            _resolve_size_model_selection_key(str(name), model_names)
+    else:
+        model = selection_cfg.get("model", selection_cfg.get("type", selection_cfg.get("name")))
+        if model is None:
+            raise ValueError("size_models.selection.model is required for single mode")
+        _resolve_size_model_selection_key(str(model), model_names)
+    _validate_size_model_anomaly_cfg(selection_cfg, model_names)
+
+
+def _validate_size_model_anomaly_cfg(selection_cfg: Mapping[str, Any], model_names: Sequence[str]) -> None:
+    anomaly_types = selection_cfg.get("anomaly_types")
+    if anomaly_types is None:
+        return
+    if not isinstance(anomaly_types, list):
+        raise ValueError("size_models.selection.anomaly_types must be a list")
+    if not anomaly_types:
+        return
+    for name in anomaly_types:
+        _resolve_size_model_selection_key(str(name), model_names)
+    label_name = selection_cfg.get("anomaly_label_name", "is_size_anomaly")
+    if label_name is None:
+        label_name = "is_size_anomaly"
+    label_name = str(label_name).strip()
+    if not label_name:
+        raise ValueError("size_models.selection.anomaly_label_name must be a non-empty string")
+    if label_name in _SAMPLE_ANOMALY_RESERVED_COLUMNS:
+        raise ValueError("size_models.selection.anomaly_label_name conflicts with samples columns")
+
+
+def _resolve_size_model_selection_key(name: str, model_names: Sequence[str]) -> str:
+    target = normalize_size_model_name(name)
+    for model_name in model_names:
+        if normalize_size_model_name(model_name) == target:
+            return model_name
+    raise ValueError(f"unknown size model in selection: {name}")
 
 
 def _collect_optional_labels_from_selection(selection_cfg: Any) -> list[str]:
@@ -639,43 +874,121 @@ class DoctorProcess(BaseProcess):
                     param_space.validate_param_specs_in_config(size_cfg, path="wafer_particles.size_models")
                 except ValueError as exc:
                     add_check("wafer_particles.size_models.param_space", "error", str(exc))
-                try:
-                    _validate_size_model_cfg(size_cfg, "wafer_particles.size_models")
-                except ValueError as exc:
-                    status = "warn" if "not a known size model" in str(exc) else "error"
-                    add_check("wafer_particles.size_models", status, str(exc))
-                by_label = size_cfg.get("by_label")
-                if by_label is not None:
-                    if not isinstance(by_label, Mapping):
+                selection_cfg = size_cfg.get("selection")
+                models_cfg = size_cfg.get("models")
+                if selection_cfg is not None or models_cfg is not None:
+                    if selection_cfg is None or not isinstance(selection_cfg, Mapping):
                         add_check(
-                            "wafer_particles.size_models.by_label",
+                            "wafer_particles.size_models.selection",
                             "error",
-                            "wafer_particles.size_models.by_label must be a mapping",
+                            "wafer_particles.size_models.selection must be a mapping",
                         )
-                    else:
-                        for label, override in by_label.items():
-                            if not isinstance(override, Mapping):
+                    if not isinstance(models_cfg, Mapping) or not models_cfg:
+                        add_check(
+                            "wafer_particles.size_models.models",
+                            "error",
+                            "wafer_particles.size_models.models must be a non-empty mapping",
+                        )
+                    elif isinstance(selection_cfg, Mapping):
+                        try:
+                            _validate_size_model_selection_cfg(selection_cfg, list(models_cfg.keys()))
+                        except ValueError as exc:
+                            add_check("wafer_particles.size_models.selection", "error", str(exc))
+                    if isinstance(models_cfg, Mapping):
+                        base_cfg = dict(size_cfg)
+                        base_cfg.pop("selection", None)
+                        base_cfg.pop("models", None)
+                        for model_name, model_cfg in models_cfg.items():
+                            if not isinstance(model_cfg, Mapping):
                                 add_check(
-                                    f"wafer_particles.size_models.by_label.{label}",
+                                    f"wafer_particles.size_models.models.{model_name}",
+                                    "error",
+                                    "size model config must be a mapping",
+                                )
+                                continue
+                            merged = dict(base_cfg)
+                            merged.update(model_cfg)
+                            if not merged.get("type") and not merged.get("name"):
+                                merged["type"] = str(model_name)
+                            try:
+                                _validate_size_model_cfg(
+                                    merged,
+                                    f"wafer_particles.size_models.models.{model_name}",
+                                )
+                            except ValueError as exc:
+                                add_check(
+                                    f"wafer_particles.size_models.models.{model_name}",
+                                    "error",
+                                    str(exc),
+                                )
+                            by_label = merged.get("by_label")
+                            if by_label is None:
+                                continue
+                            if not isinstance(by_label, Mapping):
+                                add_check(
+                                    f"wafer_particles.size_models.models.{model_name}.by_label",
                                     "error",
                                     "label size model config must be a mapping",
                                 )
                                 continue
-                            merged = dict(size_cfg)
-                            merged.pop("by_label", None)
-                            merged.update(override)
-                            try:
-                                _validate_size_model_cfg(
-                                    merged,
-                                    f"wafer_particles.size_models.by_label.{label}",
-                                )
-                            except ValueError as exc:
-                                status = "warn" if "not a known size model" in str(exc) else "error"
-                                add_check(
-                                    f"wafer_particles.size_models.by_label.{label}",
-                                    status,
-                                    str(exc),
-                                )
+                            for label, override in by_label.items():
+                                if not isinstance(override, Mapping):
+                                    add_check(
+                                        f"wafer_particles.size_models.models.{model_name}.by_label.{label}",
+                                        "error",
+                                        "label size model config must be a mapping",
+                                    )
+                                    continue
+                                merged_label = dict(merged)
+                                merged_label.pop("by_label", None)
+                                merged_label.update(override)
+                                try:
+                                    _validate_size_model_cfg(
+                                        merged_label,
+                                        f"wafer_particles.size_models.models.{model_name}.by_label.{label}",
+                                    )
+                                except ValueError as exc:
+                                    add_check(
+                                        f"wafer_particles.size_models.models.{model_name}.by_label.{label}",
+                                        "error",
+                                        str(exc),
+                                    )
+                else:
+                    try:
+                        _validate_size_model_cfg(size_cfg, "wafer_particles.size_models")
+                    except ValueError as exc:
+                        add_check("wafer_particles.size_models", "error", str(exc))
+                    by_label = size_cfg.get("by_label")
+                    if by_label is not None:
+                        if not isinstance(by_label, Mapping):
+                            add_check(
+                                "wafer_particles.size_models.by_label",
+                                "error",
+                                "wafer_particles.size_models.by_label must be a mapping",
+                            )
+                        else:
+                            for label, override in by_label.items():
+                                if not isinstance(override, Mapping):
+                                    add_check(
+                                        f"wafer_particles.size_models.by_label.{label}",
+                                        "error",
+                                        "label size model config must be a mapping",
+                                    )
+                                    continue
+                                merged = dict(size_cfg)
+                                merged.pop("by_label", None)
+                                merged.update(override)
+                                try:
+                                    _validate_size_model_cfg(
+                                        merged,
+                                        f"wafer_particles.size_models.by_label.{label}",
+                                    )
+                                except ValueError as exc:
+                                    add_check(
+                                        f"wafer_particles.size_models.by_label.{label}",
+                                        "error",
+                                        str(exc),
+                                    )
 
             labeling_cfg = wp_cfg.get("labeling")
             if labeling_cfg is not None:

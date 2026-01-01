@@ -1,16 +1,17 @@
-name: wafer_particles.size_model.mixture
+type: mixture
+min_um: 0.01
+max_um: 1.0
+per_sample: true
 components:
-  - model: wafer_particles.size_model.lognormal
-    weight: 0.7
-    cfg:
-      mu_log: -0.2
-      sigma_log: 0.35
-      min_um: 0.05
-      max_um: 3.0
-  - model: wafer_particles.size_model.gaussian
-    weight: 0.3
-    cfg:
-      mean_um: 2.0
-      std_um: 0.3
-      min_um: 0.2
-      max_um: 5.0
+  - name: base
+    weight: 0.95
+    model:
+      type: lognormal
+      mu_log: {dist: uniform, low: -5.0, high: -2.0}
+      sigma_log: {dist: uniform, low: 0.2, high: 0.8}
+  - name: tail
+    weight: 0.05
+    model:
+      type: pareto
+      alpha: {dist: uniform, low: 1.5, high: 4.0}
+      xm_um: {dist: uniform, low: 0.2, high: 0.8}

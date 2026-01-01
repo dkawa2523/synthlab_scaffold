@@ -989,5 +989,213 @@
       "timestamp": "20251231_120330_631284",
       "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20251231_120330_631284_T0509_a1_verification.log"
     }
+  },
+  {
+    "id": "T0701",
+    "priority": "P0",
+    "status": "done",
+    "title": "Add particle size distribution models: lognormal / weibull / pareto",
+    "path": "work/tasks/T0701_size_models_lognormal_weibull_pareto.md",
+    "skills": [
+      "S20",
+      "S40",
+      "S70",
+      "S98"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20260101_084832_070132",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20260101_084832_070132_T0701_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0702",
+    "priority": "P0",
+    "status": "done",
+    "title": "Implement size_model_selection to mix multiple size distributions within one dataset",
+    "path": "work/tasks/T0702_size_model_selection_mixed_dataset.md",
+    "skills": [
+      "S20",
+      "S40",
+      "S70",
+      "S98"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0701"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20260101_090813_261670",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20260101_090813_261670_T0702_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0703",
+    "priority": "P1",
+    "status": "done",
+    "title": "Mixture size model within a single sample (multi-modal / heavy-tail injection)",
+    "path": "work/tasks/T0703_size_model_mixture_within_sample.md",
+    "skills": [
+      "S20",
+      "S40",
+      "S70",
+      "S98"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/11_PLUGIN_REGISTRY.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0701"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20260101_092534_850673",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20260101_092534_850673_T0703_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0704",
+    "priority": "P0",
+    "status": "done",
+    "title": "Persist size model type + resolved parameters to samples table and CSV export",
+    "path": "work/tasks/T0704_size_model_metadata_schema_and_export.md",
+    "skills": [
+      "S20",
+      "S40",
+      "S70",
+      "S98"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0702"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20260101_094336_703933",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20260101_094336_703933_T0704_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0705",
+    "priority": "P1",
+    "status": "done",
+    "title": "Process for size distribution QC + per-sample feature extraction (for anomaly detection / ML)",
+    "path": "work/tasks/T0705_process_size_qc_and_features.md",
+    "skills": [
+      "S20",
+      "S40",
+      "S70",
+      "S98"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/10_PROCESS_CATALOG.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0704"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20260101_095656_401753",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20260101_095656_401753_T0705_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0706",
+    "priority": "P1",
+    "status": "done",
+    "title": "Anomaly injection labels for size distributions (benchmarking anomaly detection)",
+    "path": "work/tasks/T0706_size_model_anomaly_injection_labels.md",
+    "skills": [
+      "S20",
+      "S40",
+      "S70",
+      "S98"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/04_ARTIFACTS_AND_VERSIONING.md"
+    ],
+    "depends_on": [
+      "T0702",
+      "T0704"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20260101_101241_048068",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20260101_101241_048068_T0706_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0707",
+    "priority": "P0",
+    "status": "done",
+    "title": "Benchmark configs: macro10 / 300mm / 1k with mixed size models + smoke/export configs",
+    "path": "work/tasks/T0707_benchmark_configs_size_models_mix.md",
+    "skills": [
+      "S20",
+      "S70",
+      "S98"
+    ],
+    "contracts": [
+      "docs/03_CONFIG_CONVENTIONS.md",
+      "docs/00_INVARIANTS.md"
+    ],
+    "depends_on": [
+      "T0702"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20260101_102847_651955",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20260101_102847_651955_T0707_a1_verification.log"
+    }
+  },
+  {
+    "id": "T0708",
+    "priority": "P0",
+    "status": "done",
+    "title": "Doctor validation + tests for size models (new distributions + selection + metadata)",
+    "path": "work/tasks/T0708_tests_doctor_validation_size_models_mix.md",
+    "skills": [
+      "S20",
+      "S40",
+      "S98"
+    ],
+    "contracts": [
+      "docs/00_INVARIANTS.md",
+      "docs/03_CONFIG_CONVENTIONS.md"
+    ],
+    "depends_on": [
+      "T0701",
+      "T0702",
+      "T0704",
+      "T0707"
+    ],
+    "last_result": {
+      "ok": true,
+      "timestamp": "20260101_103448_216561",
+      "log": "/Users/kawahito/Desktop/synthlab_scaffold/autodev/logs/20260101_103448_216561_T0708_a1_verification.log"
+    }
   }
 ]

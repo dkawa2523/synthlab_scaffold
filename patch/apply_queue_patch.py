@@ -45,7 +45,8 @@ def main() -> int:
     # sort by id if possible (TXXXX numeric)
     def sort_key(it):
         tid = str(it.get("id",""))
-        m = __import__("re").match(r"T(\d+)", tid)
+        import re
+        m = re.match(r"T(\d+)", tid)
         return int(m.group(1)) if m else 10**9
 
     items.sort(key=sort_key)

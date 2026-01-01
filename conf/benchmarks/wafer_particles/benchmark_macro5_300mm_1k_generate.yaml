@@ -1,0 +1,87 @@
+# ベンチマーク生成（300mmウェハ / 5クラス / 1000枚）
+# - 目的: 粒子点群（極座標）→ マクロカテゴリ分類 のベンチマーク
+# - 仕様: Wafer直径300mm、粒子サイズ10nm〜1000nm、出力は後段exportでCSV化
+#
+# 使い方（例）:
+#   python -m synthlab.cli.main --config-path conf/benchmarks/wafer_particles --config-name benchmark_macro5_300mm_1k_generate seed=42
+#
+# NOTE:
+# - このYAMLは T0501〜T0509 実装後の想定キーで書いています。
+# - リポジトリ側のキー名が異なる場合は、既存の conf/ のキーに合わせて読み替えてください。
+
+defaults:
+  - override /domain: wafer_particles
+  - override /process: generate
+  - wafer_particles/patterns: C01_Uniform
+  - wafer_particles/patterns: C03_Ring
+  - wafer_particles/patterns: C04_Sector_Edge
+  - wafer_particles/patterns: C07_StraightLine
+  - wafer_particles/patterns: C11_Hotspot_Elliptic
+  - _self_
+
+# 再現性のため必ず固定
+seed: 42
+
+wafer_particles:
+  # 直径300mm → 半径150mm
+  wafer_radius_mm: 150.0
+
+  # 生成するウェハ枚数（サンプル数）
+  n_samples: 1000
+
+  # 出力（generate自体はparquetでもOK。最終CSVはexportで作ります）
+  # output_format: parquet   # <-- もし設定項目があれば
+
+  # ===== ラベル（=生成パターン）選択 =====
+  # 5種をベンチマーク用に選択（各200枚想定のバランス）
+  # mode=ratio をサポートしている場合、countsを確定させて生成できます。
+  label_selection:
+    mode: ratio
+    shuffle: true
+    ratios:
+      C01_Uniform: 1.0
+      C03_Ring: 1.0
+      C04_Sector_Edge: 1.0
+      C07_StraightLine: 1.0
+      C11_Hotspot_Elliptic: 1.0
+      # defaults from process=generate (disabled for benchmark)
+      ring_narrow: 0.0
+      ring_wide: 0.0
+      edge_sector_right: 0.0
+      edge_sector_left: 0.0
+      scratch_horizontal: 0.0
+      scratch_vertical: 0.0
+      radial_lines: 0.0
+      hotspot_center: 0.0
+      random_uniform: 0.0
+      random_edge_biased: 0.0
+
+  # ===== 粒子数（深層学習向け） =====
+  # PointNet系など「固定点数」が扱いやすいので、できれば固定 or 狭い範囲に。
+  # fixedが使えない場合は truncnorm などで近い挙動にしてください。
+  n_particles_distribution:
+    dist: truncnorm
+    mean: 1024
+    std: 128
+    min: 512
+    max: 1536
+
+  # ===== 粒子サイズ分布（10nm〜1000nm） =====
+  # 10nm = 0.01um, 1000nm = 1.0um
+  size_models:
+    # 実装が lognormal を標準としている想定
+    type: lognormal
+    min_um: 0.01
+    max_um: 1.0
+    # mu/sigma は「とりあえずベンチマークとして極端にならない」値の例
+    #（必要に応じて調整してください）
+    mu_log: -3.0
+    sigma_log: 0.8
+
+  # ===== パターン個別パラメータ（必要ならここで上書き） =====
+  # patterns:
+  #   C03_Ring:
+  #     ring_width:
+  #       dist: uniform
+  #       low: 0.02
+  #       high: 0.08

@@ -1,0 +1,5 @@
+name: wafer_particles.size_model.weibull
+k: 1.6
+lambda_um: 0.8
+min_um: 0.05
+max_um: 5.0

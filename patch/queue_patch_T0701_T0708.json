@@ -1,0 +1,172 @@
+{
+  "items": [
+    {
+      "id": "T0701",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Add particle size distribution models: lognormal / weibull / pareto",
+      "path": "work/tasks/T0701_size_models_lognormal_weibull_pareto.md",
+      "skills": [
+        "S20",
+        "S40",
+        "S70",
+        "S98"
+      ],
+      "contracts": [
+        "docs/00_INVARIANTS.md",
+        "docs/03_CONFIG_CONVENTIONS.md",
+        "docs/11_PLUGIN_REGISTRY.md",
+        "docs/04_ARTIFACTS_AND_VERSIONING.md"
+      ]
+    },
+    {
+      "id": "T0702",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Implement size_model_selection to mix multiple size distributions within one dataset",
+      "path": "work/tasks/T0702_size_model_selection_mixed_dataset.md",
+      "skills": [
+        "S20",
+        "S40",
+        "S70",
+        "S98"
+      ],
+      "contracts": [
+        "docs/00_INVARIANTS.md",
+        "docs/03_CONFIG_CONVENTIONS.md",
+        "docs/11_PLUGIN_REGISTRY.md",
+        "docs/04_ARTIFACTS_AND_VERSIONING.md"
+      ],
+      "depends_on": [
+        "T0701"
+      ]
+    },
+    {
+      "id": "T0703",
+      "priority": "P1",
+      "status": "todo",
+      "title": "Mixture size model within a single sample (multi-modal / heavy-tail injection)",
+      "path": "work/tasks/T0703_size_model_mixture_within_sample.md",
+      "skills": [
+        "S20",
+        "S40",
+        "S70",
+        "S98"
+      ],
+      "contracts": [
+        "docs/00_INVARIANTS.md",
+        "docs/03_CONFIG_CONVENTIONS.md",
+        "docs/11_PLUGIN_REGISTRY.md",
+        "docs/04_ARTIFACTS_AND_VERSIONING.md"
+      ],
+      "depends_on": [
+        "T0701"
+      ]
+    },
+    {
+      "id": "T0704",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Persist size model type + resolved parameters to samples table and CSV export",
+      "path": "work/tasks/T0704_size_model_metadata_schema_and_export.md",
+      "skills": [
+        "S20",
+        "S40",
+        "S70",
+        "S98"
+      ],
+      "contracts": [
+        "docs/00_INVARIANTS.md",
+        "docs/03_CONFIG_CONVENTIONS.md",
+        "docs/04_ARTIFACTS_AND_VERSIONING.md"
+      ],
+      "depends_on": [
+        "T0702"
+      ]
+    },
+    {
+      "id": "T0705",
+      "priority": "P1",
+      "status": "todo",
+      "title": "Process for size distribution QC + per-sample feature extraction (for anomaly detection / ML)",
+      "path": "work/tasks/T0705_process_size_qc_and_features.md",
+      "skills": [
+        "S20",
+        "S40",
+        "S70",
+        "S98"
+      ],
+      "contracts": [
+        "docs/00_INVARIANTS.md",
+        "docs/10_PROCESS_CATALOG.md",
+        "docs/04_ARTIFACTS_AND_VERSIONING.md"
+      ],
+      "depends_on": [
+        "T0704"
+      ]
+    },
+    {
+      "id": "T0706",
+      "priority": "P1",
+      "status": "todo",
+      "title": "Anomaly injection labels for size distributions (benchmarking anomaly detection)",
+      "path": "work/tasks/T0706_size_model_anomaly_injection_labels.md",
+      "skills": [
+        "S20",
+        "S40",
+        "S70",
+        "S98"
+      ],
+      "contracts": [
+        "docs/00_INVARIANTS.md",
+        "docs/03_CONFIG_CONVENTIONS.md",
+        "docs/04_ARTIFACTS_AND_VERSIONING.md"
+      ],
+      "depends_on": [
+        "T0702",
+        "T0704"
+      ]
+    },
+    {
+      "id": "T0707",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Benchmark configs: macro10 / 300mm / 1k with mixed size models + smoke/export configs",
+      "path": "work/tasks/T0707_benchmark_configs_size_models_mix.md",
+      "skills": [
+        "S20",
+        "S70",
+        "S98"
+      ],
+      "contracts": [
+        "docs/03_CONFIG_CONVENTIONS.md",
+        "docs/00_INVARIANTS.md"
+      ],
+      "depends_on": [
+        "T0702"
+      ]
+    },
+    {
+      "id": "T0708",
+      "priority": "P0",
+      "status": "todo",
+      "title": "Doctor validation + tests for size models (new distributions + selection + metadata)",
+      "path": "work/tasks/T0708_tests_doctor_validation_size_models_mix.md",
+      "skills": [
+        "S20",
+        "S40",
+        "S98"
+      ],
+      "contracts": [
+        "docs/00_INVARIANTS.md",
+        "docs/03_CONFIG_CONVENTIONS.md"
+      ],
+      "depends_on": [
+        "T0701",
+        "T0702",
+        "T0704",
+        "T0707"
+      ]
+    }
+  ]
+}

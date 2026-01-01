@@ -1,0 +1,5 @@
+defaults:
+  - wafer_particles/size_qc: default
+  - _self_
+
+name: wafer_particles.process.size_qc

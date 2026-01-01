@@ -1,0 +1,85 @@
+# ベンチマーク生成（300mmウェハ / macro10 / 20枚（smoke））
+# - 目的: 粒子点群（極座標）→ マクロカテゴリ分類 のベンチマーク
+# - 特徴: データセット内で複数の粒径分布（gaussian/lognormal/weibull/pareto）を混在
+#
+# 実行例:
+#   python -m synthlab.cli.main --config-path conf/benchmarks/wafer_particles \
+#     --config-name benchmark_macro10_300mm_20_generate_size_models_mix_smoke seed=42
+
+defaults:
+  - override /domain: wafer_particles
+  - override /process: generate
+  - _self_
+
+wafer_particles:
+  wafer_radius_mm: 150.0
+  n_samples: 20
+
+  # ラベルは macro のみ
+  labels: taxonomy_v2
+
+  # macro10 (任意の10種)
+  label_selection:
+    mode: ratio
+    shuffle: true
+    ratios:
+      C01_Uniform: 1.0
+      C02_EdgeBiased: 1.0
+      C03_Ring: 1.0
+      C04_Sector_Edge: 1.0
+      C05_Sector_Internal: 1.0
+      C06_RadialLines: 1.0
+      C07_StraightLine: 1.0
+      C08_CurvedScratch: 1.0
+      C09_Spiral: 1.0
+      C11_Hotspot_Elliptic: 1.0
+
+  # 粒子数: 10〜200
+  n_particles_distribution:
+    dist: truncnorm
+    mean: 105
+    std: 50
+    min: 10
+    max: 200
+
+  # 粒子サイズ（10nm〜1000nm）を clamp
+  # データセット内で粒径分布タイプを混在させる。
+  size_models:
+    min_um: 0.01
+    max_um: 1.0
+
+    selection:
+      mode: ratio
+      shuffle: true
+      ratios:
+        gaussian: 3.0
+        lognormal: 3.0
+        weibull: 3.0
+        pareto: 1.0
+
+    models:
+      gaussian:
+        type: gaussian
+        per_sample: true
+        mean_um: {dist: uniform, low: 0.02, high: 0.8}   # 20–800nm
+        std_um:  {dist: uniform, low: 0.02, high: 0.1}   # 20–100nm
+
+      # log-domain parameters (X[um] = exp(N(mu_log, sigma_log^2)))
+      lognormal:
+        type: lognormal
+        per_sample: true
+        mu_log:    {dist: uniform, low: -3.9, high: -0.2} # exp(mu) ≈ 0.02–0.8um
+        sigma_log: {dist: uniform, low: 0.2,  high: 0.9}
+
+      weibull:
+        type: weibull
+        per_sample: true
+        k:         {dist: uniform, low: 0.7,  high: 3.0}
+        lambda_um: {dist: uniform, low: 0.02, high: 0.5}
+
+      # heavy-tail (power-law)
+      pareto:
+        type: pareto
+        per_sample: true
+        alpha: {dist: uniform, low: 1.5, high: 4.0}
+        xm_um: {dist: uniform, low: 0.05, high: 0.3}

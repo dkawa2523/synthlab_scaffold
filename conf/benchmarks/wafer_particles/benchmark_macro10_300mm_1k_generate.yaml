@@ -1,0 +1,78 @@
+# 300mmウェハ用マクロ欠陥データ (サンプル数1000, 10カテゴリ)
+defaults:
+  - override /domain: wafer_particles
+  - override /process: generate
+  - wafer_particles/size_models: gaussian      # ガウス粒径モデルの使用
+  - wafer_particles/patterns: C01_Uniform
+  - wafer_particles/patterns: C02_EdgeBiased
+  - wafer_particles/patterns: C03_Ring
+  - wafer_particles/patterns: C04_Sector_Edge
+  - wafer_particles/patterns: C05_Sector_Internal
+  - wafer_particles/patterns: C06_RadialLines
+  - wafer_particles/patterns: C07_StraightLine
+  - wafer_particles/patterns: C08_CurvedScratch
+  - wafer_particles/patterns: C09_Spiral
+  - wafer_particles/patterns: C10_Hotspot_Iso
+  - _self_
+
+# 全般設定
+seed: 42                   # 乱数シード（再現性のため指定）
+wafer_particles:
+  wafer_radius_mm: 150.0
+  n_samples: 1000            # 合計サンプル数 1000
+
+  # 全パターンで粒子数を10〜200にランダム化
+  n_particles_distribution:
+    dist: uniform
+    min: 10
+    max: 200
+
+  # 粒径サイズモデル（ガウス分布）
+  size_models:
+    type: gaussian
+    per_sample: true
+    min_um: 0.01     # 10nm
+    max_um: 1.0      # 1000nm
+
+    mean_um:
+      dist: uniform
+      low: 0.02      # 20nm
+      high: 0.8      # 800nm
+    std_um:
+      dist: uniform
+      low: 0.02      # 20nm
+      high: 0.1      # 100nm
+  # 使用ラベルを10カテゴリに固定
+  label_selection:
+    mode: ratio
+    shuffle: true
+    ratios:
+      C01_Uniform: 1.0
+      C02_EdgeBiased: 1.0
+      C03_Ring: 1.0
+      C04_Sector_Edge: 1.0
+      C05_Sector_Internal: 1.0
+      C06_RadialLines: 1.0
+      C07_StraightLine: 1.0
+      C08_CurvedScratch: 1.0
+      C09_Spiral: 1.0
+      C10_Hotspot_Iso: 1.0
+      # process=generate の既定ラベルは無効化
+      ring_narrow: 0.0
+      ring_wide: 0.0
+      edge_sector_right: 0.0
+      edge_sector_left: 0.0
+      scratch_horizontal: 0.0
+      scratch_vertical: 0.0
+      radial_lines: 0.0
+      hotspot_center: 0.0
+      random_uniform: 0.0
+      random_edge_biased: 0.0
+
+  # 個別パターンのパラメータ上書き（必要なら）
+  patterns:
+    C08_CurvedScratch:
+      param_space:
+        arc_radius_ratio: {dist: uniform, min: 0.4, max: 0.9}
+        span_deg: {dist: uniform, min: 30.0, max: 160.0}
+        width_ratio: {dist: uniform, min: 0.01, max: 0.06}

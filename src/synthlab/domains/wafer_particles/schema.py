@@ -38,6 +38,9 @@ class TableSchema:
     def required_names(self) -> set[str]:
         return {spec.name for spec in self.required}
 
+    def optional_names(self) -> set[str]:
+        return {spec.name for spec in self.optional}
+
     def spec_for(self, column: str) -> ColumnSpec | None:
         for spec in self.required + self.optional:
             if spec.name == column:
@@ -77,6 +80,10 @@ SAMPLES_SCHEMA = TableSchema(
         ColumnSpec("seed_offset", "int"),
     ),
     optional=(
+        ColumnSpec("size_model", "str"),
+        ColumnSpec("size_params_json", "str"),
+        ColumnSpec("is_size_anomaly", "int"),
+        ColumnSpec("size_anomaly_type", "str"),
         ColumnSpec("label_coarse", "str"),
         ColumnSpec("label_family", "str"),
         ColumnSpec("labels_fine", "str"),
@@ -188,6 +195,7 @@ def _validate_rows(schema: TableSchema, rows: Any, errors: list[str]) -> None:
     if rows is None:
         errors.append("table is None")
         return
+    optional_names = schema.optional_names()
     for idx, row in enumerate(rows):
         if len(errors) >= _MAX_ERRORS:
             return
@@ -203,6 +211,8 @@ def _validate_rows(schema: TableSchema, rows: Any, errors: list[str]) -> None:
             spec = schema.spec_for(col_name)
             if spec is None:
                 continue
+            if value is None and col_name in optional_names:
+                continue
             if not spec.validate(value):
                 errors.append(f"row {idx} invalid {col_name}")
                 if len(errors) >= _MAX_ERRORS:
@@ -215,6 +225,7 @@ def _validate_columnar(schema: TableSchema, table: Mapping[str, Any], errors: li
             errors.append(f"missing column {name}")
     if errors:
         return
+    optional_names = schema.optional_names()
     length: int | None = None
     for col_name, values in table.items():
         if not _is_sequence(values):
@@ -232,6 +243,8 @@ def _validate_columnar(schema: TableSchema, table: Mapping[str, Any], errors: li
         if spec is None:
             continue
         for idx, value in enumerate(values):
+            if value is None and col_name in optional_names:
+                continue
             if not spec.validate(value):
                 errors.append(f"column {col_name} invalid at {idx}")
                 if len(errors) >= _MAX_ERRORS:
