@@ -1,0 +1,4 @@
+process=export
+seed=42
+wafer_particles.export.input.run_name=2026-01-01_04-24-51
+wafer_particles.io.format=csv

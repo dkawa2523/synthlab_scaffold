@@ -1,0 +1,196 @@
+{
+  "domain": "wafer_particles",
+  "hist_bins": {
+    "r_edges": [
+      0.0,
+      5.0,
+      10.0,
+      15.0,
+      20.0,
+      25.0,
+      30.0,
+      35.0,
+      40.0,
+      45.0,
+      50.0,
+      55.0,
+      60.0,
+      65.0,
+      70.0,
+      75.0,
+      80.0,
+      85.0,
+      90.0,
+      95.0,
+      100.0,
+      105.0,
+      110.0,
+      115.0,
+      120.0,
+      125.0,
+      130.0,
+      135.0,
+      140.0,
+      145.0,
+      150.0
+    ],
+    "size_edges": [
+      0.13098563745863495,
+      0.14934753719501967,
+      0.1677094369314044,
+      0.18607133666778908,
+      0.2044332364041738,
+      0.22279513614055851,
+      0.2411570358769432,
+      0.25951893561332795,
+      0.27788083534971264,
+      0.29624273508609733,
+      0.3146046348224821,
+      0.33296653455886677,
+      0.3513284342952515,
+      0.3696903340316362,
+      0.3880522337680209,
+      0.40641413350440564,
+      0.42477603324079033,
+      0.443137932977175,
+      0.46149983271355977,
+      0.47986173244994446,
+      0.4982236321863292,
+      0.516585531922714,
+      0.5349474316590985,
+      0.5533093313954833,
+      0.571671231131868,
+      0.5900331308682527,
+      0.6083950306046375,
+      0.6267569303410221,
+      0.6451188300774069,
+      0.6634807298137915,
+      0.6818426295501763
+    ],
+    "theta_edges": [
+      0.0,
+      0.17453292519943295,
+      0.3490658503988659,
+      0.5235987755982988,
+      0.6981317007977318,
+      0.8726646259971648,
+      1.0471975511965976,
+      1.2217304763960306,
+      1.3962634015954636,
+      1.5707963267948966,
+      1.7453292519943295,
+      1.9198621771937625,
+      2.0943951023931953,
+      2.2689280275926285,
+      2.443460952792061,
+      2.6179938779914944,
+      2.792526803190927,
+      2.96705972839036,
+      3.141592653589793,
+      3.316125578789226,
+      3.490658503988659,
+      3.665191429188092,
+      3.839724354387525,
+      4.014257279586958,
+      4.1887902047863905,
+      4.363323129985823,
+      4.537856055185257,
+      4.71238898038469,
+      4.886921905584122,
+      5.061454830783555,
+      5.235987755982989,
+      5.410520681182422,
+      5.585053606381854,
+      5.759586531581287,
+      5.93411945678072,
+      6.1086523819801535,
+      6.283185307179586
+    ]
+  },
+  "input": {
+    "manifest_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-31_14-41-56/wafer_particles.process.generate/manifest.json",
+    "particles_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-31_14-41-56/wafer_particles.process.generate/data/particles.parquet",
+    "run_dir": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-31_14-41-56/wafer_particles.process.generate",
+    "samples_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-31_14-41-56/wafer_particles.process.generate/data/samples.parquet"
+  },
+  "label_distribution": {
+    "C01_Uniform": 100,
+    "C02_EdgeBiased": 100,
+    "C03_Ring": 100,
+    "C04_Sector_Edge": 100,
+    "C05_Sector_Internal": 100,
+    "C06_RadialLines": 100,
+    "C07_StraightLine": 100,
+    "C08_CurvedScratch": 100,
+    "C09_Spiral": 100,
+    "C10_Hotspot_Iso": 100
+  },
+  "n_particles": 106010,
+  "n_samples": 1000,
+  "plots": [
+    "scatter_label_c01_uniform.png",
+    "scatter_label_c02_edgebiased.png",
+    "scatter_label_c03_ring.png",
+    "scatter_label_c04_sector_edge.png",
+    "scatter_label_c05_sector_internal.png",
+    "scatter_label_c06_radiallines.png",
+    "scatter_label_c07_straightline.png",
+    "scatter_label_c08_curvedscratch.png",
+    "scatter_label_c09_spiral.png",
+    "scatter_label_c10_hotspot_iso.png",
+    "histograms.png"
+  ],
+  "sample_selection": {
+    "C01_Uniform": [
+      "sample_000854",
+      "sample_000399",
+      "sample_000910"
+    ],
+    "C02_EdgeBiased": [
+      "sample_000881",
+      "sample_000356",
+      "sample_000755"
+    ],
+    "C03_Ring": [
+      "sample_000451",
+      "sample_000354",
+      "sample_000364"
+    ],
+    "C04_Sector_Edge": [
+      "sample_000592",
+      "sample_000994",
+      "sample_000067"
+    ],
+    "C05_Sector_Internal": [
+      "sample_000950",
+      "sample_000459",
+      "sample_000798"
+    ],
+    "C06_RadialLines": [
+      "sample_000316",
+      "sample_000764",
+      "sample_000477"
+    ],
+    "C07_StraightLine": [
+      "sample_000273",
+      "sample_000290",
+      "sample_000632"
+    ],
+    "C08_CurvedScratch": [
+      "sample_000988",
+      "sample_000634",
+      "sample_000941"
+    ],
+    "C09_Spiral": [
+      "sample_000961",
+      "sample_000164",
+      "sample_000070"
+    ],
+    "C10_Hotspot_Iso": [
+      "sample_000892",
+      "sample_000545",
+      "sample_000395"
+    ]
+  },
+  "schema_version": "wafer_particles.v1"
+}

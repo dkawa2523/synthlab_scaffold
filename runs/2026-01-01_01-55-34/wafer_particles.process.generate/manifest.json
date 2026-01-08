@@ -1,0 +1,21 @@
+{
+  "domain": "wafer_particles",
+  "files": {
+    "particles": {
+      "path": "data/particles.parquet",
+      "rows": 2104
+    },
+    "samples": {
+      "path": "data/samples.parquet",
+      "rows": 20
+    }
+  },
+  "label_distribution": {
+    "radial_lines": 4,
+    "random_edge_biased": 1,
+    "random_uniform": 1,
+    "ring_narrow": 7,
+    "ring_wide": 7
+  },
+  "schema_version": "wafer_particles.v1"
+}

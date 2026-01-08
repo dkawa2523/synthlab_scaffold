@@ -1,0 +1,188 @@
+domain:
+  name: wafer_particles
+  schema_version: wafer_particles.v1
+hydra:
+  run:
+    dir: runs/${run_name}/${process.name}
+  sweep:
+    dir: sweeps/${run_name}
+    subdir: ${hydra.job.num}
+notes: null
+process:
+  name: wafer_particles.process.export
+run_name: 2025-12-30_09-10-17
+schema_version: wafer_particles.v1
+seed: 1
+wafer_particles:
+  export:
+    input:
+      manifest_path: null
+      particles_path: null
+      process_name: wafer_particles.process.generate
+      run_dir: runs/2025-12-30_09-09-20/wafer_particles.process.generate
+      run_name: null
+      samples_path: null
+    split:
+      mode: ratio
+      ratios:
+        test: 0.1
+        train: 0.8
+        val: 0.1
+      seed_offset: 0
+      shuffle: true
+  io:
+    format: auto
+  labels:
+    domain: wafer_particles
+    labels:
+    - category: ring
+      expected_rules:
+      - r_std_ratio is small relative to wafer_radius (narrow ring)
+      - theta coverage spans most bins (0..2pi)
+      name: ring_narrow
+    - category: ring
+      expected_rules:
+      - r_std_ratio is larger than ring_narrow but still ring-like
+      - theta coverage spans most bins (0..2pi)
+      name: ring_wide
+    - category: sector
+      expected_rules:
+      - theta coverage concentrated in a sector
+      - theta mean aligned to sector center
+      - r mean near wafer edge
+      name: edge_sector
+      variants:
+      - expected_rules:
+        - theta coverage concentrated in a sector
+        - theta mean aligned to sector center
+        - r mean near wafer edge
+        - sector center near 0 rad (right)
+        name: edge_sector_right
+        params:
+          side: right
+      - expected_rules:
+        - theta coverage concentrated in a sector
+        - theta mean aligned to sector center
+        - r mean near wafer edge
+        - sector center near pi rad (left)
+        name: edge_sector_left
+        params:
+          side: left
+      - expected_rules:
+        - theta coverage concentrated in a sector
+        - theta mean aligned to sector center
+        - r mean near wafer edge
+        - sector center near pi/2 rad (top)
+        name: edge_sector_top
+        params:
+          side: top
+      - expected_rules:
+        - theta coverage concentrated in a sector
+        - theta mean aligned to sector center
+        - r mean near wafer edge
+        - sector center near 3pi/2 rad (bottom)
+        name: edge_sector_bottom
+        params:
+          side: bottom
+    - category: line
+      expected_rules:
+      - theta coverage is narrow (line-like)
+      - points lie close to a fitted line (small perpendicular spread)
+      name: scratch
+      variants:
+      - expected_rules:
+        - theta coverage is narrow (line-like)
+        - points lie close to a fitted line (small perpendicular spread)
+        - dominant line angle near 0 or pi (horizontal)
+        name: scratch_horizontal
+        params:
+          angle_category: horizontal
+      - expected_rules:
+        - theta coverage is narrow (line-like)
+        - points lie close to a fitted line (small perpendicular spread)
+        - dominant line angle near pi/2 (vertical)
+        name: scratch_vertical
+        params:
+          angle_category: vertical
+      - expected_rules:
+        - theta coverage is narrow (line-like)
+        - points lie close to a fitted line (small perpendicular spread)
+        - dominant line angle near pi/4 (diagonal)
+        name: scratch_diagonal
+        params:
+          angle_category: diagonal
+      - expected_rules:
+        - theta coverage is narrow (line-like)
+        - points lie close to a fitted line (small perpendicular spread)
+        - dominant line angle near 3pi/4 (diagonal rev)
+        name: scratch_diagonal_rev
+        params:
+          angle_category: diagonal_rev
+    - category: line
+      expected_rules:
+      - multiple line angles are present
+      - points cluster along radial lines through the center
+      - theta coverage has multiple narrow modes
+      name: radial_lines
+    - category: hotspot
+      expected_rules:
+      - density peak around a center point
+      - density decays with radius from the peak
+      name: hotspot
+      variants:
+      - expected_rules:
+        - density peak around a center point
+        - density decays with radius from the peak
+        - peak near wafer center (low r mean ratio)
+        name: hotspot_center
+        params:
+          mode: center
+      - expected_rules:
+        - density peak around a center point
+        - density decays with radius from the peak
+        - peak near wafer edge (high r mean ratio)
+        name: hotspot_edge
+        params:
+          mode: edge
+      - expected_rules:
+        - density peak around a center point
+        - density decays with radius from the peak
+        - peak location varies per sample
+        name: hotspot_random
+        params:
+          mode: random
+    - category: random
+      expected_rules:
+      - uniform density across wafer area
+      - theta coverage spans most bins
+      - r histogram follows area-proportional profile
+      name: random_uniform
+    - category: random
+      expected_rules:
+      - density increases toward edge (high r mean ratio)
+      - theta coverage spans most bins
+      name: random_edge_biased
+    - category: inhom_poisson
+      expected_rules:
+      - grid dispersion above uniform baseline
+      - grid counts show spatial intensity variation
+      - hist_r and hist_theta show structure
+      name: inhom_poisson
+    - category: cluster
+      expected_rules:
+      - nn mean ratio below CSR expectation
+      - grid dispersion above 1 (over-dispersion)
+      - child points cluster around parent centers
+      name: cluster_parent_child
+    - category: cox
+      expected_rules:
+      - grid dispersion above 1 (over-dispersion)
+      - intensity field varies across cells
+      name: cox_lognormal
+    - category: composite
+      expected_rules:
+      - component mixture ratios are respected
+      - each component retains its expected pattern
+      - label proportions match config
+      name: composite
+    version: taxonomy_v1

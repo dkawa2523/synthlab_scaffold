@@ -1,0 +1,4009 @@
+{
+  "bins": {
+    "r_edges": [
+      0.0,
+      5.0,
+      10.0,
+      15.0,
+      20.0,
+      25.0,
+      30.0,
+      35.0,
+      40.0,
+      45.0,
+      50.0,
+      55.0,
+      60.0,
+      65.0,
+      70.0,
+      75.0,
+      80.0,
+      85.0,
+      90.0,
+      95.0,
+      100.0,
+      105.0,
+      110.0,
+      115.0,
+      120.0,
+      125.0,
+      130.0,
+      135.0,
+      140.0,
+      145.0,
+      150.0
+    ],
+    "theta_edges": [
+      0.0,
+      0.17453292519943295,
+      0.3490658503988659,
+      0.5235987755982988,
+      0.6981317007977318,
+      0.8726646259971648,
+      1.0471975511965976,
+      1.2217304763960306,
+      1.3962634015954636,
+      1.5707963267948966,
+      1.7453292519943295,
+      1.9198621771937625,
+      2.0943951023931953,
+      2.2689280275926285,
+      2.443460952792061,
+      2.6179938779914944,
+      2.792526803190927,
+      2.96705972839036,
+      3.141592653589793,
+      3.316125578789226,
+      3.490658503988659,
+      3.665191429188092,
+      3.839724354387525,
+      4.014257279586958,
+      4.1887902047863905,
+      4.363323129985823,
+      4.537856055185257,
+      4.71238898038469,
+      4.886921905584122,
+      5.061454830783555,
+      5.235987755982989,
+      5.410520681182422,
+      5.585053606381854,
+      5.759586531581287,
+      5.93411945678072,
+      6.1086523819801535,
+      6.283185307179586
+    ]
+  },
+  "domain": "wafer_particles",
+  "input": {
+    "manifest_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_03-38-54/wafer_particles.process.generate/manifest.json",
+    "particles_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_03-38-54/wafer_particles.process.generate/data/particles.parquet",
+    "run_dir": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_03-38-54/wafer_particles.process.generate",
+    "samples_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_03-38-54/wafer_particles.process.generate/data/samples.parquet"
+  },
+  "labels": {
+    "cluster_parent_child": {
+      "category": "cluster",
+      "expected_rules": [
+        {
+          "TODO": "NN distances shorter than CSR"
+        },
+        {
+          "TODO": "grid dispersion > 1 (over-dispersion)"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 0,
+      "n_particles_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "n_samples": 0,
+      "r_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "rule_checks": {
+        "category": "cluster",
+        "checks": [
+          {
+            "name": "cluster.grid_dispersion",
+            "ok": null,
+            "reason": "missing value",
+            "status": "skipped",
+            "threshold": null,
+            "value": null
+          },
+          {
+            "name": "cluster.nn_mean_ratio",
+            "ok": null,
+            "reason": "missing value",
+            "status": "skipped",
+            "threshold": null,
+            "value": null
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "NN distances shorter than CSR"
+          },
+          {
+            "TODO": "grid dispersion > 1 (over-dispersion)"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        },
+        "grid_dispersion": null,
+        "nn_mean_expected": null,
+        "nn_mean_ratio": null,
+        "nn_stats": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        }
+      },
+      "theta_stats": {
+        "count": 0,
+        "coverage": 0.0,
+        "mean": null,
+        "r": null,
+        "std": null
+      }
+    },
+    "composite": {
+      "category": "composite",
+      "expected_rules": [
+        {
+          "TODO": "component mixture ratios respected"
+        },
+        {
+          "TODO": "each component retains its expected pattern"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 0,
+      "n_particles_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "n_samples": 0,
+      "r_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "rule_checks": {
+        "category": "composite",
+        "checks": [],
+        "expected_rules": [
+          {
+            "TODO": "component mixture ratios respected"
+          },
+          {
+            "TODO": "each component retains its expected pattern"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        },
+        "grid_dispersion": null,
+        "nn_mean_expected": null,
+        "nn_mean_ratio": null,
+        "nn_stats": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        }
+      },
+      "theta_stats": {
+        "count": 0,
+        "coverage": 0.0,
+        "mean": null,
+        "r": null,
+        "std": null
+      }
+    },
+    "cox_lognormal": {
+      "category": "cox",
+      "expected_rules": [
+        {
+          "TODO": "over-dispersion in grid counts"
+        },
+        {
+          "TODO": "intensity field varies across cells"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 0,
+      "n_particles_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "n_samples": 0,
+      "r_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "rule_checks": {
+        "category": "cox",
+        "checks": [
+          {
+            "name": "cox.grid_dispersion",
+            "ok": null,
+            "reason": "missing value",
+            "status": "skipped",
+            "threshold": null,
+            "value": null
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "over-dispersion in grid counts"
+          },
+          {
+            "TODO": "intensity field varies across cells"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        },
+        "grid_dispersion": null,
+        "nn_mean_expected": null,
+        "nn_mean_ratio": null,
+        "nn_stats": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        }
+      },
+      "theta_stats": {
+        "count": 0,
+        "coverage": 0.0,
+        "mean": null,
+        "r": null,
+        "std": null
+      }
+    },
+    "edge_sector": {
+      "category": "sector",
+      "expected_rules": [
+        {
+          "TODO": "theta concentrated in sector range"
+        },
+        {
+          "TODO": "r near outer edge"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 0,
+      "n_particles_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "n_samples": 0,
+      "r_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "rule_checks": {
+        "category": "sector",
+        "checks": [
+          {
+            "name": "sector.theta_coverage",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "max": 0.3
+            },
+            "value": 0.0
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "theta concentrated in sector range"
+          },
+          {
+            "TODO": "r near outer edge"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        },
+        "grid_dispersion": null,
+        "nn_mean_expected": null,
+        "nn_mean_ratio": null,
+        "nn_stats": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        }
+      },
+      "theta_stats": {
+        "count": 0,
+        "coverage": 0.0,
+        "mean": null,
+        "r": null,
+        "std": null
+      }
+    },
+    "edge_sector_bottom": {
+      "category": "sector",
+      "expected_rules": [
+        {
+          "TODO": "theta near 3pi/2 rad"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 0,
+      "n_particles_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "n_samples": 0,
+      "r_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "rule_checks": {
+        "category": "sector",
+        "checks": [
+          {
+            "name": "sector.theta_coverage",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "max": 0.3
+            },
+            "value": 0.0
+          },
+          {
+            "name": "sector.center_offset",
+            "ok": null,
+            "reason": "missing theta mean",
+            "status": "skipped",
+            "threshold": null,
+            "value": null
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "theta near 3pi/2 rad"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        },
+        "grid_dispersion": null,
+        "nn_mean_expected": null,
+        "nn_mean_ratio": null,
+        "nn_stats": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        }
+      },
+      "theta_stats": {
+        "count": 0,
+        "coverage": 0.0,
+        "mean": null,
+        "r": null,
+        "std": null
+      }
+    },
+    "edge_sector_left": {
+      "category": "sector",
+      "expected_rules": [
+        {
+          "TODO": "theta near pi rad"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          362,
+          325,
+          313
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          240,
+          264,
+          263,
+          233,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 1000,
+      "n_particles_stats": {
+        "count": 5,
+        "max": 200.0,
+        "mean": 200.0,
+        "min": 200.0,
+        "quantiles": {
+          "p05": 200.0,
+          "p50": 200.0,
+          "p95": 200.0
+        },
+        "std": 0.0
+      },
+      "n_samples": 5,
+      "r_stats": {
+        "count": 1000,
+        "max": 149.91900897753587,
+        "mean": 142.26993802726764,
+        "min": 135.01729816641694,
+        "quantiles": {
+          "p05": 135.6903754796868,
+          "p50": 142.0582734061984,
+          "p95": 149.0104737085283
+        },
+        "std": 4.362570327096584
+      },
+      "rule_checks": {
+        "category": "sector",
+        "checks": [
+          {
+            "name": "sector.theta_coverage",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "max": 0.3
+            },
+            "value": 0.1111111111111111
+          },
+          {
+            "name": "sector.center_offset",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "max": 0.6
+            },
+            "value": 0.002541738354481904
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "theta near pi rad"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 1000,
+        "max": 2.4447059518950773,
+        "mean": 0.9483361616327195,
+        "min": 0.3001622739139327,
+        "quantiles": {
+          "p05": 0.5043929116570991,
+          "p50": 0.9063753464238931,
+          "p95": 1.5257216349683032
+        },
+        "std": 0.3222689388437
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 560,
+          "max": 63.0,
+          "mean": 1.7821428571428573,
+          "min": 0.0,
+          "quantiles": {
+            "p05": 0.0,
+            "p50": 0.0,
+            "p95": 0.0
+          },
+          "std": 9.344920452593867
+        },
+        "grid_dispersion": 49.001424277126254,
+        "nn_mean_expected": 9.399856029866253,
+        "nn_mean_ratio": 0.1469548527296921,
+        "nn_stats": {
+          "count": 1000,
+          "max": 5.448043916133733,
+          "mean": 1.3813544585493036,
+          "min": 0.13055431547766555,
+          "quantiles": {
+            "p05": 0.37489916150317315,
+            "p50": 1.2395880445436285,
+            "p95": 2.820009685025932
+          },
+          "std": 0.7612557236988708
+        }
+      },
+      "theta_stats": {
+        "count": 1000,
+        "coverage": 0.1111111111111111,
+        "mean": 3.139050915235311,
+        "r": 0.9804767596103484,
+        "std": 0.1985766160292123
+      }
+    },
+    "edge_sector_right": {
+      "category": "sector",
+      "expected_rules": [
+        {
+          "TODO": "theta near 0 rad"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          322,
+          325,
+          353
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          248,
+          234,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          248,
+          270
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 1000,
+      "n_particles_stats": {
+        "count": 5,
+        "max": 200.0,
+        "mean": 200.0,
+        "min": 200.0,
+        "quantiles": {
+          "p05": 200.0,
+          "p50": 200.0,
+          "p95": 200.0
+        },
+        "std": 0.0
+      },
+      "n_samples": 5,
+      "r_stats": {
+        "count": 1000,
+        "max": 149.97880423855744,
+        "mean": 142.68904341857473,
+        "min": 135.02389764029394,
+        "quantiles": {
+          "p05": 135.69507860563527,
+          "p50": 142.67026786706583,
+          "p95": 149.29135534324595
+        },
+        "std": 4.412473350502567
+      },
+      "rule_checks": {
+        "category": "sector",
+        "checks": [
+          {
+            "name": "sector.theta_coverage",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "max": 0.3
+            },
+            "value": 0.1111111111111111
+          },
+          {
+            "name": "sector.center_offset",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "max": 0.6
+            },
+            "value": 0.0053855876485400245
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "theta near 0 rad"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 1000,
+        "max": 2.48273257913624,
+        "mean": 0.9765367430307608,
+        "min": 0.2729308170623949,
+        "quantiles": {
+          "p05": 0.4927620522015901,
+          "p50": 0.9174243611387434,
+          "p95": 1.6479840971595099
+        },
+        "std": 0.3521753968693422
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 560,
+          "max": 71.0,
+          "mean": 1.7803571428571427,
+          "min": 0.0,
+          "quantiles": {
+            "p05": 0.0,
+            "p50": 0.0,
+            "p95": 0.0
+          },
+          "std": 9.387680370016414
+        },
+        "grid_dispersion": 49.50048538472542,
+        "nn_mean_expected": 9.399856029866253,
+        "nn_mean_ratio": 0.15032811977019778,
+        "nn_stats": {
+          "count": 1000,
+          "max": 4.342934909718179,
+          "mean": 1.4130626830803499,
+          "min": 0.04865687128972893,
+          "quantiles": {
+            "p05": 0.3191373474972612,
+            "p50": 1.2993605241806963,
+            "p95": 2.8623949402752955
+          },
+          "std": 0.8004372043156812
+        }
+      },
+      "theta_stats": {
+        "count": 1000,
+        "coverage": 0.1111111111111111,
+        "mean": 6.277799719531046,
+        "r": 0.9801208416417533,
+        "std": 0.2003966422951922
+      }
+    },
+    "edge_sector_top": {
+      "category": "sector",
+      "expected_rules": [
+        {
+          "TODO": "theta near pi/2 rad"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 0,
+      "n_particles_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "n_samples": 0,
+      "r_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "rule_checks": {
+        "category": "sector",
+        "checks": [
+          {
+            "name": "sector.theta_coverage",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "max": 0.3
+            },
+            "value": 0.0
+          },
+          {
+            "name": "sector.center_offset",
+            "ok": null,
+            "reason": "missing theta mean",
+            "status": "skipped",
+            "threshold": null,
+            "value": null
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "theta near pi/2 rad"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        },
+        "grid_dispersion": null,
+        "nn_mean_expected": null,
+        "nn_mean_ratio": null,
+        "nn_stats": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        }
+      },
+      "theta_stats": {
+        "count": 0,
+        "coverage": 0.0,
+        "mean": null,
+        "r": null,
+        "std": null
+      }
+    },
+    "hotspot": {
+      "category": "hotspot",
+      "expected_rules": [
+        {
+          "TODO": "density peak around center point"
+        },
+        {
+          "TODO": "density decays with radius from peak"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 0,
+      "n_particles_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "n_samples": 0,
+      "r_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "rule_checks": {
+        "category": "hotspot",
+        "checks": [],
+        "expected_rules": [
+          {
+            "TODO": "density peak around center point"
+          },
+          {
+            "TODO": "density decays with radius from peak"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        },
+        "grid_dispersion": null,
+        "nn_mean_expected": null,
+        "nn_mean_ratio": null,
+        "nn_stats": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        }
+      },
+      "theta_stats": {
+        "count": 0,
+        "coverage": 0.0,
+        "mean": null,
+        "r": null,
+        "std": null
+      }
+    },
+    "hotspot_center": {
+      "category": "hotspot",
+      "expected_rules": [
+        {
+          "TODO": "peak at wafer center"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          124,
+          216,
+          176,
+          67,
+          15,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          10,
+          22,
+          14,
+          20,
+          20,
+          11,
+          17,
+          12,
+          23,
+          23,
+          21,
+          18,
+          15,
+          13,
+          14,
+          18,
+          20,
+          19,
+          15,
+          16,
+          22,
+          16,
+          23,
+          11,
+          9,
+          20,
+          19,
+          15,
+          14,
+          17,
+          15,
+          19,
+          21,
+          8,
+          9,
+          21
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 600,
+      "n_particles_stats": {
+        "count": 3,
+        "max": 200.0,
+        "mean": 200.0,
+        "min": 200.0,
+        "quantiles": {
+          "p05": 200.0,
+          "p50": 200.0,
+          "p95": 200.0
+        },
+        "std": 0.0
+      },
+      "n_samples": 3,
+      "r_stats": {
+        "count": 600,
+        "max": 29.71497884062963,
+        "mean": 9.453814316862875,
+        "min": 0.47305097267396384,
+        "quantiles": {
+          "p05": 2.127449787038004,
+          "p50": 9.09994052131907,
+          "p95": 18.651540231148044
+        },
+        "std": 5.086653639068472
+      },
+      "rule_checks": {
+        "category": "hotspot",
+        "checks": [
+          {
+            "name": "hotspot.center_r_mean_ratio",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "max": 0.3
+            },
+            "value": 0.06302542877908583
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "peak at wafer center"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 600,
+        "max": 2.5989493780409956,
+        "mean": 0.9629840583843733,
+        "min": 0.3313741944366628,
+        "quantiles": {
+          "p05": 0.5283044012522825,
+          "p50": 0.8923418469202573,
+          "p95": 1.6838322200313485
+        },
+        "std": 0.35681029943883164
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 336,
+          "max": 62.0,
+          "mean": 1.7857142857142858,
+          "min": 0.0,
+          "quantiles": {
+            "p05": 0.0,
+            "p50": 0.0,
+            "p95": 0.0
+          },
+          "std": 9.299989027862711
+        },
+        "grid_dispersion": 48.434285714285416,
+        "nn_mean_expected": 9.399856029866253,
+        "nn_mean_ratio": 0.13233978210684255,
+        "nn_stats": {
+          "count": 600,
+          "max": 10.571682105840381,
+          "mean": 1.24397489882819,
+          "min": 0.049311940537355006,
+          "quantiles": {
+            "p05": 0.24383470639425264,
+            "p50": 0.9742638098609276,
+            "p95": 3.0795409359084
+          },
+          "std": 1.0953664756983799
+        }
+      },
+      "theta_stats": {
+        "count": 600,
+        "coverage": 1.0,
+        "mean": 2.2787251075608417,
+        "r": 0.035402505233989336,
+        "std": 2.5849459151110707
+      }
+    },
+    "hotspot_edge": {
+      "category": "hotspot",
+      "expected_rules": [
+        {
+          "TODO": "peak near outer edge"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 0,
+      "n_particles_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "n_samples": 0,
+      "r_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "rule_checks": {
+        "category": "hotspot",
+        "checks": [],
+        "expected_rules": [
+          {
+            "TODO": "peak near outer edge"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        },
+        "grid_dispersion": null,
+        "nn_mean_expected": null,
+        "nn_mean_ratio": null,
+        "nn_stats": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        }
+      },
+      "theta_stats": {
+        "count": 0,
+        "coverage": 0.0,
+        "mean": null,
+        "r": null,
+        "std": null
+      }
+    },
+    "hotspot_random": {
+      "category": "hotspot",
+      "expected_rules": [
+        {
+          "TODO": "peak location varies per sample"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 0,
+      "n_particles_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "n_samples": 0,
+      "r_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "rule_checks": {
+        "category": "hotspot",
+        "checks": [],
+        "expected_rules": [
+          {
+            "TODO": "peak location varies per sample"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        },
+        "grid_dispersion": null,
+        "nn_mean_expected": null,
+        "nn_mean_ratio": null,
+        "nn_stats": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        }
+      },
+      "theta_stats": {
+        "count": 0,
+        "coverage": 0.0,
+        "mean": null,
+        "r": null,
+        "std": null
+      }
+    },
+    "inhom_poisson": {
+      "category": "inhom_poisson",
+      "expected_rules": [
+        {
+          "TODO": "grid dispersion above uniform baseline"
+        },
+        {
+          "TODO": "lambda(r,theta) variation visible in histograms"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 0,
+      "n_particles_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "n_samples": 0,
+      "r_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "rule_checks": {
+        "category": "inhom_poisson",
+        "checks": [
+          {
+            "name": "inhom_poisson.grid_dispersion",
+            "ok": null,
+            "reason": "missing value",
+            "status": "skipped",
+            "threshold": null,
+            "value": null
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "grid dispersion above uniform baseline"
+          },
+          {
+            "TODO": "lambda(r,theta) variation visible in histograms"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        },
+        "grid_dispersion": null,
+        "nn_mean_expected": null,
+        "nn_mean_ratio": null,
+        "nn_stats": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        }
+      },
+      "theta_stats": {
+        "count": 0,
+        "coverage": 0.0,
+        "mean": null,
+        "r": null,
+        "std": null
+      }
+    },
+    "radial_lines": {
+      "category": "line",
+      "expected_rules": [
+        {
+          "TODO": "multiple line angles present"
+        },
+        {
+          "TODO": "points concentrated on radial lines"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          37,
+          37,
+          32,
+          37,
+          33,
+          28,
+          25,
+          41,
+          36,
+          37,
+          31,
+          35,
+          30,
+          31,
+          33,
+          33,
+          33,
+          40,
+          31,
+          44,
+          35,
+          32,
+          32,
+          43,
+          29,
+          27,
+          36,
+          21,
+          26,
+          35
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          90,
+          0,
+          0,
+          0,
+          0,
+          83,
+          72,
+          0,
+          0,
+          0,
+          0,
+          93,
+          79,
+          0,
+          0,
+          0,
+          0,
+          84,
+          97,
+          0,
+          0,
+          0,
+          0,
+          84,
+          67,
+          0,
+          0,
+          0,
+          0,
+          75,
+          84,
+          0,
+          0,
+          0,
+          0,
+          92
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 1000,
+      "n_particles_stats": {
+        "count": 5,
+        "max": 200.0,
+        "mean": 200.0,
+        "min": 200.0,
+        "quantiles": {
+          "p05": 200.0,
+          "p50": 200.0,
+          "p95": 200.0
+        },
+        "std": 0.0
+      },
+      "n_samples": 5,
+      "r_stats": {
+        "count": 1000,
+        "max": 149.90171382227763,
+        "mean": 73.73716035369051,
+        "min": 0.06183962288118794,
+        "quantiles": {
+          "p05": 6.642764311747037,
+          "p50": 74.87804713321009,
+          "p95": 142.04140148705474
+        },
+        "std": 42.82553213897648
+      },
+      "rule_checks": {
+        "category": "line",
+        "checks": [
+          {
+            "name": "line.theta_coverage",
+            "ok": false,
+            "status": "checked",
+            "threshold": {
+              "max": 0.25
+            },
+            "value": 0.3333333333333333
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "multiple line angles present"
+          },
+          {
+            "TODO": "points concentrated on radial lines"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 1000,
+        "max": 2.851150524774043,
+        "mean": 0.9678419065085869,
+        "min": 0.2989074237955187,
+        "quantiles": {
+          "p05": 0.5309034991097198,
+          "p50": 0.8964398993856791,
+          "p95": 1.6393192369626466
+        },
+        "std": 0.35644873758490053
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 560,
+          "max": 13.0,
+          "mean": 1.7482142857142857,
+          "min": 0.0,
+          "quantiles": {
+            "p05": 0.0,
+            "p50": 0.0,
+            "p95": 8.0
+          },
+          "std": 2.691752686542764
+        },
+        "grid_dispersion": 4.1445334160221705,
+        "nn_mean_expected": 9.399856029866253,
+        "nn_mean_ratio": 0.31988279323679875,
+        "nn_stats": {
+          "count": 1000,
+          "max": 22.05594686793185,
+          "mean": 3.0068522028573827,
+          "min": 0.06157744421274762,
+          "quantiles": {
+            "p05": 0.5033776429736516,
+            "p50": 2.4627472030634734,
+            "p95": 7.259986162035462
+          },
+          "std": 2.3969612352904015
+        }
+      },
+      "theta_stats": {
+        "count": 1000,
+        "coverage": 0.3333333333333333,
+        "mean": 1.8041532365738084,
+        "r": 0.015302380663685921,
+        "std": 2.8912789086334394
+      }
+    },
+    "random_edge_biased": {
+      "category": "random",
+      "expected_rules": [
+        {
+          "TODO": "density increases toward edge"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          7,
+          6,
+          6,
+          7,
+          7,
+          12,
+          13,
+          12,
+          20,
+          12,
+          24,
+          20,
+          19,
+          24
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          7,
+          2,
+          7,
+          5,
+          1,
+          4,
+          6,
+          6,
+          10,
+          6,
+          3,
+          6,
+          5,
+          5,
+          1,
+          4,
+          6,
+          2,
+          8,
+          6,
+          8,
+          6,
+          7,
+          7,
+          7,
+          5,
+          8,
+          7,
+          5,
+          4,
+          5,
+          7,
+          5,
+          7,
+          3,
+          9
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 200,
+      "n_particles_stats": {
+        "count": 1,
+        "max": 200.0,
+        "mean": 200.0,
+        "min": 200.0,
+        "quantiles": {
+          "p05": 200.0,
+          "p50": 200.0,
+          "p95": 200.0
+        },
+        "std": 0.0
+      },
+      "n_samples": 1,
+      "r_stats": {
+        "count": 200,
+        "max": 149.86577578629596,
+        "mean": 119.85714889621119,
+        "min": 31.25892801767996,
+        "quantiles": {
+          "p05": 75.49225351162188,
+          "p50": 124.72039230459885,
+          "p95": 148.23258764855402
+        },
+        "std": 24.037526679817052
+      },
+      "rule_checks": {
+        "category": "random",
+        "checks": [],
+        "expected_rules": [
+          {
+            "TODO": "density increases toward edge"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 200,
+        "max": 2.2948934454618555,
+        "mean": 0.9492460845274948,
+        "min": 0.39760326045283356,
+        "quantiles": {
+          "p05": 0.5123435978552373,
+          "p50": 0.916647549958442,
+          "p95": 1.485554435083562
+        },
+        "std": 0.3191039190164497
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 112,
+          "max": 8.0,
+          "mean": 1.6875,
+          "min": 0.0,
+          "quantiles": {
+            "p05": 0.0,
+            "p50": 1.0,
+            "p95": 5.0
+          },
+          "std": 1.6904735705881777
+        },
+        "grid_dispersion": 1.693452380952381,
+        "nn_mean_expected": 9.399856029866253,
+        "nn_mean_ratio": 1.024554071284996,
+        "nn_stats": {
+          "count": 200,
+          "max": 34.23892823717377,
+          "mean": 9.63066076489229,
+          "min": 0.47840191265335774,
+          "quantiles": {
+            "p05": 2.400958186060939,
+            "p50": 9.06965194927756,
+            "p95": 20.603988653316037
+          },
+          "std": 5.946381205408233
+        }
+      },
+      "theta_stats": {
+        "count": 200,
+        "coverage": 1.0,
+        "mean": 4.606126462101085,
+        "r": 0.06321748580756992,
+        "std": 2.349967804854422
+      }
+    },
+    "random_uniform": {
+      "category": "random",
+      "expected_rules": [
+        {
+          "TODO": "uniform density across wafer area"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          4,
+          1,
+          1,
+          3,
+          4,
+          2,
+          5,
+          6,
+          4,
+          6,
+          5,
+          8,
+          10,
+          6,
+          6,
+          7,
+          7,
+          11,
+          9,
+          9,
+          5,
+          6,
+          15,
+          10,
+          12,
+          10,
+          18,
+          10
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          6,
+          5,
+          7,
+          8,
+          6,
+          4,
+          3,
+          2,
+          6,
+          8,
+          5,
+          8,
+          6,
+          9,
+          6,
+          7,
+          1,
+          6,
+          8,
+          7,
+          4,
+          3,
+          9,
+          5,
+          3,
+          6,
+          5,
+          11,
+          6,
+          5,
+          6,
+          5,
+          2,
+          2,
+          7,
+          3
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 200,
+      "n_particles_stats": {
+        "count": 1,
+        "max": 200.0,
+        "mean": 200.0,
+        "min": 200.0,
+        "quantiles": {
+          "p05": 200.0,
+          "p50": 200.0,
+          "p95": 200.0
+        },
+        "std": 0.0
+      },
+      "n_samples": 1,
+      "r_stats": {
+        "count": 200,
+        "max": 148.34914025458482,
+        "mean": 97.76448656072452,
+        "min": 10.679243073836588,
+        "quantiles": {
+          "p05": 32.30396802324318,
+          "p50": 101.45973914361649,
+          "p95": 144.8789179338554
+        },
+        "std": 36.52588798716241
+      },
+      "rule_checks": {
+        "category": "random",
+        "checks": [],
+        "expected_rules": [
+          {
+            "TODO": "uniform density across wafer area"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 200,
+        "max": 2.1196827762137627,
+        "mean": 0.9717580894252026,
+        "min": 0.3158094210168943,
+        "quantiles": {
+          "p05": 0.4709861545675198,
+          "p50": 0.909407975593903,
+          "p95": 1.6633207169755662
+        },
+        "std": 0.3592281231332574
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 112,
+          "max": 6.0,
+          "mean": 1.7321428571428572,
+          "min": 0.0,
+          "quantiles": {
+            "p05": 0.0,
+            "p50": 1.0,
+            "p95": 4.0
+          },
+          "std": 1.3756955569115286
+        },
+        "grid_dispersion": 1.092599410898379,
+        "nn_mean_expected": 9.399856029866253,
+        "nn_mean_ratio": 1.0182358635441078,
+        "nn_stats": {
+          "count": 200,
+          "max": 33.257060596653595,
+          "mean": 9.571270521761154,
+          "min": 0.9881286574820092,
+          "quantiles": {
+            "p05": 2.0456647491816793,
+            "p50": 9.322938418475804,
+            "p95": 20.58482983143858
+          },
+          "std": 5.911653408434834
+        }
+      },
+      "theta_stats": {
+        "count": 200,
+        "coverage": 1.0,
+        "mean": 2.823338312673595,
+        "r": 0.04168883109852011,
+        "std": 2.520921270256878
+      }
+    },
+    "ring_narrow": {
+      "category": "ring",
+      "expected_rules": [
+        {
+          "TODO": "r variance small (narrow ring)"
+        },
+        {
+          "TODO": "theta covers full 0..2pi"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1020,
+          980,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          59,
+          59,
+          48,
+          58,
+          75,
+          55,
+          64,
+          45,
+          59,
+          63,
+          57,
+          52,
+          58,
+          62,
+          59,
+          56,
+          54,
+          42,
+          53,
+          54,
+          51,
+          47,
+          48,
+          65,
+          42,
+          51,
+          54,
+          57,
+          59,
+          45,
+          51,
+          61,
+          68,
+          60,
+          49,
+          60
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 2000,
+      "n_particles_stats": {
+        "count": 10,
+        "max": 200.0,
+        "mean": 200.0,
+        "min": 200.0,
+        "quantiles": {
+          "p05": 200.0,
+          "p50": 200.0,
+          "p95": 200.0
+        },
+        "std": 0.0
+      },
+      "n_samples": 10,
+      "r_stats": {
+        "count": 2000,
+        "max": 107.24904618579254,
+        "mean": 104.97434114760478,
+        "min": 102.75248149765342,
+        "quantiles": {
+          "p05": 102.954179286096,
+          "p50": 104.95138315618229,
+          "p95": 107.03792977828243
+        },
+        "std": 1.3204411286272555
+      },
+      "rule_checks": {
+        "category": "ring",
+        "checks": [
+          {
+            "name": "ring.r_std_ratio",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "max": 0.08
+            },
+            "value": 0.008802940857515037
+          },
+          {
+            "name": "ring.theta_coverage",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "min": 0.6
+            },
+            "value": 1.0
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "r variance small (narrow ring)"
+          },
+          {
+            "TODO": "theta covers full 0..2pi"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 2000,
+        "max": 3.9275904371351773,
+        "mean": 0.9649643905775759,
+        "min": 0.33141553260187206,
+        "quantiles": {
+          "p05": 0.4963816087948861,
+          "p50": 0.9130671772395854,
+          "p95": 1.5982947764648567
+        },
+        "std": 0.3501414104728627
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 1120,
+          "max": 15.0,
+          "mean": 1.7857142857142858,
+          "min": 0.0,
+          "quantiles": {
+            "p05": 0.0,
+            "p50": 0.0,
+            "p95": 10.0
+          },
+          "std": 3.338435720696802
+        },
+        "grid_dispersion": 6.24128571428565,
+        "nn_mean_expected": 9.399856029866253,
+        "nn_mean_ratio": 0.2533992195024506,
+        "nn_stats": {
+          "count": 2000,
+          "max": 10.880955530919007,
+          "mean": 2.3819161814035126,
+          "min": 0.09285466726776609,
+          "quantiles": {
+            "p05": 0.5023718361945992,
+            "p50": 2.0808954635587944,
+            "p95": 5.375374383055468
+          },
+          "std": 1.5621159871602743
+        }
+      },
+      "theta_stats": {
+        "count": 2000,
+        "coverage": 1.0,
+        "mean": 0.6857080071419521,
+        "r": 0.03556056071095586,
+        "std": 2.5832220579873177
+      }
+    },
+    "ring_wide": {
+      "category": "ring",
+      "expected_rules": [
+        {
+          "TODO": "r variance larger than ring_narrow"
+        },
+        {
+          "TODO": "theta covers full 0..2pi"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          103,
+          449,
+          422,
+          424,
+          490,
+          112,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          55,
+          59,
+          49,
+          62,
+          40,
+          61,
+          64,
+          50,
+          60,
+          53,
+          67,
+          52,
+          53,
+          63,
+          55,
+          61,
+          56,
+          49,
+          65,
+          46,
+          53,
+          63,
+          63,
+          59,
+          44,
+          58,
+          60,
+          61,
+          42,
+          46,
+          52,
+          55,
+          58,
+          55,
+          59,
+          52
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 2000,
+      "n_particles_stats": {
+        "count": 10,
+        "max": 200.0,
+        "mean": 200.0,
+        "min": 200.0,
+        "quantiles": {
+          "p05": 200.0,
+          "p50": 200.0,
+          "p95": 200.0
+        },
+        "std": 0.0
+      },
+      "n_samples": 10,
+      "r_stats": {
+        "count": 2000,
+        "max": 101.20883229202325,
+        "mean": 90.19167735396509,
+        "min": 78.84338171780477,
+        "quantiles": {
+          "p05": 79.9886905116831,
+          "p50": 90.33645271776612,
+          "p95": 100.10429407658053
+        },
+        "std": 6.5286732519046
+      },
+      "rule_checks": {
+        "category": "ring",
+        "checks": [
+          {
+            "name": "ring.r_std_ratio",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "max": 0.08
+            },
+            "value": 0.04352448834603066
+          },
+          {
+            "name": "ring.theta_coverage",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "min": 0.6
+            },
+            "value": 1.0
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "r variance larger than ring_narrow"
+          },
+          {
+            "TODO": "theta covers full 0..2pi"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 2000,
+        "max": 2.9850067045109867,
+        "mean": 0.967296236939863,
+        "min": 0.27761304375852797,
+        "quantiles": {
+          "p05": 0.4935827422900101,
+          "p50": 0.9073134658375057,
+          "p95": 1.641978217862047
+        },
+        "std": 0.35847188527327983
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 1120,
+          "max": 17.0,
+          "mean": 1.7857142857142858,
+          "min": 0.0,
+          "quantiles": {
+            "p05": 0.0,
+            "p50": 0.0,
+            "p95": 10.0
+          },
+          "std": 3.361357536739551
+        },
+        "grid_dispersion": 6.327285714285637,
+        "nn_mean_expected": 9.399856029866253,
+        "nn_mean_ratio": 0.461348659977971,
+        "nn_stats": {
+          "count": 2000,
+          "max": 16.38849376902686,
+          "mean": 4.336610983364646,
+          "min": 0.048014603393399524,
+          "quantiles": {
+            "p05": 1.086099811248484,
+            "p50": 3.96241458569467,
+            "p95": 9.133028405114896
+          },
+          "std": 2.4869747658337387
+        }
+      },
+      "theta_stats": {
+        "count": 2000,
+        "coverage": 1.0,
+        "mean": 2.3363870515690905,
+        "r": 0.01669114408382242,
+        "std": 2.861075669952514
+      }
+    },
+    "scratch": {
+      "category": "line",
+      "expected_rules": [
+        {
+          "TODO": "line-fit residual small"
+        },
+        {
+          "TODO": "perpendicular variance small"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 0,
+      "n_particles_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "n_samples": 0,
+      "r_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "rule_checks": {
+        "category": "line",
+        "checks": [
+          {
+            "name": "line.theta_coverage",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "max": 0.25
+            },
+            "value": 0.0
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "line-fit residual small"
+          },
+          {
+            "TODO": "perpendicular variance small"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        },
+        "grid_dispersion": null,
+        "nn_mean_expected": null,
+        "nn_mean_ratio": null,
+        "nn_stats": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        }
+      },
+      "theta_stats": {
+        "count": 0,
+        "coverage": 0.0,
+        "mean": null,
+        "r": null,
+        "std": null
+      }
+    },
+    "scratch_diagonal": {
+      "category": "line",
+      "expected_rules": [
+        {
+          "TODO": "line angle near pi/4"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 0,
+      "n_particles_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "n_samples": 0,
+      "r_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "rule_checks": {
+        "category": "line",
+        "checks": [
+          {
+            "name": "line.theta_coverage",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "max": 0.25
+            },
+            "value": 0.0
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "line angle near pi/4"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        },
+        "grid_dispersion": null,
+        "nn_mean_expected": null,
+        "nn_mean_ratio": null,
+        "nn_stats": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        }
+      },
+      "theta_stats": {
+        "count": 0,
+        "coverage": 0.0,
+        "mean": null,
+        "r": null,
+        "std": null
+      }
+    },
+    "scratch_diagonal_rev": {
+      "category": "line",
+      "expected_rules": [
+        {
+          "TODO": "line angle near 3pi/4"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 0,
+      "n_particles_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "n_samples": 0,
+      "r_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "rule_checks": {
+        "category": "line",
+        "checks": [
+          {
+            "name": "line.theta_coverage",
+            "ok": true,
+            "status": "checked",
+            "threshold": {
+              "max": 0.25
+            },
+            "value": 0.0
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "line angle near 3pi/4"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 0,
+        "max": null,
+        "mean": null,
+        "min": null,
+        "quantiles": {},
+        "std": null
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        },
+        "grid_dispersion": null,
+        "nn_mean_expected": null,
+        "nn_mean_ratio": null,
+        "nn_stats": {
+          "count": 0,
+          "max": null,
+          "mean": null,
+          "min": null,
+          "quantiles": {},
+          "std": null
+        }
+      },
+      "theta_stats": {
+        "count": 0,
+        "coverage": 0.0,
+        "mean": null,
+        "r": null,
+        "std": null
+      }
+    },
+    "scratch_horizontal": {
+      "category": "line",
+      "expected_rules": [
+        {
+          "TODO": "line angle near 0 or pi"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          35,
+          27,
+          26,
+          32,
+          32,
+          40,
+          36,
+          35,
+          42,
+          31,
+          41,
+          52,
+          30,
+          32,
+          36,
+          34,
+          28,
+          34,
+          30,
+          26,
+          38,
+          33,
+          26,
+          23,
+          34,
+          38,
+          34,
+          28,
+          38,
+          29
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          245,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          1,
+          270,
+          246,
+          2,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          3,
+          225
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 1000,
+      "n_particles_stats": {
+        "count": 5,
+        "max": 200.0,
+        "mean": 200.0,
+        "min": 200.0,
+        "quantiles": {
+          "p05": 200.0,
+          "p50": 200.0,
+          "p95": 200.0
+        },
+        "std": 0.0
+      },
+      "n_samples": 5,
+      "r_stats": {
+        "count": 1000,
+        "max": 149.84507054697806,
+        "mean": 73.85843042241561,
+        "min": 0.2887205707307342,
+        "quantiles": {
+          "p05": 7.972674426404724,
+          "p50": 72.08614435803437,
+          "p95": 141.8525438861065
+        },
+        "std": 42.6311689615005
+      },
+      "rule_checks": {
+        "category": "line",
+        "checks": [
+          {
+            "name": "line.theta_coverage",
+            "ok": false,
+            "status": "checked",
+            "threshold": {
+              "max": 0.25
+            },
+            "value": 0.3333333333333333
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "line angle near 0 or pi"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 1000,
+        "max": 2.96842090315113,
+        "mean": 0.9610692740486612,
+        "min": 0.27541324021297575,
+        "quantiles": {
+          "p05": 0.5078569828808598,
+          "p50": 0.9079697531626556,
+          "p95": 1.5830049059704179
+        },
+        "std": 0.34101195458549954
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 560,
+          "max": 16.0,
+          "mean": 1.7857142857142858,
+          "min": 0.0,
+          "quantiles": {
+            "p05": 0.0,
+            "p50": 0.0,
+            "p95": 10.0
+          },
+          "std": 3.639143765632076
+        },
+        "grid_dispersion": 7.416285714285732,
+        "nn_mean_expected": 9.399856029866253,
+        "nn_mean_ratio": 0.10433101406498432,
+        "nn_stats": {
+          "count": 1000,
+          "max": 6.103436788597664,
+          "mean": 0.9806965116608037,
+          "min": 0.032152005604313375,
+          "quantiles": {
+            "p05": 0.23963000744107127,
+            "p50": 0.835867916235715,
+            "p95": 2.3572989675140565
+          },
+          "std": 0.7158273152446827
+        }
+      },
+      "theta_stats": {
+        "count": 1000,
+        "coverage": 0.3333333333333333,
+        "mean": 3.1552494290473745,
+        "r": 0.044301446066655044,
+        "std": 2.4966929966960913
+      }
+    },
+    "scratch_vertical": {
+      "category": "line",
+      "expected_rules": [
+        {
+          "TODO": "line angle near pi/2"
+        }
+      ],
+      "hist_r": {
+        "counts": [
+          35,
+          33,
+          32,
+          22,
+          29,
+          41,
+          30,
+          24,
+          32,
+          39,
+          31,
+          43,
+          29,
+          48,
+          34,
+          32,
+          34,
+          31,
+          38,
+          39,
+          34,
+          24,
+          30,
+          37,
+          44,
+          34,
+          29,
+          20,
+          35,
+          37
+        ],
+        "out_of_range": 0
+      },
+      "hist_theta": {
+        "counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          247,
+          249,
+          2,
+          0,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          2,
+          249,
+          238,
+          3,
+          0,
+          2,
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        "out_of_range": 0
+      },
+      "n_particles": 1000,
+      "n_particles_stats": {
+        "count": 5,
+        "max": 200.0,
+        "mean": 200.0,
+        "min": 200.0,
+        "quantiles": {
+          "p05": 200.0,
+          "p50": 200.0,
+          "p95": 200.0
+        },
+        "std": 0.0
+      },
+      "n_samples": 5,
+      "r_stats": {
+        "count": 1000,
+        "max": 149.67986738381734,
+        "mean": 75.38938709025071,
+        "min": 0.32451279219122636,
+        "quantiles": {
+          "p05": 8.112870478451569,
+          "p50": 74.25120625190436,
+          "p95": 142.5177437134923
+        },
+        "std": 42.54434388963063
+      },
+      "rule_checks": {
+        "category": "line",
+        "checks": [
+          {
+            "name": "line.theta_coverage",
+            "ok": false,
+            "status": "checked",
+            "threshold": {
+              "max": 0.25
+            },
+            "value": 0.4166666666666667
+          }
+        ],
+        "expected_rules": [
+          {
+            "TODO": "line angle near pi/2"
+          }
+        ]
+      },
+      "size_stats": {
+        "count": 1000,
+        "max": 2.7612355919646876,
+        "mean": 0.9502773196074489,
+        "min": 0.2295462394575696,
+        "quantiles": {
+          "p05": 0.5073118892654198,
+          "p50": 0.9030487158887398,
+          "p95": 1.5440500405133175
+        },
+        "std": 0.33644255069436224
+      },
+      "spatial": {
+        "grid_bins": 12,
+        "grid_cells": 112,
+        "grid_counts": {
+          "count": 560,
+          "max": 15.0,
+          "mean": 1.7857142857142858,
+          "min": 0.0,
+          "quantiles": {
+            "p05": 0.0,
+            "p50": 0.0,
+            "p95": 10.0
+          },
+          "std": 3.6273479377121447
+        },
+        "grid_dispersion": 7.368285714285747,
+        "nn_mean_expected": 9.399856029866253,
+        "nn_mean_ratio": 0.1035498470797401,
+        "nn_stats": {
+          "count": 1000,
+          "max": 5.408748703798729,
+          "mean": 0.9733536544642234,
+          "min": 0.014032336770481468,
+          "quantiles": {
+            "p05": 0.20032610662508496,
+            "p50": 0.8146371816579687,
+            "p95": 2.2830695461736252
+          },
+          "std": 0.7021214424773479
+        }
+      },
+      "theta_stats": {
+        "count": 1000,
+        "coverage": 0.4166666666666667,
+        "mean": 1.8975053221513942,
+        "r": 0.007332891733178329,
+        "std": 3.1354059814665387
+      }
+    }
+  },
+  "schema_version": "wafer_particles.v1",
+  "spatial": {
+    "grid_bins": 12
+  },
+  "summary": {
+    "labels": 23,
+    "rule_violations": 3,
+    "total_particles": 10000,
+    "total_samples": 50
+  }
+}

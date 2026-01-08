@@ -1,0 +1,6 @@
+sample_id,label,n_particles,pattern_params,seed_offset
+sample_000000,ring_wide,200,"{""n_particles"": 200, ""name"": ""wafer_particles.pattern.ring_wide"", ""radius_ratio"": 0.6, ""wafer_radius_mm"": 150.0, ""width_ratio"": 0.15}",0
+sample_000001,edge_sector_right,200,"{""angle_width_deg"": 40.0, ""edge_width_ratio"": 0.1, ""n_particles"": 200, ""name"": ""wafer_particles.pattern.edge_sector"", ""side"": ""right"", ""wafer_radius_mm"": 150.0}",1
+sample_000002,edge_sector_left,200,"{""angle_width_deg"": 40.0, ""edge_width_ratio"": 0.1, ""n_particles"": 200, ""name"": ""wafer_particles.pattern.edge_sector"", ""side"": ""left"", ""wafer_radius_mm"": 150.0}",2
+sample_000003,scratch_horizontal,200,"{""angle_category"": ""horizontal"", ""length_ratio"": 1.0, ""n_particles"": 200, ""name"": ""wafer_particles.pattern.scratch"", ""offset_ratio"": 0.0, ""wafer_radius_mm"": 150.0, ""width_ratio"": 0.01}",3
+sample_000004,ring_narrow,200,"{""n_particles"": 200, ""name"": ""wafer_particles.pattern.ring_narrow"", ""radius_ratio"": 0.7, ""wafer_radius_mm"": 150.0, ""width_ratio"": 0.03}",4

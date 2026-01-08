@@ -1,0 +1,5 @@
+process=export
+seed=1
+run_name=2025-12-30_03-38-54
+wafer_particles.export.input.run_name=2025-12-30_03-38-54
+wafer_particles.io.format=parquet

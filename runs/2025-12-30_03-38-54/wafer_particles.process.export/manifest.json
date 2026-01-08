@@ -1,0 +1,65 @@
+{
+  "config_hash": "b7a790fd4806",
+  "dataset_id": "wafer_particles.wafer_particles.v1.b7a790fd4806",
+  "domain": "wafer_particles",
+  "files": {
+    "index_particles": {
+      "path": "data/index_particles.parquet",
+      "rows": 10000
+    },
+    "index_samples": {
+      "path": "data/index_samples.parquet",
+      "rows": 50
+    },
+    "particles": {
+      "path": "data/particles.parquet",
+      "rows": 10000
+    },
+    "samples": {
+      "path": "data/samples.parquet",
+      "rows": 50
+    }
+  },
+  "input": {
+    "manifest_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_03-38-54/wafer_particles.process.generate/manifest.json",
+    "particles_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_03-38-54/wafer_particles.process.generate/data/particles.parquet",
+    "run_dir": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_03-38-54/wafer_particles.process.generate",
+    "samples_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_03-38-54/wafer_particles.process.generate/data/samples.parquet"
+  },
+  "input_config_hash": "7aec5922bf22",
+  "label_distribution": {
+    "edge_sector_left": 5,
+    "edge_sector_right": 5,
+    "hotspot_center": 3,
+    "radial_lines": 5,
+    "random_edge_biased": 1,
+    "random_uniform": 1,
+    "ring_narrow": 10,
+    "ring_wide": 10,
+    "scratch_horizontal": 5,
+    "scratch_vertical": 5
+  },
+  "schema_version": "wafer_particles.v1",
+  "splits": {
+    "path": "splits/splits.json",
+    "ratios": {
+      "test": 0.1,
+      "train": 0.8,
+      "val": 0.1
+    },
+    "summary": {
+      "test": {
+        "n_particles": 1000,
+        "n_samples": 5
+      },
+      "train": {
+        "n_particles": 8000,
+        "n_samples": 40
+      },
+      "val": {
+        "n_particles": 1000,
+        "n_samples": 5
+      }
+    }
+  }
+}

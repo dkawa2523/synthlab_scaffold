@@ -1,0 +1,14 @@
+{
+  "created_at": "2025-12-29T23:31:00.911300+00:00",
+  "ok": true,
+  "platform": "macOS-14.5-arm64-arm-64bit",
+  "python": {
+    "executable": "/Users/kawahito/Desktop/synthlab_scaffold/.venv/bin/python",
+    "version": "3.10.8"
+  },
+  "torch": {
+    "available": false,
+    "cuda_available": false,
+    "error": "No module named 'torch'"
+  }
+}

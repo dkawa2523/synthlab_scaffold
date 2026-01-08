@@ -1,0 +1,468 @@
+domain:
+  name: wafer_particles
+  schema_version: wafer_particles.v1
+hydra:
+  run:
+    dir: runs/${run_name}/${process.name}
+  sweep:
+    dir: sweeps/${run_name}
+    subdir: ${hydra.job.num}
+notes: null
+policy:
+  real_data:
+    allow_repo_paths: false
+process:
+  name: wafer_particles.process.generate
+run_name: 2025-12-31_12-31-09
+schema_version: wafer_particles.v1
+seed: 42
+wafer_particles:
+  allow_optional_patterns: false
+  generate:
+    chunk_size: 1000
+  include_xy: true
+  io:
+    format: auto
+    write_mode: eager
+  label_selection:
+    mode: ratio
+    ratios:
+      C01_Uniform: 1.0
+      C03_Ring: 1.0
+      C04_Sector_Edge: 1.0
+      C07_StraightLine: 1.0
+      C11_Hotspot_Elliptic: 1.0
+      edge_sector_left: 0.1
+      edge_sector_right: 0.1
+      hotspot_center: 0.05
+      radial_lines: 0.1
+      random_edge_biased: 0.025
+      random_uniform: 0.025
+      ring_narrow: 0.2
+      ring_wide: 0.2
+      scratch_horizontal: 0.1
+      scratch_vertical: 0.1
+    shuffle: true
+  labeling:
+    spec_path: conf/wafer_particles/labeling/label_layers_example_v1.yaml
+  labels:
+    domain: wafer_particles
+    labels:
+    - category: ring
+      expected_rules:
+      - r_std_ratio is small relative to wafer_radius (narrow ring)
+      - theta coverage spans most bins (0..2pi)
+      name: ring_narrow
+    - category: ring
+      expected_rules:
+      - r_std_ratio is larger than ring_narrow but still ring-like
+      - theta coverage spans most bins (0..2pi)
+      name: ring_wide
+    - category: sector
+      expected_rules:
+      - theta coverage concentrated in a sector
+      - theta mean aligned to sector center
+      - r mean near wafer edge
+      name: edge_sector
+      variants:
+      - expected_rules:
+        - theta coverage concentrated in a sector
+        - theta mean aligned to sector center
+        - r mean near wafer edge
+        - sector center near 0 rad (right)
+        name: edge_sector_right
+        params:
+          side: right
+      - expected_rules:
+        - theta coverage concentrated in a sector
+        - theta mean aligned to sector center
+        - r mean near wafer edge
+        - sector center near pi rad (left)
+        name: edge_sector_left
+        params:
+          side: left
+      - expected_rules:
+        - theta coverage concentrated in a sector
+        - theta mean aligned to sector center
+        - r mean near wafer edge
+        - sector center near pi/2 rad (top)
+        name: edge_sector_top
+        params:
+          side: top
+      - expected_rules:
+        - theta coverage concentrated in a sector
+        - theta mean aligned to sector center
+        - r mean near wafer edge
+        - sector center near 3pi/2 rad (bottom)
+        name: edge_sector_bottom
+        params:
+          side: bottom
+    - category: line
+      expected_rules:
+      - theta coverage is narrow (line-like)
+      - points lie close to a fitted line (small perpendicular spread)
+      name: scratch
+      variants:
+      - expected_rules:
+        - theta coverage is narrow (line-like)
+        - points lie close to a fitted line (small perpendicular spread)
+        - dominant line angle near 0 or pi (horizontal)
+        name: scratch_horizontal
+        params:
+          angle_category: horizontal
+      - expected_rules:
+        - theta coverage is narrow (line-like)
+        - points lie close to a fitted line (small perpendicular spread)
+        - dominant line angle near pi/2 (vertical)
+        name: scratch_vertical
+        params:
+          angle_category: vertical
+      - expected_rules:
+        - theta coverage is narrow (line-like)
+        - points lie close to a fitted line (small perpendicular spread)
+        - dominant line angle near pi/4 (diagonal)
+        name: scratch_diagonal
+        params:
+          angle_category: diagonal
+      - expected_rules:
+        - theta coverage is narrow (line-like)
+        - points lie close to a fitted line (small perpendicular spread)
+        - dominant line angle near 3pi/4 (diagonal rev)
+        name: scratch_diagonal_rev
+        params:
+          angle_category: diagonal_rev
+    - category: line
+      expected_rules:
+      - multiple line angles are present
+      - points cluster along radial lines through the center
+      - theta coverage has multiple narrow modes
+      name: radial_lines
+    - category: hotspot
+      expected_rules:
+      - density peak around a center point
+      - density decays with radius from the peak
+      name: hotspot
+      variants:
+      - expected_rules:
+        - density peak around a center point
+        - density decays with radius from the peak
+        - peak near wafer center (low r mean ratio)
+        name: hotspot_center
+        params:
+          mode: center
+      - expected_rules:
+        - density peak around a center point
+        - density decays with radius from the peak
+        - peak near wafer edge (high r mean ratio)
+        name: hotspot_edge
+        params:
+          mode: edge
+      - expected_rules:
+        - density peak around a center point
+        - density decays with radius from the peak
+        - peak location varies per sample
+        name: hotspot_random
+        params:
+          mode: random
+    - category: random
+      expected_rules:
+      - uniform density across wafer area
+      - theta coverage spans most bins
+      - r histogram follows area-proportional profile
+      name: random_uniform
+    - category: random
+      expected_rules:
+      - density increases toward edge (high r mean ratio)
+      - theta coverage spans most bins
+      name: random_edge_biased
+    - category: inhom_poisson
+      expected_rules:
+      - grid dispersion above uniform baseline
+      - grid counts show spatial intensity variation
+      - hist_r and hist_theta show structure
+      name: inhom_poisson
+    - category: cluster
+      expected_rules:
+      - nn mean ratio below CSR expectation
+      - grid dispersion above 1 (over-dispersion)
+      - child points cluster around parent centers
+      name: cluster_parent_child
+    - category: cox
+      expected_rules:
+      - grid dispersion above 1 (over-dispersion)
+      - intensity field varies across cells
+      name: cox_lognormal
+    - category: composite
+      expected_rules:
+      - component mixture ratios are respected
+      - each component retains its expected pattern
+      - label proportions match config
+      name: composite
+    version: taxonomy_v1
+  n_particles:
+    dist: truncnorm
+    max: 1536
+    mean: 1024
+    min: 512
+    std: 128
+  n_samples: 1000
+  noise:
+    background:
+      count: 0
+      enabled: false
+      fraction: 0.0
+    jitter:
+      enabled: false
+      r_std_mm: 0.0
+      theta_std_rad: 0.0
+  patterns:
+    C01_Uniform:
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.C01_Uniform
+      param_space:
+        n_particles:
+          dist: uniform
+          max: 400
+          min: 120
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    C03_Ring:
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.C03_Ring
+      param_space:
+        radius_ratio:
+          dist: uniform
+          max: 0.9
+          min: 0.4
+        width_ratio:
+          dist: uniform
+          max: 0.2
+          min: 0.02
+      radius_ratio: 0.7
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+      width_ratio: 0.08
+    C04_Sector_Edge:
+      angle_width_deg: 50.0
+      edge_width_ratio: 0.15
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.C04_Sector_Edge
+      param_space:
+        angle_center_rad:
+          dist: uniform
+          max: 6.283185307179586
+          min: 0.0
+        angle_width_deg:
+          dist: uniform
+          max: 90.0
+          min: 20.0
+        edge_width_ratio:
+          dist: uniform
+          max: 0.3
+          min: 0.05
+        radial_beta_alpha:
+          dist: uniform
+          max: 4.0
+          min: 1.2
+        radial_beta_beta:
+          dist: uniform
+          max: 3.5
+          min: 0.8
+        theta_vonmises_kappa:
+          dist: uniform
+          max: 10.0
+          min: 0.5
+      radial_beta_alpha: 2.0
+      radial_beta_beta: 1.2
+      schema_version: wafer_particles.pattern_config.v1
+      side: right
+      theta_vonmises_kappa: 4.0
+      wafer_radius_mm: 150.0
+    C07_StraightLine:
+      angle_deg: 0.0
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.C07_StraightLine
+      offset_ratio: 0.0
+      param_space:
+        angle_deg:
+          dist: uniform
+          max: 180.0
+          min: 0.0
+        offset_ratio:
+          dist: uniform
+          max: 0.3
+          min: -0.3
+        segment_half_length_ratio:
+          dist: uniform
+          max: 0.9
+          min: 0.3
+        width_ratio:
+          dist: uniform
+          max: 0.05
+          min: 0.005
+      schema_version: wafer_particles.pattern_config.v1
+      segment_half_length_ratio: 0.6
+      wafer_radius_mm: 150.0
+      width_ratio: 0.02
+    C11_Hotspot_Elliptic:
+      center_angle: random
+      center_radius_ratio: 0.7
+      enabled: true
+      mode: random
+      n_particles: 200
+      name: wafer_particles.pattern.C11_Hotspot_Elliptic
+      param_space:
+        center_angle_rad:
+          dist: uniform
+          max: 6.283185307179586
+          min: 0.0
+        center_radius_ratio:
+          dist: uniform
+          max: 0.9
+          min: 0.0
+        rotation_rad:
+          dist: uniform
+          max: 6.283185307179586
+          min: 0.0
+        sigma_x_ratio:
+          dist: uniform
+          max: 0.12
+          min: 0.03
+        sigma_y_ratio:
+          dist: uniform
+          max: 0.08
+          min: 0.01
+      rotation_deg: 30.0
+      schema_version: wafer_particles.pattern_config.v1
+      sigma_x_ratio: 0.08
+      sigma_y_ratio: 0.03
+      wafer_radius_mm: 150.0
+    cluster_parent_child:
+      cluster_sigma_ratio: 0.03
+      enabled: true
+      mean_children: 8
+      mean_particles: 200
+      name: wafer_particles.pattern.cluster_parent_child
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    composite:
+      components:
+      - cfg:
+          radius_ratio: 0.7
+          width_ratio: 0.03
+        label: ring
+        pattern: wafer_particles.pattern.ring_narrow
+        weight: 0.6
+      - label: background
+        pattern: wafer_particles.pattern.random_uniform
+        weight: 0.4
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.composite
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    cox_lognormal:
+      enabled: true
+      field_sigma: 0.8
+      grid_bins: 8
+      mean_particles: 200
+      name: wafer_particles.pattern.cox_lognormal
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    edge_sector:
+      angle_width_deg: 40.0
+      edge_width_ratio: 0.1
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.edge_sector
+      schema_version: wafer_particles.pattern_config.v1
+      side: right
+      wafer_radius_mm: 150.0
+    hotspot:
+      center_angle: random
+      center_radius_ratio: 0.9
+      enabled: true
+      mode: center
+      n_particles: 200
+      name: wafer_particles.pattern.hotspot
+      schema_version: wafer_particles.pattern_config.v1
+      sigma_ratio: 0.05
+      wafer_radius_mm: 150.0
+    inhom_poisson:
+      angular_amplitude: 0.4
+      angular_harmonic: 2
+      angular_phase_deg: 30.0
+      enabled: true
+      mean_particles: 200
+      name: wafer_particles.pattern.inhomogeneous_poisson
+      radial_power: 1.5
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    radial_lines:
+      angular_jitter_deg: 2.0
+      enabled: true
+      n_lines: 6
+      n_particles: 200
+      name: wafer_particles.pattern.radial_lines
+      r_max_ratio: 1.0
+      r_min_ratio: 0.0
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    random_edge_biased:
+      edge_bias: 2.0
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.random_edge_biased
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    random_uniform:
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.random_uniform
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    ring_narrow:
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.ring_narrow
+      radius_ratio: 0.7
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+      width_ratio: 0.03
+    ring_wide:
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.ring_wide
+      radius_ratio: 0.6
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+      width_ratio: 0.15
+    scratch:
+      angle_category: horizontal
+      enabled: true
+      length_ratio: 1.0
+      n_particles: 200
+      name: wafer_particles.pattern.scratch
+      offset_ratio: 0.0
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+      width_ratio: 0.01
+  profiles:
+    description: Default parameter profile. Use as baseline ranges.
+    name: default_profile
+    overrides: {}
+    version: 1
+  sample_id_prefix: sample
+  size_models:
+    max_um: 1.0
+    min_um: 0.01
+    mu_log: -3.0
+    name: wafer_particles.size_model.lognormal
+    sigma_log: 0.8
+    type: lognormal
+  source: synthetic
+  wafer_radius_mm: 150.0

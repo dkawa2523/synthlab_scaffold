@@ -1,0 +1,121 @@
+{
+  "dataset_id": "wafer_particles.v1_taxonomy_v1_d0f341a6059f",
+  "domain": "wafer_particles",
+  "input": {
+    "manifest_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-31_22-29-42/wafer_particles.process.generate/manifest.json",
+    "particles_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-31_22-29-42/wafer_particles.process.generate/data/particles.parquet",
+    "run_dir": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-31_22-29-42/wafer_particles.process.generate",
+    "samples_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-31_22-29-42/wafer_particles.process.generate/data/samples.parquet"
+  },
+  "input_config_hash": "e32d6f3513e2",
+  "label_distribution": {
+    "C01_Uniform": 100,
+    "C02_EdgeBiased": 100,
+    "C03_Ring": 100,
+    "C04_Sector_Edge": 100,
+    "C05_Sector_Internal": 100,
+    "C06_RadialLines": 100,
+    "C07_StraightLine": 100,
+    "C08_CurvedScratch": 100,
+    "C09_Spiral": 100,
+    "C10_Hotspot_Iso": 100
+  },
+  "labeling_spec_hash": null,
+  "metric_set_version": null,
+  "schema_version": "wafer_particles.v1",
+  "split": {
+    "mode": "ratio",
+    "ratios": {
+      "test": 0.1,
+      "train": 0.8,
+      "val": 0.1
+    },
+    "shuffle": true
+  },
+  "splits": {
+    "test": {
+      "n_particles": 9868,
+      "n_samples": 100,
+      "particle_label_distribution": {
+        "C01_Uniform": 1193,
+        "C02_EdgeBiased": 769,
+        "C03_Ring": 1301,
+        "C04_Sector_Edge": 487,
+        "C05_Sector_Internal": 1198,
+        "C06_RadialLines": 818,
+        "C07_StraightLine": 1584,
+        "C08_CurvedScratch": 855,
+        "C09_Spiral": 812,
+        "C10_Hotspot_Iso": 851
+      },
+      "sample_label_distribution": {
+        "C01_Uniform": 11,
+        "C02_EdgeBiased": 10,
+        "C03_Ring": 14,
+        "C04_Sector_Edge": 7,
+        "C05_Sector_Internal": 10,
+        "C06_RadialLines": 9,
+        "C07_StraightLine": 12,
+        "C08_CurvedScratch": 8,
+        "C09_Spiral": 9,
+        "C10_Hotspot_Iso": 10
+      }
+    },
+    "train": {
+      "n_particles": 85589,
+      "n_samples": 800,
+      "particle_label_distribution": {
+        "C01_Uniform": 8676,
+        "C02_EdgeBiased": 8271,
+        "C03_Ring": 9073,
+        "C04_Sector_Edge": 9092,
+        "C05_Sector_Internal": 8236,
+        "C06_RadialLines": 7398,
+        "C07_StraightLine": 7963,
+        "C08_CurvedScratch": 8264,
+        "C09_Spiral": 9100,
+        "C10_Hotspot_Iso": 9516
+      },
+      "sample_label_distribution": {
+        "C01_Uniform": 78,
+        "C02_EdgeBiased": 79,
+        "C03_Ring": 79,
+        "C04_Sector_Edge": 87,
+        "C05_Sector_Internal": 77,
+        "C06_RadialLines": 77,
+        "C07_StraightLine": 74,
+        "C08_CurvedScratch": 86,
+        "C09_Spiral": 81,
+        "C10_Hotspot_Iso": 82
+      }
+    },
+    "val": {
+      "n_particles": 10553,
+      "n_samples": 100,
+      "particle_label_distribution": {
+        "C01_Uniform": 1199,
+        "C02_EdgeBiased": 1083,
+        "C03_Ring": 596,
+        "C04_Sector_Edge": 574,
+        "C05_Sector_Internal": 1542,
+        "C06_RadialLines": 1678,
+        "C07_StraightLine": 1359,
+        "C08_CurvedScratch": 723,
+        "C09_Spiral": 1100,
+        "C10_Hotspot_Iso": 699
+      },
+      "sample_label_distribution": {
+        "C01_Uniform": 11,
+        "C02_EdgeBiased": 11,
+        "C03_Ring": 7,
+        "C04_Sector_Edge": 6,
+        "C05_Sector_Internal": 13,
+        "C06_RadialLines": 14,
+        "C07_StraightLine": 14,
+        "C08_CurvedScratch": 6,
+        "C09_Spiral": 10,
+        "C10_Hotspot_Iso": 8
+      }
+    }
+  }
+}

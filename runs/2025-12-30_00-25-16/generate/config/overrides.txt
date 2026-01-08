@@ -1,0 +1,4 @@
+process=generate
+seed=1
+wafer_particles.n_samples=5
+wafer_particles.io.format=csv

@@ -1,0 +1,121 @@
+domain:
+  name: wafer_particles
+  schema_version: wafer_particles.v1
+hydra:
+  run:
+    dir: runs/${run_name}/${process.name}
+  sweep:
+    dir: sweeps/${run_name}
+    subdir: ${hydra.job.num}
+notes: null
+process:
+  name: doctor
+run_name: 2025-12-30_00-42-06
+schema_version: wafer_particles.v1
+seed: 1
+wafer_particles:
+  labels:
+    domain: wafer_particles
+    labels:
+    - category: ring
+      expected_rules:
+      - TODO: r variance small (narrow ring)
+      - TODO: theta covers full 0..2pi
+      name: ring_narrow
+    - category: ring
+      expected_rules:
+      - TODO: r variance larger than ring_narrow
+      - TODO: theta covers full 0..2pi
+      name: ring_wide
+    - category: sector
+      expected_rules:
+      - TODO: theta concentrated in sector range
+      - TODO: r near outer edge
+      name: edge_sector
+      variants:
+      - expected_rules:
+        - TODO: theta near 0 rad
+        name: edge_sector_right
+        params:
+          side: right
+      - expected_rules:
+        - TODO: theta near pi rad
+        name: edge_sector_left
+        params:
+          side: left
+      - expected_rules:
+        - TODO: theta near pi/2 rad
+        name: edge_sector_top
+        params:
+          side: top
+      - expected_rules:
+        - TODO: theta near 3pi/2 rad
+        name: edge_sector_bottom
+        params:
+          side: bottom
+    - category: line
+      expected_rules:
+      - TODO: line-fit residual small
+      - TODO: perpendicular variance small
+      name: scratch
+      variants:
+      - expected_rules:
+        - TODO: line angle near 0 or pi
+        name: scratch_horizontal
+        params:
+          angle_category: horizontal
+      - expected_rules:
+        - TODO: line angle near pi/2
+        name: scratch_vertical
+        params:
+          angle_category: vertical
+      - expected_rules:
+        - TODO: line angle near pi/4
+        name: scratch_diagonal
+        params:
+          angle_category: diagonal
+      - expected_rules:
+        - TODO: line angle near 3pi/4
+        name: scratch_diagonal_rev
+        params:
+          angle_category: diagonal_rev
+    - category: line
+      expected_rules:
+      - TODO: multiple line angles present
+      - TODO: points concentrated on radial lines
+      name: radial_lines
+    - category: hotspot
+      expected_rules:
+      - TODO: density peak around center point
+      - TODO: density decays with radius from peak
+      name: hotspot
+      variants:
+      - expected_rules:
+        - TODO: peak at wafer center
+        name: hotspot_center
+        params:
+          mode: center
+      - expected_rules:
+        - TODO: peak near outer edge
+        name: hotspot_edge
+        params:
+          mode: edge
+      - expected_rules:
+        - TODO: peak location varies per sample
+        name: hotspot_random
+        params:
+          mode: random
+    - category: random
+      expected_rules:
+      - TODO: uniform density across wafer area
+      name: random_uniform
+    - category: random
+      expected_rules:
+      - TODO: density increases toward edge
+      name: random_edge_biased
+    - category: composite
+      expected_rules:
+      - TODO: component mixture ratios respected
+      - TODO: each component retains its expected pattern
+      name: composite
+    version: taxonomy_v1

@@ -1,0 +1,5 @@
+[2025-12-31T12:35:41.913650+00:00] dispatch process=wafer_particles.process.generate
+[2025-12-31T12:35:41.913736+00:00] generate start
+[2025-12-31T12:35:42.079860+00:00] io.format=auto resolved to parquet
+[2025-12-31T12:35:55.840080+00:00] generate complete
+[2025-12-31T12:35:56.016008+00:00] process completed

@@ -1,0 +1,13 @@
+{
+  "dependencies": [
+    "pip==25.3",
+    "PyYAML==6.0.3",
+    "setuptools==63.2.0"
+  ],
+  "executable": "/Users/kawahito/Desktop/synthlab_scaffold/.venv/bin/python",
+  "platform": "macOS-14.5-arm64-arm-64bit",
+  "process_name": "doctor",
+  "python": "3.10.8",
+  "run_name": "doctor_seed123",
+  "status": "ok"
+}

@@ -1,0 +1,5 @@
+[2025-12-31T12:34:21.259606+00:00] dispatch process=wafer_particles.process.generate
+[2025-12-31T12:34:21.259693+00:00] generate start
+[2025-12-31T12:34:21.260749+00:00] io.format=auto resolved to csv
+[2025-12-31T12:34:36.984883+00:00] generate complete
+[2025-12-31T12:34:37.390836+00:00] process completed

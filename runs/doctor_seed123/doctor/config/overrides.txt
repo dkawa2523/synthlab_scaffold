@@ -1,0 +1,3 @@
+process=doctor
+seed=123
+run_name=doctor_seed123

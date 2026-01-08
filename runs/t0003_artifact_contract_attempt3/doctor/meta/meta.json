@@ -1,0 +1,21 @@
+{
+  "config_hash": "2729910db389",
+  "created_at": "2025-12-29T11:28:40.558217+00:00",
+  "domain": "wafer_particles",
+  "environment": {
+    "dependencies": [
+      "pip==25.3",
+      "PyYAML==6.0.3",
+      "setuptools==63.2.0"
+    ],
+    "executable": "/Users/kawahito/Desktop/synthlab_scaffold/.venv/bin/python",
+    "platform": "macOS-14.5-arm64-arm-64bit",
+    "python": "3.10.8"
+  },
+  "git_sha": "c8790fd0fbb011ad05249a80a1c09b1cdc0df552",
+  "notes": null,
+  "process_name": "doctor",
+  "run_name": "t0003_artifact_contract_attempt3",
+  "schema_version": "wafer_particles.v1",
+  "seed": 1
+}

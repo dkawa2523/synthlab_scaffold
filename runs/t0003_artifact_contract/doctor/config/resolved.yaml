@@ -1,0 +1,44 @@
+domain:
+  config_key: wafer_particles
+  description: Synthetic wafer particle point clouds.
+  name: wafer_particles
+  schema_version: wafer_particles.v1
+hydra:
+  run:
+    dir: runs/t0003_artifact_contract/doctor
+  sweep:
+    dir: sweeps/t0003_artifact_contract
+    subdir: ${hydra.job.num}
+notes: null
+process:
+  description: Validate config and environment, emit artifact metadata.
+  name: doctor
+run_name: t0003_artifact_contract
+run_root: runs
+schema_version: wafer_particles.v1
+seed: 1
+wafer_particles:
+  io:
+    extension: .parquet
+    format: parquet
+    name: parquet
+  labels:
+    labels:
+    - ring_narrow
+    - ring_wide
+    - edge_sector
+    - scratch
+    - radial_lines
+    - hotspot
+    - random_uniform
+    - random_edge_biased
+    - composite
+    name: taxonomy_v1
+    notes: Skeleton taxonomy; update with final definitions.
+    version: v1
+  qc:
+    description: 'TODO: define default QC metrics for wafer_particles.'
+    name: default
+  viz:
+    description: 'TODO: define default visualization settings.'
+    name: default

@@ -1,0 +1,218 @@
+domain:
+  name: wafer_particles
+  schema_version: wafer_particles.v1
+hydra:
+  run:
+    dir: runs/${run_name}/${process.name}
+  sweep:
+    dir: sweeps/${run_name}
+    subdir: ${hydra.job.num}
+notes: null
+process:
+  name: generate
+run_name: 2025-12-30_00-25-16
+schema_version: wafer_particles.v1
+seed: 1
+wafer_particles:
+  include_xy: true
+  io:
+    format: csv
+    parquet:
+      compression: snappy
+  label_selection:
+    mode: ratio
+    ratios:
+      edge_sector_left: 0.1
+      edge_sector_right: 0.1
+      hotspot_center: 0.05
+      radial_lines: 0.1
+      random_edge_biased: 0.025
+      random_uniform: 0.025
+      ring_narrow: 0.2
+      ring_wide: 0.2
+      scratch_horizontal: 0.1
+      scratch_vertical: 0.1
+    shuffle: true
+  labels:
+    domain: wafer_particles
+    labels:
+    - category: ring
+      expected_rules:
+      - TODO: r variance small (narrow ring)
+      - TODO: theta covers full 0..2pi
+      name: ring_narrow
+    - category: ring
+      expected_rules:
+      - TODO: r variance larger than ring_narrow
+      - TODO: theta covers full 0..2pi
+      name: ring_wide
+    - category: sector
+      expected_rules:
+      - TODO: theta concentrated in sector range
+      - TODO: r near outer edge
+      name: edge_sector
+      variants:
+      - expected_rules:
+        - TODO: theta near 0 rad
+        name: edge_sector_right
+        params:
+          side: right
+      - expected_rules:
+        - TODO: theta near pi rad
+        name: edge_sector_left
+        params:
+          side: left
+      - expected_rules:
+        - TODO: theta near pi/2 rad
+        name: edge_sector_top
+        params:
+          side: top
+      - expected_rules:
+        - TODO: theta near 3pi/2 rad
+        name: edge_sector_bottom
+        params:
+          side: bottom
+    - category: line
+      expected_rules:
+      - TODO: line-fit residual small
+      - TODO: perpendicular variance small
+      name: scratch
+      variants:
+      - expected_rules:
+        - TODO: line angle near 0 or pi
+        name: scratch_horizontal
+        params:
+          angle_category: horizontal
+      - expected_rules:
+        - TODO: line angle near pi/2
+        name: scratch_vertical
+        params:
+          angle_category: vertical
+      - expected_rules:
+        - TODO: line angle near pi/4
+        name: scratch_diagonal
+        params:
+          angle_category: diagonal
+      - expected_rules:
+        - TODO: line angle near 3pi/4
+        name: scratch_diagonal_rev
+        params:
+          angle_category: diagonal_rev
+    - category: line
+      expected_rules:
+      - TODO: multiple line angles present
+      - TODO: points concentrated on radial lines
+      name: radial_lines
+    - category: hotspot
+      expected_rules:
+      - TODO: density peak around center point
+      - TODO: density decays with radius from peak
+      name: hotspot
+      variants:
+      - expected_rules:
+        - TODO: peak at wafer center
+        name: hotspot_center
+        params:
+          mode: center
+      - expected_rules:
+        - TODO: peak near outer edge
+        name: hotspot_edge
+        params:
+          mode: edge
+      - expected_rules:
+        - TODO: peak location varies per sample
+        name: hotspot_random
+        params:
+          mode: random
+    - category: random
+      expected_rules:
+      - TODO: uniform density across wafer area
+      name: random_uniform
+    - category: random
+      expected_rules:
+      - TODO: density increases toward edge
+      name: random_edge_biased
+    - category: composite
+      expected_rules:
+      - TODO: component mixture ratios respected
+      - TODO: each component retains its expected pattern
+      name: composite
+    version: taxonomy_v1
+  n_particles: null
+  n_samples: 5
+  patterns:
+    composite:
+      components:
+      - cfg:
+          radius_ratio: 0.7
+          width_ratio: 0.03
+        label: ring
+        pattern: wafer_particles.pattern.ring_narrow
+        weight: 0.6
+      - label: background
+        pattern: wafer_particles.pattern.random_uniform
+        weight: 0.4
+      n_particles: 200
+      name: wafer_particles.pattern.composite
+      wafer_radius_mm: 150.0
+    edge_sector:
+      angle_width_deg: 40.0
+      edge_width_ratio: 0.1
+      n_particles: 200
+      name: wafer_particles.pattern.edge_sector
+      side: right
+      wafer_radius_mm: 150.0
+    hotspot:
+      center_angle: random
+      center_radius_ratio: 0.9
+      mode: center
+      n_particles: 200
+      name: wafer_particles.pattern.hotspot
+      sigma_ratio: 0.05
+      wafer_radius_mm: 150.0
+    radial_lines:
+      angular_jitter_deg: 2.0
+      n_lines: 6
+      n_particles: 200
+      name: wafer_particles.pattern.radial_lines
+      r_max_ratio: 1.0
+      r_min_ratio: 0.0
+      wafer_radius_mm: 150.0
+    random_edge_biased:
+      edge_bias: 2.0
+      n_particles: 200
+      name: wafer_particles.pattern.random_edge_biased
+      wafer_radius_mm: 150.0
+    random_uniform:
+      n_particles: 200
+      name: wafer_particles.pattern.random_uniform
+      wafer_radius_mm: 150.0
+    ring_narrow:
+      n_particles: 200
+      name: wafer_particles.pattern.ring_narrow
+      radius_ratio: 0.7
+      wafer_radius_mm: 150.0
+      width_ratio: 0.03
+    ring_wide:
+      n_particles: 200
+      name: wafer_particles.pattern.ring_wide
+      radius_ratio: 0.6
+      wafer_radius_mm: 150.0
+      width_ratio: 0.15
+    scratch:
+      angle_category: horizontal
+      length_ratio: 1.0
+      n_particles: 200
+      name: wafer_particles.pattern.scratch
+      offset_ratio: 0.0
+      wafer_radius_mm: 150.0
+      width_ratio: 0.01
+  sample_id_prefix: sample
+  size_models:
+    max_um: 5.0
+    min_um: 0.05
+    mu_log: -0.1
+    name: wafer_particles.size_model.lognormal
+    sigma_log: 0.35
+  source: synthetic
+  wafer_radius_mm: null

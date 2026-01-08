@@ -1,0 +1,4 @@
+[2025-12-30T08:49:38.069084+00:00] dispatch process=wafer_particles.process.doctor
+[2025-12-30T08:49:38.069155+00:00] doctor start
+[2025-12-30T08:49:38.271451+00:00] doctor complete
+[2025-12-30T08:49:38.271506+00:00] process completed

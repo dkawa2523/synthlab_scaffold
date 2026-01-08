@@ -1,0 +1,96 @@
+{
+  "dataset_id": "wafer_particles.wafer_particles.v1.d95c09bf3fa4",
+  "domain": "wafer_particles",
+  "sample_ids": {
+    "test": [
+      "sample_000009",
+      "sample_000005"
+    ],
+    "train": [
+      "sample_000012",
+      "sample_000017",
+      "sample_000013",
+      "sample_000001",
+      "sample_000019",
+      "sample_000008",
+      "sample_000007",
+      "sample_000016",
+      "sample_000006",
+      "sample_000000",
+      "sample_000018",
+      "sample_000010",
+      "sample_000004",
+      "sample_000002",
+      "sample_000011",
+      "sample_000003"
+    ],
+    "val": [
+      "sample_000015",
+      "sample_000014"
+    ]
+  },
+  "schema_version": "wafer_particles.v1",
+  "seed": 1,
+  "seed_offset": 0,
+  "split": {
+    "mode": "ratio",
+    "ratios": {
+      "test": 0.1,
+      "train": 0.8,
+      "val": 0.1
+    },
+    "shuffle": true
+  },
+  "splits": {
+    "test": {
+      "n_particles": 400,
+      "n_samples": 2,
+      "particle_label_distribution": {
+        "edge_sector_right": 200,
+        "scratch_vertical": 200
+      },
+      "sample_label_distribution": {
+        "edge_sector_right": 1,
+        "scratch_vertical": 1
+      }
+    },
+    "train": {
+      "n_particles": 3200,
+      "n_samples": 16,
+      "particle_label_distribution": {
+        "edge_sector_left": 400,
+        "edge_sector_right": 200,
+        "hotspot_center": 200,
+        "radial_lines": 200,
+        "random_uniform": 200,
+        "ring_narrow": 600,
+        "ring_wide": 800,
+        "scratch_horizontal": 400,
+        "scratch_vertical": 200
+      },
+      "sample_label_distribution": {
+        "edge_sector_left": 2,
+        "edge_sector_right": 1,
+        "hotspot_center": 1,
+        "radial_lines": 1,
+        "random_uniform": 1,
+        "ring_narrow": 3,
+        "ring_wide": 4,
+        "scratch_horizontal": 2,
+        "scratch_vertical": 1
+      }
+    },
+    "val": {
+      "n_particles": 400,
+      "n_samples": 2,
+      "particle_label_distribution": {
+        "radial_lines": 200,
+        "ring_narrow": 200
+      },
+      "sample_label_distribution": {
+        "radial_lines": 1,
+        "ring_narrow": 1
+      }
+    }
+  }
+}

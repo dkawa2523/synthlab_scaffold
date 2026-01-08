@@ -1,0 +1,3 @@
+process=doctor
+seed=1
+run_name=t0003_artifact_contract_attempt11

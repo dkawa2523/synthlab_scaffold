@@ -1,0 +1,3 @@
+process=viz
+seed=42
+wafer_particles.viz.input.run_name=2025-12-31_12-35-41

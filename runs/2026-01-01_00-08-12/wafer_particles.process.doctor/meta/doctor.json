@@ -1,0 +1,128 @@
+{
+  "checks": [
+    {
+      "message": "seed is set",
+      "name": "config.seed",
+      "status": "ok",
+      "value": 1
+    },
+    {
+      "message": "schema_version is set",
+      "name": "config.schema_version",
+      "status": "ok",
+      "value": "wafer_particles.v1"
+    },
+    {
+      "message": "run_name is set",
+      "name": "config.run_name",
+      "status": "ok",
+      "value": "2026-01-01_00-08-12"
+    },
+    {
+      "message": "process is set",
+      "name": "config.process",
+      "status": "ok",
+      "value": "wafer_particles.process.doctor"
+    },
+    {
+      "message": "domain is set",
+      "name": "config.domain",
+      "status": "ok",
+      "value": "wafer_particles"
+    },
+    {
+      "message": "pattern bounds ok",
+      "name": "wafer_particles.patterns.ring_narrow.bounds",
+      "status": "ok"
+    },
+    {
+      "message": "pattern bounds ok",
+      "name": "wafer_particles.patterns.ring_wide.bounds",
+      "status": "ok"
+    },
+    {
+      "message": "pattern bounds ok",
+      "name": "wafer_particles.patterns.edge_sector.bounds",
+      "status": "ok"
+    },
+    {
+      "message": "pattern bounds ok",
+      "name": "wafer_particles.patterns.scratch.bounds",
+      "status": "ok"
+    },
+    {
+      "message": "pattern bounds ok",
+      "name": "wafer_particles.patterns.radial_lines.bounds",
+      "status": "ok"
+    },
+    {
+      "message": "pattern bounds ok",
+      "name": "wafer_particles.patterns.hotspot.bounds",
+      "status": "ok"
+    },
+    {
+      "message": "pattern bounds ok",
+      "name": "wafer_particles.patterns.random_uniform.bounds",
+      "status": "ok"
+    },
+    {
+      "message": "pattern bounds ok",
+      "name": "wafer_particles.patterns.random_edge_biased.bounds",
+      "status": "ok"
+    },
+    {
+      "message": "pattern bounds ok",
+      "name": "wafer_particles.patterns.inhom_poisson.bounds",
+      "status": "ok"
+    },
+    {
+      "message": "pattern bounds ok",
+      "name": "wafer_particles.patterns.cluster_parent_child.bounds",
+      "status": "ok"
+    },
+    {
+      "message": "pattern bounds ok",
+      "name": "wafer_particles.patterns.cox_lognormal.bounds",
+      "status": "ok"
+    },
+    {
+      "message": "pattern bounds ok",
+      "name": "wafer_particles.patterns.composite.bounds",
+      "status": "ok"
+    }
+  ],
+  "config": {
+    "domain": "wafer_particles",
+    "io_format": null,
+    "process_name": "wafer_particles.process.doctor",
+    "run_name": "2026-01-01_00-08-12",
+    "schema_version": "wafer_particles.v1",
+    "seed": 1
+  },
+  "created_at": "2026-01-01T00:08:13.234996+00:00",
+  "dependencies": {
+    "matplotlib": {
+      "available": true,
+      "version": "3.10.8"
+    },
+    "pyarrow": {
+      "available": true,
+      "version": "22.0.0"
+    },
+    "torch": {
+      "available": false,
+      "cuda_available": false,
+      "error": "No module named 'torch'"
+    },
+    "yaml": {
+      "available": true,
+      "version": "6.0.3"
+    }
+  },
+  "ok": true,
+  "platform": "macOS-14.5-arm64-arm-64bit",
+  "python": {
+    "executable": "/Users/kawahito/Desktop/synthlab_scaffold/.venv/bin/python",
+    "version": "3.10.8"
+  }
+}

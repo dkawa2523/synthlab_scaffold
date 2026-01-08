@@ -1,0 +1,84 @@
+{
+  "dataset_id": "wafer_particles.wafer_particles.v1.d95c09bf3fa4",
+  "domain": "wafer_particles",
+  "input": {
+    "manifest_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_09-09-20/wafer_particles.process.generate/manifest.json",
+    "particles_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_09-09-20/wafer_particles.process.generate/data/particles.parquet",
+    "run_dir": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_09-09-20/wafer_particles.process.generate",
+    "samples_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_09-09-20/wafer_particles.process.generate/data/samples.parquet"
+  },
+  "input_config_hash": "33ae7825a0f4",
+  "label_distribution": {
+    "edge_sector_left": 2,
+    "edge_sector_right": 2,
+    "hotspot_center": 1,
+    "radial_lines": 2,
+    "random_uniform": 1,
+    "ring_narrow": 4,
+    "ring_wide": 4,
+    "scratch_horizontal": 2,
+    "scratch_vertical": 2
+  },
+  "schema_version": "wafer_particles.v1",
+  "split": {
+    "mode": "ratio",
+    "ratios": {
+      "test": 0.1,
+      "train": 0.8,
+      "val": 0.1
+    },
+    "shuffle": true
+  },
+  "splits": {
+    "test": {
+      "n_particles": 400,
+      "n_samples": 2,
+      "particle_label_distribution": {
+        "edge_sector_right": 200,
+        "scratch_vertical": 200
+      },
+      "sample_label_distribution": {
+        "edge_sector_right": 1,
+        "scratch_vertical": 1
+      }
+    },
+    "train": {
+      "n_particles": 3200,
+      "n_samples": 16,
+      "particle_label_distribution": {
+        "edge_sector_left": 400,
+        "edge_sector_right": 200,
+        "hotspot_center": 200,
+        "radial_lines": 200,
+        "random_uniform": 200,
+        "ring_narrow": 600,
+        "ring_wide": 800,
+        "scratch_horizontal": 400,
+        "scratch_vertical": 200
+      },
+      "sample_label_distribution": {
+        "edge_sector_left": 2,
+        "edge_sector_right": 1,
+        "hotspot_center": 1,
+        "radial_lines": 1,
+        "random_uniform": 1,
+        "ring_narrow": 3,
+        "ring_wide": 4,
+        "scratch_horizontal": 2,
+        "scratch_vertical": 1
+      }
+    },
+    "val": {
+      "n_particles": 400,
+      "n_samples": 2,
+      "particle_label_distribution": {
+        "radial_lines": 200,
+        "ring_narrow": 200
+      },
+      "sample_label_distribution": {
+        "radial_lines": 1,
+        "ring_narrow": 1
+      }
+    }
+  }
+}

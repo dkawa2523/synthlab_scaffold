@@ -1,0 +1,3 @@
+process=export
+wafer_particles.export.input.run_dir=runs/2025-12-30_09-09-20/generate
+seed=1

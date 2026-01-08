@@ -1,0 +1,68 @@
+{
+  "checks": [
+    {
+      "message": "seed is set",
+      "name": "config.seed",
+      "status": "ok",
+      "value": 1
+    },
+    {
+      "message": "schema_version is set",
+      "name": "config.schema_version",
+      "status": "ok",
+      "value": "wafer_particles.v1"
+    },
+    {
+      "message": "run_name is set",
+      "name": "config.run_name",
+      "status": "ok",
+      "value": "2025-12-30_09-32-17"
+    },
+    {
+      "message": "process is set",
+      "name": "config.process",
+      "status": "ok",
+      "value": "wafer_particles.process.doctor"
+    },
+    {
+      "message": "domain is set",
+      "name": "config.domain",
+      "status": "ok",
+      "value": "wafer_particles"
+    }
+  ],
+  "config": {
+    "domain": "wafer_particles",
+    "io_format": null,
+    "process_name": "wafer_particles.process.doctor",
+    "run_name": "2025-12-30_09-32-17",
+    "schema_version": "wafer_particles.v1",
+    "seed": 1
+  },
+  "created_at": "2025-12-30T09:32:17.841148+00:00",
+  "dependencies": {
+    "matplotlib": {
+      "available": true,
+      "version": "3.10.8"
+    },
+    "pyarrow": {
+      "available": true,
+      "version": "22.0.0"
+    },
+    "torch": {
+      "available": false,
+      "cuda_available": false,
+      "error": "No module named 'torch'"
+    },
+    "yaml": {
+      "available": true,
+      "version": "6.0.3"
+    }
+  },
+  "ok": true,
+  "platform": "macOS-14.5-arm64-arm-64bit",
+  "python": {
+    "executable": "/Users/kawahito/Desktop/synthlab_scaffold/.venv/bin/python",
+    "version": "3.10.8"
+  }
+}

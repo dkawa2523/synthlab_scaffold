@@ -1,0 +1,31 @@
+{
+  "domain": "wafer_particles",
+  "files": {
+    "particles": {
+      "path": "data/particles.csv",
+      "rows": 1024219
+    },
+    "samples": {
+      "path": "data/samples.csv",
+      "rows": 1000
+    }
+  },
+  "label_distribution": {
+    "C01_Uniform": 167,
+    "C03_Ring": 167,
+    "C04_Sector_Edge": 167,
+    "C07_StraightLine": 167,
+    "C11_Hotspot_Elliptic": 167,
+    "edge_sector_left": 17,
+    "edge_sector_right": 17,
+    "hotspot_center": 8,
+    "radial_lines": 16,
+    "random_edge_biased": 4,
+    "random_uniform": 4,
+    "ring_narrow": 33,
+    "ring_wide": 33,
+    "scratch_horizontal": 17,
+    "scratch_vertical": 16
+  },
+  "schema_version": "wafer_particles.v1"
+}

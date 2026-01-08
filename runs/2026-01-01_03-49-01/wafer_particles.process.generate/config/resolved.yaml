@@ -1,0 +1,325 @@
+domain:
+  name: wafer_particles
+  schema_version: wafer_particles.v1
+hydra:
+  run:
+    dir: runs/${run_name}/${process.name}
+  sweep:
+    dir: sweeps/${run_name}
+    subdir: ${hydra.job.num}
+notes: null
+policy:
+  real_data:
+    allow_repo_paths: false
+process:
+  name: wafer_particles.process.generate
+run_name: 2026-01-01_03-49-01
+schema_version: wafer_particles.v1
+seed: 1
+wafer_particles:
+  allow_optional_patterns: false
+  generate:
+    chunk_size: 1000
+  include_xy: true
+  io:
+    format: auto
+    write_mode: eager
+  label_selection:
+    mode: ratio
+    ratios:
+      C01_Uniform: 1.0
+      C02_EdgeBiased: 1.0
+      C03_Ring: 1.0
+      C04_Sector_Edge: 1.0
+      C05_Sector_Internal: 1.0
+      C06_RadialLines: 1.0
+      C07_StraightLine: 1.0
+      C08_CurvedScratch: 1.0
+      C09_Spiral: 1.0
+      C11_Hotspot_Elliptic: 1.0
+      edge_sector_left: 0.1
+      edge_sector_right: 0.1
+      hotspot_center: 0.05
+      radial_lines: 0.1
+      random_edge_biased: 0.025
+      random_uniform: 0.025
+      ring_narrow: 0.2
+      ring_wide: 0.2
+      scratch_horizontal: 0.1
+      scratch_vertical: 0.1
+    shuffle: true
+  labeling:
+    spec_path: conf/wafer_particles/labeling/label_layers_example_v1.yaml
+  labels: taxonomy_v2
+  n_particles:
+    dist: truncnorm
+    max: 200
+    mean: 105
+    min: 10
+    std: 50
+  n_samples: 20
+  noise:
+    background:
+      count: 0
+      enabled: false
+      fraction: 0.0
+    jitter:
+      enabled: false
+      r_std_mm: 0.0
+      theta_std_rad: 0.0
+  patterns: &id001
+    C06_RadialLines:
+      params:
+        n_lines:
+          dist: choice
+          values:
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          weights:
+          - 1
+          - 1
+          - 1
+          - 1
+          - 1
+          - 1
+          - 1
+        r_max_norm:
+          dist: uniform
+          high: 1.0
+          low: 0.7
+        r_min_norm:
+          dist: uniform
+          high: 0.3
+          low: 0.0
+        sigma_perp_norm:
+          dist: uniform
+          high: 0.07
+          low: 0.01
+    C07_StraightLine:
+      params:
+        segment_half_length_norm:
+          dist: uniform
+          high: 0.333333
+          low: 0.033333
+        width_norm:
+          dist: uniform
+          high: 0.066667
+          low: 0.033333
+    C08_CurvedScratch:
+      params:
+        arc_radius_norm:
+          dist: uniform
+          high: 0.9
+          low: 0.4
+        span_rad:
+          dist: uniform
+          high: 0.8
+          low: 0.2
+        width_norm:
+          dist: uniform
+          high: 0.066667
+          low: 0.033333
+    C09_Spiral:
+      params:
+        theta_max:
+          dist: uniform
+          high: 31.415927
+          low: 12.566371
+        width_norm:
+          dist: uniform
+          high: 0.05
+          low: 0.005
+    cluster_parent_child:
+      cluster_sigma_ratio: 0.03
+      enabled: true
+      mean_children: 8
+      mean_particles: 200
+      name: wafer_particles.pattern.cluster_parent_child
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    composite:
+      components:
+      - cfg:
+          radius_ratio: 0.7
+          width_ratio: 0.03
+        label: ring
+        pattern: wafer_particles.pattern.ring_narrow
+        weight: 0.6
+      - label: background
+        pattern: wafer_particles.pattern.random_uniform
+        weight: 0.4
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.composite
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    cox_lognormal:
+      enabled: true
+      field_sigma: 0.8
+      grid_bins: 8
+      mean_particles: 200
+      name: wafer_particles.pattern.cox_lognormal
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    edge_sector:
+      angle_width_deg: 40.0
+      edge_width_ratio: 0.1
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.edge_sector
+      schema_version: wafer_particles.pattern_config.v1
+      side: right
+      wafer_radius_mm: 150.0
+    hotspot:
+      center_angle: random
+      center_radius_ratio: 0.9
+      enabled: true
+      mode: center
+      n_particles: 200
+      name: wafer_particles.pattern.hotspot
+      schema_version: wafer_particles.pattern_config.v1
+      sigma_ratio: 0.05
+      wafer_radius_mm: 150.0
+    inhom_poisson:
+      angular_amplitude: 0.4
+      angular_harmonic: 2
+      angular_phase_deg: 30.0
+      enabled: true
+      mean_particles: 200
+      name: wafer_particles.pattern.inhomogeneous_poisson
+      radial_power: 1.5
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    radial_lines:
+      angular_jitter_deg: 2.0
+      enabled: true
+      n_lines: 6
+      n_particles: 200
+      name: wafer_particles.pattern.radial_lines
+      r_max_ratio: 1.0
+      r_min_ratio: 0.0
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    random_edge_biased:
+      edge_bias: 2.0
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.random_edge_biased
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    random_uniform:
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.random_uniform
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+    ring_narrow:
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.ring_narrow
+      radius_ratio: 0.7
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+      width_ratio: 0.03
+    ring_wide:
+      enabled: true
+      n_particles: 200
+      name: wafer_particles.pattern.ring_wide
+      radius_ratio: 0.6
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+      width_ratio: 0.15
+    scratch:
+      angle_category: horizontal
+      enabled: true
+      length_ratio: 1.0
+      n_particles: 200
+      name: wafer_particles.pattern.scratch
+      offset_ratio: 0.0
+      schema_version: wafer_particles.pattern_config.v1
+      wafer_radius_mm: 150.0
+      width_ratio: 0.01
+  profiles:
+    description: "Benchmark\u5411\u3051\u306E\u30D1\u30BF\u30FC\u30F3\u30D1\u30E9\u30E1\
+      \u30FC\u30BF\u5E83\u57DF\u30B9\u30A4\u30FC\u30D7\uFF08v1\uFF09\u3002 - \u76EE\
+      \u7684: \u7A7A\u9593\u30D1\u30BF\u30FC\u30F3\u306E\u5E7E\u4F55\u30D1\u30E9\u30E1\
+      \u30FC\u30BF\uFF08\u9577\u3055/\u5E45\u306A\u3069\uFF09\u3092\u5E83\u304F\u632F\
+      \u3063\u3066\u591A\u69D8\u6027\u3092\u78BA\u4FDD\u3059\u308B\u3002 - \u6CE8\u610F\
+      : \u3053\u3053\u3067\u306F T0504 \u3067\u4ED5\u69D8\u78BA\u5B9A\u3057\u3066\u3044\
+      \u308B\u300C\u7DDA\u72B6/\u30B9\u30AF\u30E9\u30C3\u30C1\u7CFB\u30D1\u30E9\u30E1\
+      \u30FC\u30BF\u300D\u3092\u4E2D\u5FC3\u306B\u4E0A\u66F8\u304D\u3059\u308B\u3002\
+      \n  Ring/Sector/Hotspot \u306A\u3069\u306E\u4ED6\u30D1\u30BF\u30FC\u30F3\u306F\
+      \u5404 pattern YAML \u5074\u306E param_space \u3092\u512A\u5148\u3057\u3066\u4F7F\
+      \u7528\u3059\u308B\u3002\n"
+    name: benchmark_param_sweep_v1
+    overrides:
+      wafer_particles:
+        patterns: *id001
+    version: 1
+  sample_id_prefix: sample
+  size_models:
+    max_um: 1.0
+    min_um: 0.01
+    models:
+      gaussian:
+        mean_um:
+          dist: uniform
+          high: 0.8
+          low: 0.02
+        per_sample: true
+        std_um:
+          dist: uniform
+          high: 0.1
+          low: 0.02
+        type: gaussian
+      lognormal:
+        mu_log:
+          dist: uniform
+          high: -0.2
+          low: -3.9
+        per_sample: true
+        sigma_log:
+          dist: uniform
+          high: 0.9
+          low: 0.2
+        type: lognormal
+      pareto:
+        alpha:
+          dist: uniform
+          high: 4.0
+          low: 1.5
+        per_sample: true
+        type: pareto
+        xm_um:
+          dist: uniform
+          high: 0.3
+          low: 0.05
+      weibull:
+        k:
+          dist: uniform
+          high: 3.0
+          low: 0.7
+        lambda_um:
+          dist: uniform
+          high: 0.5
+          low: 0.02
+        per_sample: true
+        type: weibull
+    mu_log: -0.1
+    name: wafer_particles.size_model.lognormal
+    selection:
+      mode: ratio
+      ratios:
+        gaussian: 3.0
+        lognormal: 3.0
+        pareto: 1.0
+        weibull: 3.0
+      shuffle: true
+    sigma_log: 0.35
+  source: synthetic
+  wafer_radius_mm: 150.0

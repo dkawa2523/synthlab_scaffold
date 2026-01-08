@@ -1,0 +1,5 @@
+process=generate
+wafer_particles.n_samples=50
+seed=1
+run_name=2025-12-30_03-38-54
+wafer_particles.io.format=parquet

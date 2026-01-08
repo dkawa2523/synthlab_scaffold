@@ -1,0 +1,7 @@
+domain: system
+notes: null
+process:
+  name: doctor
+run_name: 2025-12-29_23-09-56_c6d0ca
+schema_version: system.v1
+seed: 1

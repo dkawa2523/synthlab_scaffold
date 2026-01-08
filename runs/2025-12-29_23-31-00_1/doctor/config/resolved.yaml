@@ -1,0 +1,47 @@
+domain:
+  name: wafer_particles
+  schema_version: wafer_particles.v1
+hydra:
+  run:
+    dir: runs/${run_name}/${process.name}
+  sweep:
+    dir: sweeps/${run_name}
+    subdir: ${hydra.job.num}
+notes: null
+process:
+  name: doctor
+run_name: 2025-12-29_23-31-00_1
+schema_version: wafer_particles.v1
+seed: 1
+wafer_particles:
+  labels:
+    domain: wafer_particles
+    labels:
+    - category: ring
+      expected_rules: []
+      name: ring_narrow
+    - category: ring
+      expected_rules: []
+      name: ring_wide
+    - category: sector
+      expected_rules: []
+      name: edge_sector
+    - category: line
+      expected_rules: []
+      name: scratch
+    - category: line
+      expected_rules: []
+      name: radial_lines
+    - category: hotspot
+      expected_rules: []
+      name: hotspot
+    - category: random
+      expected_rules: []
+      name: random_uniform
+    - category: random
+      expected_rules: []
+      name: random_edge_biased
+    - category: composite
+      expected_rules: []
+      name: composite
+    version: taxonomy_v1

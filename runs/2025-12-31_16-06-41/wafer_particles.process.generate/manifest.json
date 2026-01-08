@@ -1,0 +1,26 @@
+{
+  "domain": "wafer_particles",
+  "files": {
+    "particles": {
+      "path": "data/particles.parquet",
+      "rows": 106010
+    },
+    "samples": {
+      "path": "data/samples.parquet",
+      "rows": 1000
+    }
+  },
+  "label_distribution": {
+    "C01_Uniform": 100,
+    "C02_EdgeBiased": 100,
+    "C03_Ring": 100,
+    "C04_Sector_Edge": 100,
+    "C05_Sector_Internal": 100,
+    "C06_RadialLines": 100,
+    "C07_StraightLine": 100,
+    "C08_CurvedScratch": 100,
+    "C09_Spiral": 100,
+    "C10_Hotspot_Iso": 100
+  },
+  "schema_version": "wafer_particles.v1"
+}

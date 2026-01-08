@@ -1,0 +1,4 @@
+process=generate
+wafer_particles.n_samples=20
+wafer_particles/labels=taxonomy_v2
+seed=1

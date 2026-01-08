@@ -1,0 +1,95 @@
+{
+  "dataset_id": "wafer_particles.wafer_particles.v1.b7a790fd4806",
+  "domain": "wafer_particles",
+  "input": {
+    "manifest_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_03-38-54/wafer_particles.process.generate/manifest.json",
+    "particles_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_03-38-54/wafer_particles.process.generate/data/particles.parquet",
+    "run_dir": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_03-38-54/wafer_particles.process.generate",
+    "samples_path": "/Users/kawahito/Desktop/synthlab_scaffold/runs/2025-12-30_03-38-54/wafer_particles.process.generate/data/samples.parquet"
+  },
+  "input_config_hash": "7aec5922bf22",
+  "label_distribution": {
+    "edge_sector_left": 5,
+    "edge_sector_right": 5,
+    "hotspot_center": 3,
+    "radial_lines": 5,
+    "random_edge_biased": 1,
+    "random_uniform": 1,
+    "ring_narrow": 10,
+    "ring_wide": 10,
+    "scratch_horizontal": 5,
+    "scratch_vertical": 5
+  },
+  "schema_version": "wafer_particles.v1",
+  "split": {
+    "mode": "ratio",
+    "ratios": {
+      "test": 0.1,
+      "train": 0.8,
+      "val": 0.1
+    },
+    "shuffle": true
+  },
+  "splits": {
+    "test": {
+      "n_particles": 1000,
+      "n_samples": 5,
+      "particle_label_distribution": {
+        "edge_sector_right": 200,
+        "radial_lines": 400,
+        "ring_narrow": 200,
+        "ring_wide": 200
+      },
+      "sample_label_distribution": {
+        "edge_sector_right": 1,
+        "radial_lines": 2,
+        "ring_narrow": 1,
+        "ring_wide": 1
+      }
+    },
+    "train": {
+      "n_particles": 8000,
+      "n_samples": 40,
+      "particle_label_distribution": {
+        "edge_sector_left": 800,
+        "edge_sector_right": 800,
+        "hotspot_center": 600,
+        "radial_lines": 400,
+        "random_edge_biased": 200,
+        "random_uniform": 200,
+        "ring_narrow": 1400,
+        "ring_wide": 1800,
+        "scratch_horizontal": 800,
+        "scratch_vertical": 1000
+      },
+      "sample_label_distribution": {
+        "edge_sector_left": 4,
+        "edge_sector_right": 4,
+        "hotspot_center": 3,
+        "radial_lines": 2,
+        "random_edge_biased": 1,
+        "random_uniform": 1,
+        "ring_narrow": 7,
+        "ring_wide": 9,
+        "scratch_horizontal": 4,
+        "scratch_vertical": 5
+      }
+    },
+    "val": {
+      "n_particles": 1000,
+      "n_samples": 5,
+      "particle_label_distribution": {
+        "edge_sector_left": 200,
+        "radial_lines": 200,
+        "ring_narrow": 400,
+        "scratch_horizontal": 200
+      },
+      "sample_label_distribution": {
+        "edge_sector_left": 1,
+        "radial_lines": 1,
+        "ring_narrow": 2,
+        "scratch_horizontal": 1
+      }
+    }
+  }
+}

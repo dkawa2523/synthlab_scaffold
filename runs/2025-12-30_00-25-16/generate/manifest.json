@@ -1,0 +1,21 @@
+{
+  "domain": "wafer_particles",
+  "files": {
+    "particles": {
+      "path": "data/particles.csv",
+      "rows": 1000
+    },
+    "samples": {
+      "path": "data/samples.csv",
+      "rows": 5
+    }
+  },
+  "label_distribution": {
+    "edge_sector_left": 1,
+    "edge_sector_right": 1,
+    "ring_narrow": 1,
+    "ring_wide": 1,
+    "scratch_horizontal": 1
+  },
+  "schema_version": "wafer_particles.v1"
+}

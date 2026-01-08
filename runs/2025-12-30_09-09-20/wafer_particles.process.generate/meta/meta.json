@@ -1,0 +1,16 @@
+{
+  "config_hash": "33ae7825a0f4",
+  "created_at": "2025-12-30T09:09:20.808526+00:00",
+  "domain": "wafer_particles",
+  "env": {
+    "executable": "/Users/kawahito/Desktop/synthlab_scaffold/.venv/bin/python",
+    "platform": "macOS-14.5-arm64-arm-64bit",
+    "python": "3.10.8"
+  },
+  "git_sha": "25dff5cd51048104460a2814672381d2d4c5aed0",
+  "notes": null,
+  "process_name": "wafer_particles.process.generate",
+  "run_name": "2025-12-30_09-09-20",
+  "schema_version": "wafer_particles.v1",
+  "seed": 1
+}
