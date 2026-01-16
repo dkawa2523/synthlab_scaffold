@@ -1,0 +1,4 @@
+python -m synthlab.cli.main --config-path conf/benchmarks/wafer_particles \
+  --config-name benchmark_all_patterns_gaussian_range seed=42 \
+  wafer_particles.n_samples=420 \
+  wafer_particles.io.format=csv

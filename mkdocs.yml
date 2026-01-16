@@ -1,0 +1,25 @@
+site_name: SynthLab Scaffold (Internal)
+theme:
+  name: material
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Config Conventions: config_conventions.md
+  - Process Catalog: process_catalog.md
+  - Patterns: patterns.md
+  - Size Models: size_models.md
+  - Labeling: labeling.md
+  - Artifacts & Versioning: artifacts.md
+  - Developer Guide: developer_guide.md
+  - Testing: testing.md
+  - Roadmap: roadmap.md

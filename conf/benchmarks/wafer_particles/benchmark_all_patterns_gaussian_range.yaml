@@ -1,0 +1,117 @@
+# Generate all patterns with a Gaussian size model (range configurable).
+#
+# Example:
+#   python -m synthlab.cli.main --config-path conf/benchmarks/wafer_particles \
+#     --config-name benchmark_all_patterns_gaussian_range seed=42
+
+defaults:
+  - override /domain: wafer_particles
+  - override /process: generate
+  - wafer_particles/size_models: gaussian
+  - wafer_particles/patterns: C01_Uniform
+  - wafer_particles/patterns: C02_EdgeBiased
+  - wafer_particles/patterns: C03_Ring
+  - wafer_particles/patterns: C04_Sector_Edge
+  - wafer_particles/patterns: C05_Sector_Internal
+  - wafer_particles/patterns: C06_RadialLines
+  - wafer_particles/patterns: C07_StraightLine
+  - wafer_particles/patterns: C08_CurvedScratch
+  - wafer_particles/patterns: C09_Spiral
+  - wafer_particles/patterns: C10_Hotspot_Iso
+  - wafer_particles/patterns: C11_Hotspot_Elliptic
+  - wafer_particles/patterns: C12_Crescent_Edge
+  - wafer_particles/patterns: C13_Crescent_Internal
+  - wafer_particles/patterns: C14_EdgeSource_Spray
+  - wafer_particles/patterns: C15_EdgeSource_Bursty
+  - wafer_particles/patterns: K01_Donut_Hollow
+  - wafer_particles/patterns: K02_SemiRing_Segment
+  - wafer_particles/patterns: K03_Edge_Arc
+  - wafer_particles/patterns: K04_Scratch_Periodic
+  - wafer_particles/patterns: O01_ReticleRepeat
+  - wafer_particles/patterns: O02_Checkerboard
+  - wafer_particles/patterns: cluster_parent_child
+  - wafer_particles/patterns: composite
+  - wafer_particles/patterns: composite_dual_ring
+  - wafer_particles/patterns: composite_edge_sector_plus_scratch
+  - wafer_particles/patterns: composite_multi_hotspot
+  - wafer_particles/patterns: composite_ring_hotspot
+  - wafer_particles/patterns: composite_ring_hotspot_center
+  - wafer_particles/patterns: composite_ring_hotspot_edge
+  - wafer_particles/patterns: cox_lognormal
+  - wafer_particles/patterns: edge_sector
+  - wafer_particles/patterns: hotspot
+  - wafer_particles/patterns: inhom_poisson
+  - wafer_particles/patterns: pp_inhom_poisson
+  - wafer_particles/patterns: pp_strauss_repulsive
+  - wafer_particles/patterns: pp_thomas_cluster
+  - wafer_particles/patterns: radial_lines
+  - wafer_particles/patterns: random_edge_biased
+  - wafer_particles/patterns: random_uniform
+  - wafer_particles/patterns: ring_narrow
+  - wafer_particles/patterns: ring_wide
+  - wafer_particles/patterns: scratch
+  - _self_
+
+seed: 42
+
+wafer_particles:
+  labels: null
+  wafer_radius_mm: 150.0
+  allow_optional_patterns: true
+
+  # 42 patterns total -> set n_samples to multiples of 42 for equal repeats.
+  n_samples: 42
+
+  label_selection:
+    mode: fixed
+    labels:
+      - C01_Uniform
+      - C02_EdgeBiased
+      - C03_Ring
+      - C04_Sector_Edge
+      - C05_Sector_Internal
+      - C06_RadialLines
+      - C07_StraightLine
+      - C08_CurvedScratch
+      - C09_Spiral
+      - C10_Hotspot_Iso
+      - C11_Hotspot_Elliptic
+      - C12_Crescent_Edge
+      - C13_Crescent_Internal
+      - C14_EdgeSource_Spray
+      - C15_EdgeSource_Bursty
+      - K01_Donut_Hollow
+      - K02_SemiRing_Segment
+      - K03_Edge_Arc
+      - K04_Scratch_Periodic
+      - O01_ReticleRepeat
+      - O02_Checkerboard
+      - cluster_parent_child
+      - composite
+      - composite_dual_ring
+      - composite_edge_sector_plus_scratch
+      - composite_multi_hotspot
+      - composite_ring_hotspot
+      - composite_ring_hotspot_center
+      - composite_ring_hotspot_edge
+      - cox_lognormal
+      - edge_sector
+      - hotspot
+      - inhom_poisson
+      - pp_inhom_poisson
+      - pp_strauss_repulsive
+      - pp_thomas_cluster
+      - radial_lines
+      - random_edge_biased
+      - random_uniform
+      - ring_narrow
+      - ring_wide
+      - scratch
+
+  size_models:
+    type: gaussian
+    per_sample: true
+    min_um: 0.01
+    max_um: 1.0
+    mean_um: {dist: uniform, low: 0.02, high: 0.8}
+    std_um: {dist: uniform, low: 0.02, high: 0.1}
